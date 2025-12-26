@@ -1,0 +1,933 @@
+# Implementation Plan - Agile Sprints
+## Simple Image Converter Project
+
+**Project Duration:** 23 weeks (6 months)  
+**Sprint Length:** 2 weeks  
+**Total Sprints:** 12  
+**Start Date:** TBD  
+**Development Tools:** Claude AI, Claude Code, Cursor 2.2
+
+---
+
+## Sprint Overview
+
+| Sprint | Phase | Weeks | Focus | Deliverables |
+|--------|-------|-------|-------|--------------|
+| 1 | Setup | 1-2 | Project foundation | Workspace, CI/CD, docs |
+| 2 | Phase 1 | 3-4 | img-convert core | PNG, JPG, BMP, GIF |
+| 3 | Phase 1 | 5-6 | mesh-convert core | STL, OBJ, PLY |
+| 4 | Phase 2 | 7-8 | Advanced 2D | TIFF, WebP, SVG |
+| 5 | Phase 2 | 9-10 | Advanced 3D | glTF, DXF, OFF |
+| 6 | Phase 2 | 11-12 | Polish & Testing | Quality improvements |
+| 7 | Phase 3 | 13-14 | STEP evaluation | truck integration |
+| 8 | Phase 3 | 15-16 | STEP implementation | Read/write testing |
+| 9 | Phase 4 | 17-18 | GUI foundation | egui setup, basic UI |
+| 10 | Phase 4 | 19-20 | GUI features | Drag-drop, batch |
+| 11 | Phase 4 | 21-22 | GUI polish | Settings, installer |
+| 12 | Release | 23 | Final release | v1.0.0, public repo |
+
+---
+
+## SPRINT 1: Project Foundation (Weeks 1-2)
+
+**Goal:** Establish project infrastructure and development workflow
+
+### User Stories
+- As a developer, I want a workspace structure so I can organize code effectively
+- As a developer, I want CI/CD so builds are automated and tested
+- As a developer, I want comprehensive documentation so team members can onboard quickly
+
+### Tasks
+
+#### Day 1-2: Repository Setup
+- [x] Create GitHub repository (private)
+- [x] Initialize Cargo workspace
+- [x] Add README.md
+- [x] Add LICENSE (MIT)
+- [x] Create IMPLEMENTATION_PLAN.md
+- [ ] Add .gitignore (Rust + IDE)
+- [ ] Add CONTRIBUTING.md (placeholder)
+- [ ] Add CODE_OF_CONDUCT.md (placeholder)
+
+#### Day 3-4: Workspace Structure
+- [ ] Create `common/` crate
+  - [ ] Error types (ConversionError)
+  - [ ] Progress reporter trait
+  - [ ] Validation utilities
+  - [ ] I/O helpers
+- [ ] Create `img-core/` library crate
+  - [ ] Basic structure
+  - [ ] Format trait definitions
+  - [ ] Empty format modules
+- [ ] Create `img-convert/` binary crate
+  - [ ] CLI argument parsing skeleton
+  - [ ] Main entry point
+- [ ] Create `mesh-core/` library crate
+  - [ ] Basic structure
+  - [ ] Format trait definitions
+  - [ ] Mesh data structures
+- [ ] Create `mesh-convert/` binary crate
+  - [ ] CLI argument parsing skeleton
+  - [ ] Main entry point
+
+#### Day 5-6: Build Configuration
+- [ ] Configure Cargo.toml workspace
+  - [ ] Shared dependencies
+  - [ ] Release profile optimization
+  - [ ] Feature flags setup
+- [ ] Add build.sh script
+- [ ] Add cross-compilation setup
+  - [ ] Document Windows target
+  - [ ] Test MinGW compilation
+
+#### Day 7-8: CI/CD Pipeline
+- [ ] GitHub Actions setup
+  - [ ] CI workflow (build + test)
+  - [ ] Clippy + format checks
+  - [ ] Cross-platform builds
+- [ ] Pre-commit hooks (optional)
+- [ ] Code coverage setup (tarpaulin)
+
+#### Day 9-10: Documentation
+- [ ] Create docs/ folder
+  - [ ] ARCHITECTURE.md
+  - [ ] FORMATS.md (format matrix)
+  - [ ] API.md (skeleton)
+  - [ ] DEVELOPMENT.md
+- [ ] Add inline doc comments
+- [ ] Generate cargo doc
+- [ ] Add examples/ folder
+
+### Definition of Done
+- ✅ Repository created and structured
+- ✅ All crates compile without errors
+- ✅ CI/CD pipeline runs successfully
+- ✅ Documentation accessible and comprehensive
+- ✅ Team can build project locally
+
+### Sprint Review Checklist
+- [ ] Workspace structure matches architecture design
+- [ ] CI builds pass on all platforms
+- [ ] Documentation is clear and accurate
+- [ ] No compilation warnings
+- [ ] Sprint retrospective documented
+
+---
+
+## SPRINT 2: img-convert Core (Weeks 3-4)
+
+**Goal:** Implement basic 2D image conversion with Tier 1 formats
+
+### User Stories
+- As a user, I want to convert PNG to JPEG so I can reduce file size
+- As a user, I want to convert images with transparency so alpha channels are handled correctly
+- As a user, I want quality control so I can balance size and quality
+
+### Tasks
+
+#### Day 1-3: Core Image Infrastructure
+- [ ] Implement ImageData structure
+- [ ] Implement QualitySettings
+- [ ] Implement ConversionOptions
+- [ ] Create ImageConverter orchestrator
+- [ ] Implement format detection
+  - [ ] By extension
+  - [ ] By magic bytes
+- [ ] Create FormatRegistry
+
+#### Day 4-6: PNG Format Support
+- [ ] Implement PngFormat struct
+- [ ] Implement ImageReader for PNG
+- [ ] Implement ImageWriter for PNG
+- [ ] Add PNG tests
+  - [ ] RGB images
+  - [ ] RGBA images (transparency)
+  - [ ] Indexed color
+  - [ ] Grayscale
+
+#### Day 7-8: JPEG Format Support
+- [ ] Implement JpegFormat struct
+- [ ] Implement ImageReader for JPEG
+- [ ] Implement ImageWriter for JPEG
+  - [ ] Quality parameter
+  - [ ] Optimization
+- [ ] Handle transparency conversion (RGBA → RGB)
+- [ ] Add JPEG tests
+
+#### Day 9-10: BMP and GIF Formats
+- [ ] Implement BmpFormat
+  - [ ] Reader
+  - [ ] Writer
+  - [ ] Tests
+- [ ] Implement GifFormat
+  - [ ] Reader
+  - [ ] Writer
+  - [ ] Tests (including animated GIFs)
+
+#### Day 11-12: CLI Integration
+- [ ] Complete CLI argument parsing
+  - [ ] Clap derive macros
+  - [ ] Validation
+- [ ] Integrate with img-core
+- [ ] Add help text and examples
+- [ ] Error handling and user messages
+
+#### Day 13-14: Testing & Polish
+- [ ] Integration tests
+  - [ ] All format pairs
+  - [ ] Edge cases
+  - [ ] Error conditions
+- [ ] Performance benchmarks
+- [ ] Fix bugs
+- [ ] Update documentation
+
+### Definition of Done
+- ✅ PNG ↔ JPEG ↔ BMP ↔ GIF conversions work
+- ✅ CLI accepts arguments and produces correct output
+- ✅ Transparency handled correctly
+- ✅ Quality settings functional
+- ✅ All tests pass
+- ✅ Binary size ≤ 5MB
+
+### Sprint Review Checklist
+- [ ] Demo conversions to team
+- [ ] Validate against PoC results
+- [ ] Code review completed
+- [ ] Documentation updated
+- [ ] Performance acceptable (<1s for typical images)
+
+---
+
+## SPRINT 3: mesh-convert Core (Weeks 5-6)
+
+**Goal:** Implement basic 3D mesh conversion with core formats
+
+### User Stories
+- As a user, I want to convert STL to OBJ so I can add materials
+- As a user, I want binary and ASCII STL so I can choose format
+- As a user, I want mesh validation so I know the output is correct
+
+### Tasks
+
+#### Day 1-3: Core Mesh Infrastructure
+- [ ] Implement Mesh data structure
+- [ ] Implement Vertex, Normal, UV, Face
+- [ ] Implement MeshBuilder pattern
+- [ ] Create MeshConverter orchestrator
+- [ ] Implement format detection
+- [ ] Create FormatRegistry
+
+#### Day 4-6: STL Format Support
+- [ ] Implement StlFormat struct
+- [ ] Implement MeshReader for STL
+  - [ ] Binary STL
+  - [ ] ASCII STL
+  - [ ] Auto-detection
+- [ ] Implement MeshWriter for STL
+  - [ ] Binary output
+  - [ ] ASCII output
+- [ ] Normal calculation
+- [ ] Add STL tests
+
+#### Day 7-9: OBJ Format Support
+- [ ] Implement ObjFormat struct
+- [ ] Implement MeshReader for OBJ
+  - [ ] Vertex positions
+  - [ ] Normals
+  - [ ] UVs
+  - [ ] Materials (.mtl)
+- [ ] Implement MeshWriter for OBJ
+- [ ] Add OBJ tests
+
+#### Day 10-11: PLY Format Support
+- [ ] Implement PlyFormat struct
+- [ ] Implement MeshReader for PLY
+  - [ ] Binary PLY
+  - [ ] ASCII PLY
+- [ ] Implement MeshWriter for PLY
+- [ ] Add PLY tests
+
+#### Day 12-13: CLI Integration & Features
+- [ ] Complete CLI argument parsing
+- [ ] Integrate with mesh-core
+- [ ] Add coordinate transforms
+  - [ ] Y-up ↔ Z-up
+  - [ ] Transform matrices
+- [ ] Add mesh validation
+  - [ ] Manifold checking
+  - [ ] Topology validation
+- [ ] Add normal recalculation
+
+#### Day 14: Testing & Polish
+- [ ] Integration tests
+- [ ] Round-trip tests
+- [ ] Large file tests
+- [ ] Fix bugs
+- [ ] Update documentation
+
+### Definition of Done
+- ✅ STL ↔ OBJ ↔ PLY conversions work
+- ✅ Binary and ASCII variants supported
+- ✅ Normals calculated correctly
+- ✅ CLI functional with all options
+- ✅ All tests pass
+- ✅ Binary size ≤ 4MB
+
+### Sprint Review Checklist
+- [ ] Demo conversions with 3D viewer
+- [ ] Validate mesh integrity
+- [ ] Performance benchmarks
+- [ ] Code review completed
+- [ ] Documentation updated
+
+---
+
+## SPRINT 4: Advanced 2D Formats (Weeks 7-8)
+
+**Goal:** Add Tier 2 image formats and advanced features
+
+### User Stories
+- As a user, I want to convert TIFF files so I can work with scanned documents
+- As a user, I want WebP support so I can use modern formats
+- As a user, I want to rasterize SVG so I can convert vector to bitmap
+
+### Tasks
+
+#### Day 1-3: TIFF Support
+- [ ] Implement TiffFormat
+- [ ] Multi-page TIFF handling
+- [ ] Compression options (LZW, Deflate)
+- [ ] Tests
+
+#### Day 4-5: WebP Support
+- [ ] Implement WebPFormat
+- [ ] Lossy and lossless modes
+- [ ] Quality settings
+- [ ] Tests
+
+#### Day 6-8: Vector Rasterization (SVG)
+- [ ] Integrate resvg crate
+- [ ] Implement SvgFormat (read-only)
+- [ ] DPI configuration
+- [ ] Size calculation
+- [ ] Tests with various SVG files
+
+#### Day 9-10: Advanced Formats (Tier 2)
+- [ ] TGA format
+- [ ] ICO format
+- [ ] DDS format (optional)
+- [ ] HDR format (optional)
+
+#### Day 11-12: Quality Presets
+- [ ] Define quality presets
+  - [ ] Maximum (100%)
+  - [ ] High (95%)
+  - [ ] Medium (85%)
+  - [ ] Low (70%)
+  - [ ] Web-optimized
+- [ ] CLI preset option
+- [ ] Documentation
+
+#### Day 13-14: Testing & Optimization
+- [ ] All format tests
+- [ ] Performance optimization
+- [ ] Memory profiling
+- [ ] Bug fixes
+
+### Definition of Done
+- ✅ TIFF, WebP, SVG (read) functional
+- ✅ Quality presets working
+- ✅ All tests pass
+- ✅ Documentation complete
+
+---
+
+## SPRINT 5: Advanced 3D Formats (Weeks 9-10)
+
+**Goal:** Add glTF, DXF, and custom OFF format
+
+### User Stories
+- As a user, I want glTF support so I can work with modern 3D assets
+- As a user, I want DXF support so I can exchange CAD data
+- As a user, I want OFF format so I can work with simple geometry
+
+### Tasks
+
+#### Day 1-4: glTF Support
+- [ ] Integrate gltf crate
+- [ ] Implement GltfFormat
+- [ ] Binary (.glb) and text (.gltf) support
+- [ ] Material handling
+- [ ] Tests
+
+#### Day 5-7: DXF Support
+- [ ] Integrate dxf crate
+- [ ] Implement DxfFormat
+- [ ] 3D entities only (ignore 2D)
+- [ ] Layer handling
+- [ ] Tests
+
+#### Day 8-9: OFF Format (Custom Parser)
+- [ ] Write OFF parser
+- [ ] Implement OffFormat
+- [ ] Reader and Writer
+- [ ] Tests
+
+#### Day 10-12: Coordinate Transforms
+- [ ] Enhance transform system
+- [ ] Add rotation matrices
+- [ ] Add scale transforms
+- [ ] CLI options
+- [ ] Tests
+
+#### Day 13-14: Testing & Polish
+- [ ] Integration tests
+- [ ] Format compatibility matrix
+- [ ] Performance benchmarks
+- [ ] Bug fixes
+
+### Definition of Done
+- ✅ glTF, DXF, OFF working
+- ✅ Transforms functional
+- ✅ All tests pass
+- ✅ No performance regressions
+
+---
+
+## SPRINT 6: Quality & Testing (Weeks 11-12)
+
+**Goal:** Comprehensive testing, bug fixes, and documentation
+
+### User Stories
+- As a user, I want robust error messages so I can fix issues
+- As a developer, I want comprehensive tests so I can refactor safely
+- As a user, I want clear documentation so I can learn to use the tools
+
+### Tasks
+
+#### Day 1-3: Test Coverage
+- [ ] Achieve 80%+ code coverage
+- [ ] Add missing unit tests
+- [ ] Add integration tests
+- [ ] Add CLI tests
+
+#### Day 4-5: Error Handling Review
+- [ ] Audit all error messages
+- [ ] Improve user-facing errors
+- [ ] Add context to errors
+- [ ] Test error paths
+
+#### Day 6-7: Performance Optimization
+- [ ] Profile conversions
+- [ ] Optimize hot paths
+- [ ] Reduce allocations
+- [ ] Benchmark improvements
+
+#### Day 8-9: Documentation Pass
+- [ ] Complete API documentation
+- [ ] Update README with examples
+- [ ] Add troubleshooting guide
+- [ ] Add format support matrix
+- [ ] Screenshot/demo generation
+
+#### Day 10-12: Bug Bash
+- [ ] Test with real-world files
+- [ ] Fix discovered bugs
+- [ ] Handle edge cases
+- [ ] Validate conversions
+
+#### Day 13-14: v0.2.0 Release
+- [ ] Prepare release notes
+- [ ] Tag version
+- [ ] Build release binaries
+- [ ] Update documentation
+- [ ] Sprint retrospective
+
+### Definition of Done
+- ✅ Test coverage ≥ 80%
+- ✅ All known bugs fixed
+- ✅ Documentation complete
+- ✅ v0.2.0 released
+
+---
+
+## SPRINT 7: STEP Evaluation (Weeks 13-14)
+
+**Goal:** Evaluate and integrate truck for STEP support
+
+### User Stories
+- As a user, I want to read STEP files so I can import CAD models
+- As a developer, I want to evaluate truck's capabilities so I can determine viability
+
+### Tasks
+
+#### Day 1-3: truck Research
+- [ ] Study truck documentation
+- [ ] Review truck-stepio API
+- [ ] Test with sample STEP files
+- [ ] Evaluate limitations
+
+#### Day 4-6: truck Integration
+- [ ] Add truck dependencies
+- [ ] Create StepFormat skeleton
+- [ ] Implement basic STEP reader
+- [ ] Test tessellation
+
+#### Day 7-9: STEP Reader Implementation
+- [ ] Complete MeshReader for STEP
+- [ ] Handle multiple solids
+- [ ] Extract geometry
+- [ ] Convert to Mesh format
+- [ ] Tests with various STEP files
+
+#### Day 10-11: Evaluation & Decision
+- [ ] Test with real-world STEP files
+- [ ] Document limitations
+- [ ] Evaluate if truck is sufficient
+- [ ] Decision: continue or pivot to OCCT
+
+#### Day 12-14: Contingency Planning
+- [ ] If truck sufficient: proceed
+- [ ] If truck insufficient: plan OCCT integration
+- [ ] Document findings
+- [ ] Update roadmap if needed
+
+### Definition of Done
+- ✅ truck evaluation complete
+- ✅ STEP reading functional (or pivot plan ready)
+- ✅ Decision documented
+- ✅ Team aligned on path forward
+
+---
+
+## SPRINT 8: STEP Implementation (Weeks 15-16)
+
+**Goal:** Complete STEP support and CAD format polish
+
+### User Stories
+- As a user, I want full STEP read support so I can import CAD
+- As a user, I want reliable STEP conversion so models preserve geometry
+- As a user, I want IGES support (if possible) so I can work with legacy CAD
+
+### Tasks
+
+#### Day 1-4: Complete STEP Reader
+- [ ] Handle complex geometries
+- [ ] Handle assemblies
+- [ ] Handle curves and surfaces
+- [ ] Error handling
+- [ ] Comprehensive tests
+
+#### Day 5-7: STEP Writer (if feasible)
+- [ ] Evaluate truck write capabilities
+- [ ] Implement basic STEP export
+- [ ] Or document "read-only" limitation
+- [ ] Tests
+
+#### Day 8-9: IGES Support Evaluation
+- [ ] Check truck IGES support
+- [ ] If available, implement IgesFormat
+- [ ] If not, document limitation
+
+#### Day 10-12: CAD-Specific Features
+- [ ] Units handling
+- [ ] Tolerance settings
+- [ ] Assembly hierarchy (preserve if possible)
+- [ ] Material properties
+
+#### Day 13-14: Testing & v0.3.0 Release
+- [ ] Extensive STEP file testing
+- [ ] CAD validation
+- [ ] Release preparation
+- [ ] Documentation
+
+### Definition of Done
+- ✅ STEP read support functional
+- ✅ STEP write functional or limitation documented
+- ✅ CAD formats polished
+- ✅ v0.3.0 released
+
+---
+
+## SPRINT 9: GUI Foundation (Weeks 17-18)
+
+**Goal:** Set up GUI framework and basic interface
+
+### User Stories
+- As a user, I want a GUI so I can convert files without command line
+- As a user, I want to select files visually so conversion is easier
+
+### Tasks
+
+#### Day 1-3: egui Setup
+- [ ] Create converter-gui crate
+- [ ] Integrate eframe
+- [ ] Basic window setup
+- [ ] Import img-core and mesh-core libraries
+
+#### Day 4-6: Application Structure
+- [ ] App state management
+- [ ] Tab system (2D/3D)
+- [ ] Menu bar
+- [ ] Status bar
+
+#### Day 7-9: File Selection UI
+- [ ] File picker integration
+- [ ] Source file display
+- [ ] Format dropdown
+- [ ] Output path selection
+
+#### Day 10-11: Conversion Integration
+- [ ] Wire up img-core conversion
+- [ ] Wire up mesh-core conversion
+- [ ] Error display
+- [ ] Success messages
+
+#### Day 12-14: Basic Testing
+- [ ] Manual testing
+- [ ] UI responsiveness
+- [ ] Error handling
+- [ ] Cross-platform check
+
+### Definition of Done
+- ✅ GUI launches and runs
+- ✅ Single file conversion works (2D and 3D)
+- ✅ Basic error handling
+- ✅ Interface is usable
+
+---
+
+## SPRINT 10: GUI Features (Weeks 19-20)
+
+**Goal:** Add drag-drop, batch processing, and progress indicators
+
+### User Stories
+- As a user, I want drag-and-drop so I can add files easily
+- As a user, I want batch conversion so I can process multiple files
+- As a user, I want progress bars so I know conversion status
+
+### Tasks
+
+#### Day 1-3: Drag-and-Drop
+- [ ] Implement drag-drop handler
+- [ ] Multi-file support
+- [ ] File type filtering
+- [ ] Visual feedback
+
+#### Day 4-6: Batch Queue
+- [ ] Queue UI component
+- [ ] Add/remove files
+- [ ] Queue management
+- [ ] Process all button
+
+#### Day 7-9: Progress Indicators
+- [ ] Progress bar per file
+- [ ] Overall progress
+- [ ] Estimated time remaining
+- [ ] Cancellation support
+
+#### Day 10-11: Quality Settings Panel
+- [ ] Quality sliders
+- [ ] Preset selection
+- [ ] Format-specific options
+- [ ] Preview (optional)
+
+#### Day 12-14: Advanced Options
+- [ ] Coordinate transforms (3D)
+- [ ] Normal recalculation toggle
+- [ ] Validation toggle
+- [ ] Metadata preservation
+
+### Definition of Done
+- ✅ Drag-drop functional
+- ✅ Batch processing works
+- ✅ Progress indicators accurate
+- ✅ Settings panel complete
+
+---
+
+## SPRINT 11: GUI Polish (Weeks 21-22)
+
+**Goal:** Polish UI, add settings persistence, create installer
+
+### User Stories
+- As a user, I want settings saved so I don't reconfigure each time
+- As a user, I want an installer so deployment is easy
+- As a user, I want a professional interface so the tool feels polished
+
+### Tasks
+
+#### Day 1-3: Settings Persistence
+- [ ] Settings save/load
+- [ ] Recent files list
+- [ ] Default paths
+- [ ] Preference dialog
+
+#### Day 4-6: UI Polish
+- [ ] Consistent styling
+- [ ] Icons and branding
+- [ ] Tooltips
+- [ ] Keyboard shortcuts
+- [ ] Dark/light theme (optional)
+
+#### Day 7-8: Help System
+- [ ] Help menu
+- [ ] About dialog
+- [ ] Inline help text
+- [ ] Link to documentation
+
+#### Day 9-11: Installer Creation
+- [ ] NSIS installer script (Windows)
+- [ ] File associations (optional)
+- [ ] Start menu shortcuts
+- [ ] Uninstaller
+
+#### Day 12-14: Final Testing
+- [ ] End-to-end testing
+- [ ] User acceptance testing
+- [ ] Bug fixes
+- [ ] Performance check
+
+### Definition of Done
+- ✅ Settings persist correctly
+- ✅ UI is polished and professional
+- ✅ Installer works
+- ✅ Ready for v1.0.0 release
+
+---
+
+## SPRINT 12: Release (Week 23)
+
+**Goal:** Final release preparation and repository publication
+
+### User Stories
+- As a user, I want stable v1.0.0 so I can use it in production
+- As a developer, I want public repository so others can contribute
+- As a user, I want clear release notes so I know what's included
+
+### Tasks
+
+#### Day 1-2: Final Bug Fixes
+- [ ] Address critical bugs
+- [ ] Performance tuning
+- [ ] Memory leak checks
+- [ ] Stress testing
+
+#### Day 3-4: Documentation Finalization
+- [ ] Complete user guide
+- [ ] API documentation
+- [ ] Tutorial videos (optional)
+- [ ] FAQ
+
+#### Day 5-6: Release Preparation
+- [ ] Version bump to 1.0.0
+- [ ] Release notes
+- [ ] Change log
+- [ ] Migration guide (if needed)
+
+#### Day 7-8: Release Artifacts
+- [ ] Build release binaries (all platforms)
+- [ ] Create GitHub release
+- [ ] Publish to crates.io (libraries)
+- [ ] Upload installers
+
+#### Day 9-10: Repository Publication
+- [ ] Review all code
+- [ ] Remove sensitive information
+- [ ] Set repository to public
+- [ ] Enable issues and discussions
+- [ ] Add contribution guidelines
+
+#### Day 11-12: Launch Activities
+- [ ] Announcement post
+- [ ] Social media (if applicable)
+- [ ] Community outreach
+- [ ] Monitor initial feedback
+
+#### Day 13-14: Post-Release
+- [ ] Monitor issues
+- [ ] Quick bug fixes
+- [ ] Thank contributors
+- [ ] Plan future roadmap
+
+### Definition of Done
+- ✅ v1.0.0 released
+- ✅ Repository public
+- ✅ Documentation complete
+- ✅ Community engaged
+- ✅ Project stable
+
+---
+
+## Agile Ceremonies
+
+### Daily Stand-ups (Async for AI tools)
+- What was completed yesterday?
+- What's planned for today?
+- Any blockers?
+
+### Sprint Planning (Start of each sprint)
+- Review sprint goals
+- Break down user stories into tasks
+- Assign estimates
+- Commit to sprint backlog
+
+### Sprint Review (End of each sprint)
+- Demo completed features
+- Review against Definition of Done
+- Gather feedback
+- Update product backlog
+
+### Sprint Retrospective (End of each sprint)
+- What went well?
+- What could be improved?
+- Action items for next sprint
+
+---
+
+## Risk Management
+
+### Identified Risks
+
+| Risk | Probability | Impact | Mitigation |
+|------|-------------|--------|------------|
+| truck STEP support insufficient | Medium | High | OCCT FFI fallback documented |
+| Performance issues with large files | Medium | Medium | Streaming I/O, profiling |
+| Cross-compilation issues | Low | Medium | Early testing, CI/CD |
+| API breaking changes in dependencies | Low | Low | Pin versions, test updates |
+| Scope creep | Medium | Medium | Strict sprint planning |
+
+### Contingency Plans
+
+**If truck STEP fails:**
+- Sprint 7: Pivot to OCCT evaluation
+- Sprint 8: Implement OCCT FFI
+- Accept larger binary size (~15-20MB)
+
+**If GUI framework (egui) insufficient:**
+- Evaluate iced as alternative
+- Consider Tauri (web-based)
+- Delay GUI to v1.1.0 if needed
+
+**If timeline slips:**
+- Reduce scope (e.g., defer IGES)
+- Extend sprints to 3 weeks
+- Prioritize MVP features
+
+---
+
+## Success Metrics
+
+### Technical Metrics
+- **Code Coverage:** ≥80%
+- **Binary Size:** img-convert ≤5MB, mesh-convert ≤6MB
+- **Performance:** Typical conversion <1 second
+- **Build Time:** Full workspace <5 minutes
+- **Test Pass Rate:** 100%
+
+### Quality Metrics
+- **Bug Escape Rate:** <5% of releases
+- **User-Reported Issues:** <10 per month (post-v1.0)
+- **Conversion Success Rate:** ≥99% for valid files
+- **Documentation Completeness:** 100% of public APIs
+
+### Process Metrics
+- **Sprint Velocity:** Track story points
+- **Sprint Completion Rate:** ≥80%
+- **Code Review Turnaround:** <24 hours
+- **CI/CD Success Rate:** ≥95%
+
+---
+
+## Communication Plan
+
+### GitHub Tools
+- **Issues:** Bug reports, feature requests
+- **Projects:** Sprint board (Kanban)
+- **Discussions:** Architecture decisions, Q&A
+- **Wiki:** Extended documentation
+
+### Status Updates
+- Weekly progress summaries (in README or CHANGELOG)
+- Sprint review notes (in docs/sprints/)
+- Milestone tracking (GitHub milestones)
+
+### AI Tool Coordination
+- **Claude AI:** Architecture decisions, code reviews
+- **Claude Code:** Implementation, refactoring
+- **Cursor 2.2:** Rapid prototyping, debugging
+
+---
+
+## Post-v1.0 Roadmap (Future Sprints)
+
+### v1.1.0 - Performance & Optimization
+- Streaming I/O for large files
+- Multi-threading for batch
+- Memory optimizations
+- Profiling and benchmarking
+
+### v1.2.0 - Plugin System
+- Dynamic format loading
+- Custom format plugins
+- Python bindings (optional)
+- C FFI exports
+
+### v1.3.0 - Advanced Features
+- Batch scripting
+- Configuration files
+- Presets and profiles
+- Format conversion pipelines
+
+### v2.0.0 - Major Features
+- Cloud integration
+- Web service API
+- Mobile apps (via Tauri)
+- Advanced 3D operations
+
+---
+
+## Appendix
+
+### Glossary
+- **MVP:** Minimum Viable Product
+- **POC:** Proof of Concept
+- **FFI:** Foreign Function Interface
+- **CI/CD:** Continuous Integration/Continuous Deployment
+- **OCCT:** Open CASCADE Technology
+
+### References
+- [Rust Book](https://doc.rust-lang.org/book/)
+- [Cargo Guide](https://doc.rust-lang.org/cargo/)
+- [truck Documentation](https://github.com/ricosjp/truck)
+- [image Crate](https://docs.rs/image/)
+- [egui Documentation](https://docs.rs/egui/)
+
+### Sprint Template
+
+```markdown
+## Sprint X: [Name] (Weeks Y-Z)
+
+**Goal:** [One-sentence goal]
+
+### User Stories
+- As a [role], I want [feature] so that [benefit]
+
+### Tasks
+- [ ] Task 1
+- [ ] Task 2
+
+### Definition of Done
+- ✅ Criterion 1
+- ✅ Criterion 2
+
+### Sprint Review Checklist
+- [ ] Item 1
+- [ ] Item 2
+```
+
+---
+
+**Document Version:** 1.0  
+**Last Updated:** December 26, 2025  
+**Next Review:** End of Sprint 1
