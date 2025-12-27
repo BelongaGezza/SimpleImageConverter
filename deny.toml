@@ -1,14 +1,16 @@
 # Cargo Deny Configuration
 # Security-focused dependency checking for SimpleImageConverter
+# Compatible with cargo-deny v0.16+
+
+[graph]
+targets = []
+all-features = false
+no-default-features = false
 
 [advisories]
 # The database of advisories to check
 db-path = "~/.cargo/advisory-db"
 db-urls = ["https://github.com/rustsec/advisory-db"]
-# Check for security advisories from RustSec
-vulnerability = "deny"
-# Warn about yanked crates
-yanked = "warn"
 # Ignore advisories for specific crates (add as needed)
 ignore = []
 
@@ -43,5 +45,3 @@ highlight = "all"
 # Only allow crates from crates.io
 unknown-registry = "deny"
 unknown-git = "warn"
-# Allow specific organizations (if needed)
-allow-org = { github = [] }
