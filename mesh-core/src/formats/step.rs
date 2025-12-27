@@ -9,8 +9,16 @@ use crate::mesh::Mesh;
 use common::error::{ConversionError, Result};
 #[cfg(feature = "step")]
 use common::limits::ResourceLimits;
+// Truck types for geometry and tessellation
+// Note: Currently unused in active code but needed for function signatures
 #[cfg(feature = "step")]
 use truck_modeling::Shell;
+// Future use for tessellation:
+// use truck_meshalgo::tessellation::{MeshableShape, MeshedShape};
+// use truck_polymesh::PolygonMesh;
+// ruststep for STEP file parsing
+#[cfg(feature = "step")]
+use ruststep::parser;
 
 /// STEP format handler
 ///
@@ -169,7 +177,7 @@ impl StepFormat {
         }
 
         // Convert bytes to string (STEP files are ASCII)
-        let _step_text = std::str::from_utf8(data).map_err(|e| {
+        let step_text = std::str::from_utf8(data).map_err(|e| {
             ConversionError::ConversionFailed(format!(
                 "STEP file is not valid UTF-8 ({} bytes): {}",
                 data.len(),
@@ -177,52 +185,48 @@ impl StepFormat {
             ))
         })?;
 
-        // Parse STEP file using truck-stepio
-        // TODO: Verify actual truck-stepio API
-        // Architecture docs suggest truck_stepio::read() or truck_stepio::in::read()
-        // But compiler indicates these don't exist
-        // Need to check actual API in truck-stepio v0.3.0
+        // Parse STEP file using ruststep
+        let exchange = parser::parse(step_text).map_err(|e| {
+            ConversionError::ConversionFailed(format!("Failed to parse STEP file: {}", e))
+        })?;
+
+        // Extract geometric entities from the parsed STEP file
+        // This is a complex conversion: ruststep AST → truck Shell/Solid types
+        // The ruststep parser gives us an AST (Abstract Syntax Tree) of STEP entities,
+        // but we need to convert these to truck's geometric types (Shell, Solid).
+        //
+        // This conversion is non-trivial because:
+        // - STEP entities are structured differently than truck types
+        // - We need to handle various STEP entity types (MANIFOLD_SOLID_BREP, SHELL, etc.)
+        // - Coordinate transformations may be needed
+        // - Complex topology needs to be reconstructed
+
+        // TODO: Implement ruststep AST → truck Shell/Solid conversion
+        // Steps needed:
+        // 1. Extract geometric entities from exchange.data (Vec<ast::Record>)
+        // 2. Identify entity types (MANIFOLD_SOLID_BREP, CLOSED_SHELL, etc.)
+        // 3. Convert STEP geometric entities to truck Shell/Solid types
+        // 4. Handle coordinate systems and transformations
+        // 5. Tessellate using truck-meshalgo
+        // 6. Convert tessellated mesh to our Mesh format
+
+        let _exchange = exchange; // Parsed successfully, but conversion not yet implemented
 
         Err(ConversionError::ConversionFailed(format!(
-            "STEP format input is not yet supported.\n\
+            "STEP format reading is under development.\n\
             \n\
-            Status: truck-stepio 0.3.0 does not support STEP file input/reading yet.\n\
-            The library is currently designed for STEP output (writing) only.\n\
+            Status: STEP file parsed successfully ({} bytes), but entity conversion is in progress.\n\
             \n\
-            File received: {} bytes (valid UTF-8)\n\
+            Progress:\n\
+            - ✅ Dependencies added (ruststep 0.4 with ap203, truck-meshalgo 0.4)\n\
+            - ✅ STEP file parsing working\n\
+            - 🚧 Entity conversion (ruststep AST → truck Shell/Solid) - in progress\n\
+            - ⏳ Tessellation and mesh conversion - pending\n\
             \n\
-            This limitation is a dependency on truck-stepio adding input support.\n\
-            See STEP_IMPLEMENTATION_DECISION.md for details.\n\
-            \n\
-            Workaround: Convert STEP files using external tools, then use this converter\n\
-            for other formats (STL, OBJ, PLY, OFF, glTF, DXF all supported).",
+            This is a complex conversion requiring mapping STEP geometric entities to truck types.\n\
+            See TASKS_SENIOR_ENGINEER_V0.2.0.md for implementation plan.",
             data.len()
         )))
-
-        // Code to uncomment once API is verified:
-        // let shells: Vec<Shell> = /* truck-stepio parsing API call here */;
-        //
-        // // Check if we have any shells
-        // if shells.is_empty() {
-        //     return Err(ConversionError::ConversionFailed(
-        //         "STEP file contains no geometric data (no shells found)".to_string(),
-        //     ));
-        // }
-        //
-        // // Security: Estimate resource usage before tessellation
-        // // Note: We can't know exact counts until tessellation, so we use a conservative estimate
-        // let estimated_vertices = shells.len() * 1000; // Conservative estimate
-        // let estimated_faces = shells.len() * 2000; // Conservative estimate
-        // if let Err(e) = self
-        //     .limits
-        //     .check_mesh_resources(estimated_vertices, estimated_faces)
-        // {
-        //     common::security::log_security_error(&e, None);
-        //     return Err(e);
-        // }
-        //
-        // // Convert truck shells to our mesh format
-        // self.convert_truck_to_mesh(shells)
     }
 }
 
