@@ -64,7 +64,11 @@ fn main() -> Result<()> {
     // Write output file
     write_file_bytes(&output_path, &output_data)?;
 
-    println!("Successfully converted {} to {}", args.input, output_path.display());
+    println!(
+        "Successfully converted {} to {}",
+        args.input,
+        output_path.display()
+    );
 
     Ok(())
 }

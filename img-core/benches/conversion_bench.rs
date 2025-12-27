@@ -2,15 +2,14 @@
 // Copyright (c) 2025 Simple Image Converter Contributors
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use img_core::{FormatRegistry, ImageConverter, ImageFormat, QualitySettings};
 use image::{DynamicImage, ImageBuffer, ImageFormat as ImgFormat, Rgb};
+use img_core::{FormatRegistry, ImageConverter, ImageFormat, QualitySettings};
 
 /// Helper to create a test PNG image
 fn create_test_png(width: u32, height: u32) -> Vec<u8> {
-    let img: ImageBuffer<Rgb<u8>, Vec<u8>> =
-        ImageBuffer::from_fn(width, height, |x, y| {
-            Rgb([(x % 256) as u8, (y % 256) as u8, 128])
-        });
+    let img: ImageBuffer<Rgb<u8>, Vec<u8>> = ImageBuffer::from_fn(width, height, |x, y| {
+        Rgb([(x % 256) as u8, (y % 256) as u8, 128])
+    });
     let mut buffer = Vec::new();
     DynamicImage::ImageRgb8(img)
         .write_to(&mut std::io::Cursor::new(&mut buffer), ImgFormat::Png)
@@ -20,10 +19,9 @@ fn create_test_png(width: u32, height: u32) -> Vec<u8> {
 
 /// Helper to create a test JPEG image
 fn create_test_jpeg(width: u32, height: u32) -> Vec<u8> {
-    let img: ImageBuffer<Rgb<u8>, Vec<u8>> =
-        ImageBuffer::from_fn(width, height, |x, y| {
-            Rgb([(x % 256) as u8, (y % 256) as u8, 128])
-        });
+    let img: ImageBuffer<Rgb<u8>, Vec<u8>> = ImageBuffer::from_fn(width, height, |x, y| {
+        Rgb([(x % 256) as u8, (y % 256) as u8, 128])
+    });
     let mut buffer = Vec::new();
     let mut encoder = image::codecs::jpeg::JpegEncoder::new_with_quality(&mut buffer, 90);
     encoder
@@ -52,7 +50,11 @@ fn benchmark_png_write(c: &mut Criterion) {
 
     c.bench_function("png_write_100x100", |b| {
         b.iter(|| {
-            black_box(writer.write(black_box(&image), black_box(&quality)).unwrap());
+            black_box(
+                writer
+                    .write(black_box(&image), black_box(&quality))
+                    .unwrap(),
+            );
         });
     });
 }
@@ -77,7 +79,11 @@ fn benchmark_jpeg_write(c: &mut Criterion) {
 
     c.bench_function("jpeg_write_100x100", |b| {
         b.iter(|| {
-            black_box(writer.write(black_box(&image), black_box(&quality)).unwrap());
+            black_box(
+                writer
+                    .write(black_box(&image), black_box(&quality))
+                    .unwrap(),
+            );
         });
     });
 }
@@ -162,4 +168,3 @@ criterion_group!(
     benchmark_large_image
 );
 criterion_main!(benches);
-

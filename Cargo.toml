@@ -34,6 +34,10 @@ log = "0.4"
 # 2D image processing
 image = "0.25"
 
+# 3D mesh processing
+stl_io = "0.7"
+nalgebra = "0.33"
+
 # Benchmarking
 criterion = { version = "0.5", features = ["html_reports"] }
 

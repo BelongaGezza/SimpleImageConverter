@@ -6,4 +6,5 @@ pub mod formats;
 pub mod mesh;
 
 pub use convert::MeshConverter;
-pub use mesh::Mesh;
+pub use formats::{FormatRegistry, MeshFormat, StlFormat};
+pub use mesh::{Face, Mesh, Normal, Vertex};

@@ -4,16 +4,16 @@
 use crate::formats::traits::{ColorType, ImageData};
 
 /// Convert image data to RGB format
-/// 
+///
 /// JPEG and other formats that don't support transparency need RGB data.
 /// This function handles conversion from all color types to RGB.
-/// 
+///
 /// # Arguments
-/// 
+///
 /// * `image` - The image data to convert
-/// 
+///
 /// # Returns
-/// 
+///
 /// A vector of RGB bytes (width * height * 3)
 pub fn convert_to_rgb(image: &ImageData) -> Vec<u8> {
     match image.color_type {
@@ -109,4 +109,3 @@ mod tests {
         assert_eq!(rgb[3..6], [200, 200, 200]); // Second pixel
     }
 }
-

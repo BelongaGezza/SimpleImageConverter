@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 // Copyright (c) 2025 Simple Image Converter Contributors
 
-pub mod traits;
-pub mod png;
+pub mod bmp;
+pub mod gif;
 pub mod jpg;
+pub mod png;
 pub mod registry;
+pub mod traits;
 
-// Format implementations will be added in Sprint 2+
-// pub mod bmp;
-// pub mod gif;
-
-pub use png::PngFormat;
+pub use bmp::BmpFormat;
+pub use gif::GifFormat;
 pub use jpg::JpegFormat;
+pub use png::PngFormat;
 pub use registry::FormatRegistry;

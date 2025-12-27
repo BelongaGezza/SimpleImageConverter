@@ -1,7 +1,7 @@
 # Format Support Matrix
 ## Simple Image Converter
 
-**Last Updated:** December 26, 2025
+**Last Updated:** December 27, 2025
 
 ---
 
@@ -11,8 +11,8 @@
 |--------|-----------|------|-------|--------|-------|
 | PNG | .png | ✅ | ✅ | Sprint 2 | Full support |
 | JPEG | .jpg, .jpeg | ✅ | ✅ | Sprint 2 | Quality control |
-| BMP | .bmp | ✅ | ✅ | Sprint 2 | Windows bitmap |
-| GIF | .gif | ✅ | ✅ | Sprint 2 | Animated support |
+| BMP | .bmp | ✅ | ✅ | Sprint 2 ✅ | Windows bitmap |
+| GIF | .gif | ✅ | ✅ | Sprint 2 ✅ | First frame only (animated) |
 | TIFF | .tiff, .tif | 📅 | 📅 | Sprint 4 | Multi-page |
 | WebP | .webp | 📅 | 📅 | Sprint 4 | Lossy/lossless |
 | SVG | .svg | 📅 | ❌ | Sprint 4 | Rasterize only |
@@ -35,9 +35,9 @@
 
 | Format | Extension | Read | Write | Status | Notes |
 |--------|-----------|------|-------|--------|-------|
-| STL | .stl | ✅ | ✅ | Sprint 3 | Binary/ASCII |
-| OBJ | .obj | ✅ | ✅ | Sprint 3 | With materials |
-| PLY | .ply | ✅ | ✅ | Sprint 3 | Binary/ASCII |
+| STL | .stl | ✅ | ✅ | Sprint 3 ✅ | Binary/ASCII |
+| OBJ | .obj | ❌ | ❌ | Sprint 3 🚧 | In progress |
+| PLY | .ply | ❌ | ❌ | Sprint 3 🚧 | In progress |
 | OFF | .off | 📅 | 📅 | Sprint 5 | Custom parser |
 | glTF | .gltf, .glb | 📅 | 📅 | Sprint 5 | Binary/text |
 | DXF | .dxf | 📅 | 📅 | Sprint 5 | 3D entities |
@@ -108,16 +108,16 @@ Formats are detected by:
 - Trait definitions
 - Basic CLI skeletons
 
-### Sprint 2 (Image Core) 🚧
-- PNG format
-- JPEG format
-- BMP format
-- GIF format
+### Sprint 2 (Image Core) ✅
+- ✅ PNG format
+- ✅ JPEG format
+- ✅ BMP format
+- ✅ GIF format
 
-### Sprint 3 (Mesh Core) 📅
-- STL format
-- OBJ format
-- PLY format
+### Sprint 3 (Mesh Core) 🚧
+- ✅ STL format
+- 🚧 OBJ format (in progress)
+- 🚧 PLY format (in progress)
 
 ### Sprint 4+ (Advanced) 📅
 - See IMPLEMENTATION_PLAN.md

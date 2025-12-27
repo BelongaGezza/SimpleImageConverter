@@ -6,27 +6,27 @@ use crate::quality::QualitySettings;
 use common::error::{ConversionError, Result};
 use image::{DynamicImage, GenericImageView, ImageFormat, Rgb, Rgba};
 
-/// PNG format handler
-pub struct PngFormat;
+/// BMP format handler
+pub struct BmpFormat;
 
-impl PngFormat {
-    /// Create a new PNG format handler
+impl BmpFormat {
+    /// Create a new BMP format handler
     pub fn new() -> Self {
         Self
     }
 }
 
-impl Default for PngFormat {
+impl Default for BmpFormat {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl ImageReader for PngFormat {
+impl ImageReader for BmpFormat {
     fn read(&self, data: &[u8]) -> Result<ImageData> {
-        let img = image::load_from_memory_with_format(data, ImageFormat::Png).map_err(|e| {
+        let img = image::load_from_memory_with_format(data, ImageFormat::Bmp).map_err(|e| {
             ConversionError::ConversionFailed(format!(
-                "Failed to read PNG image ({} bytes): {}",
+                "Failed to read BMP image ({} bytes): {}",
                 data.len(),
                 e
             ))
@@ -70,7 +70,7 @@ impl ImageReader for PngFormat {
     }
 }
 
-impl ImageWriter for PngFormat {
+impl ImageWriter for BmpFormat {
     fn write(&self, image: &ImageData, _quality: &QualitySettings) -> Result<Vec<u8>> {
         // Validate image data before processing
         crate::validation::validate_image_data(image)?;
@@ -112,10 +112,10 @@ impl ImageWriter for PngFormat {
 
         let mut buffer = Vec::new();
         img_buffer
-            .write_to(&mut std::io::Cursor::new(&mut buffer), ImageFormat::Png)
+            .write_to(&mut std::io::Cursor::new(&mut buffer), ImageFormat::Bmp)
             .map_err(|e| {
                 ConversionError::ConversionFailed(format!(
-                    "Failed to write PNG image ({}x{} {:?}): {}",
+                    "Failed to write BMP image ({}x{} {:?}): {}",
                     image.width, image.height, image.color_type, e
                 ))
             })?;
@@ -130,23 +130,35 @@ mod tests {
     use crate::formats::traits::ColorType;
     use crate::quality::QualitySettings;
 
-    // Helper to create a simple test PNG
-    fn create_test_png_rgb() -> Vec<u8> {
+    // Helper to create a simple test BMP
+    fn create_test_bmp_rgb() -> Vec<u8> {
         let img = image::ImageBuffer::from_fn(2, 2, |x, y| {
             image::Rgb([(x * 85) as u8, (y * 85) as u8, 128])
         });
         let mut buffer = Vec::new();
         DynamicImage::ImageRgb8(img)
-            .write_to(&mut std::io::Cursor::new(&mut buffer), ImageFormat::Png)
+            .write_to(&mut std::io::Cursor::new(&mut buffer), ImageFormat::Bmp)
+            .unwrap();
+        buffer
+    }
+
+    // Helper to create a simple test BMP with RGBA
+    fn create_test_bmp_rgba() -> Vec<u8> {
+        let img = image::ImageBuffer::from_fn(2, 2, |x, y| {
+            image::Rgba([(x * 85) as u8, (y * 85) as u8, 128, 255])
+        });
+        let mut buffer = Vec::new();
+        DynamicImage::ImageRgba8(img)
+            .write_to(&mut std::io::Cursor::new(&mut buffer), ImageFormat::Bmp)
             .unwrap();
         buffer
     }
 
     #[test]
-    fn test_png_read_rgb() {
-        let png_data = create_test_png_rgb();
-        let format = PngFormat::new();
-        let result = format.read(&png_data);
+    fn test_bmp_read_rgb() {
+        let bmp_data = create_test_bmp_rgb();
+        let format = BmpFormat::new();
+        let result = format.read(&bmp_data);
         assert!(result.is_ok());
         let image = result.unwrap();
         assert_eq!(image.width, 2);
@@ -156,29 +168,69 @@ mod tests {
     }
 
     #[test]
-    fn test_png_write_rgb() {
+    fn test_bmp_read_rgba() {
+        let bmp_data = create_test_bmp_rgba();
+        let format = BmpFormat::new();
+        let result = format.read(&bmp_data);
+        assert!(result.is_ok());
+        let image = result.unwrap();
+        assert_eq!(image.width, 2);
+        assert_eq!(image.height, 2);
+        assert_eq!(image.color_type, ColorType::Rgba);
+        assert_eq!(image.data.len(), 2 * 2 * 4); // 2x2 RGBA
+    }
+
+    #[test]
+    fn test_bmp_write_rgb() {
         let image = ImageData {
             width: 2,
             height: 2,
             data: vec![255, 0, 0, 0, 255, 0, 0, 0, 255, 128, 128, 128], // 2x2 RGB
             color_type: ColorType::Rgb,
         };
-        let format = PngFormat::new();
+        let format = BmpFormat::new();
         let quality = QualitySettings::default();
         let result = format.write(&image, &quality);
         assert!(result.is_ok());
-        let png_data = result.unwrap();
-        assert!(!png_data.is_empty());
+        let bmp_data = result.unwrap();
+        assert!(!bmp_data.is_empty());
 
         // Verify we can read it back
-        let read_result = format.read(&png_data);
+        let read_result = format.read(&bmp_data);
         assert!(read_result.is_ok());
     }
 
     #[test]
-    fn test_png_round_trip() {
-        let original = create_test_png_rgb();
-        let format = PngFormat::new();
+    fn test_bmp_write_rgba() {
+        let image = ImageData {
+            width: 2,
+            height: 2,
+            data: vec![
+                255, 0, 0, 255, // RGBA pixel 1
+                0, 255, 0, 255, // RGBA pixel 2
+                0, 0, 255, 255, // RGBA pixel 3
+                128, 128, 128, 255, // RGBA pixel 4
+            ],
+            color_type: ColorType::Rgba,
+        };
+        let format = BmpFormat::new();
+        let quality = QualitySettings::default();
+        let result = format.write(&image, &quality);
+        assert!(result.is_ok());
+        let bmp_data = result.unwrap();
+        assert!(!bmp_data.is_empty());
+
+        // Verify we can read it back
+        let read_result = format.read(&bmp_data);
+        assert!(read_result.is_ok());
+        let read_image = read_result.unwrap();
+        assert_eq!(read_image.color_type, ColorType::Rgba);
+    }
+
+    #[test]
+    fn test_bmp_round_trip() {
+        let original = create_test_bmp_rgb();
+        let format = BmpFormat::new();
         let quality = QualitySettings::default();
 
         // Read
@@ -198,22 +250,22 @@ mod tests {
     }
 
     #[test]
-    fn test_png_read_invalid() {
-        let format = PngFormat::new();
-        let invalid_data = b"not a png file";
+    fn test_bmp_read_invalid() {
+        let format = BmpFormat::new();
+        let invalid_data = b"not a bmp file";
         let result = format.read(invalid_data);
         assert!(result.is_err());
     }
 
     #[test]
-    fn test_png_write_invalid_dimensions() {
+    fn test_bmp_write_invalid_dimensions() {
         let image = ImageData {
             width: 0,
             height: 10,
             data: vec![],
             color_type: ColorType::Rgb,
         };
-        let format = PngFormat::new();
+        let format = BmpFormat::new();
         let quality = QualitySettings::default();
         let result = format.write(&image, &quality);
         assert!(result.is_err());

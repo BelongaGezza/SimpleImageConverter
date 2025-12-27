@@ -18,48 +18,40 @@ pub fn validate_image_data(image: &ImageData) -> Result<()> {
     let width = image.width as u64;
     let height = image.height as u64;
     let expected_len = match image.color_type {
-        ColorType::Rgb => {
-            width
-                .checked_mul(height)
-                .and_then(|x| x.checked_mul(3))
-                .ok_or_else(|| {
-                    ConversionError::InvalidInput("Image dimensions too large for RGB".to_string())
-                })?
-        }
-        ColorType::Rgba => {
-            width
-                .checked_mul(height)
-                .and_then(|x| x.checked_mul(4))
-                .ok_or_else(|| {
-                    ConversionError::InvalidInput("Image dimensions too large for RGBA".to_string())
-                })?
-        }
-        ColorType::Grayscale => {
-            width
-                .checked_mul(height)
-                .ok_or_else(|| {
-                    ConversionError::InvalidInput(
-                        "Image dimensions too large for Grayscale".to_string(),
-                    )
-                })?
-        }
-        ColorType::GrayscaleAlpha => {
-            width
-                .checked_mul(height)
-                .and_then(|x| x.checked_mul(2))
-                .ok_or_else(|| {
-                    ConversionError::InvalidInput(
-                        "Image dimensions too large for GrayscaleAlpha".to_string(),
-                    )
-                })?
-        }
+        ColorType::Rgb => width
+            .checked_mul(height)
+            .and_then(|x| x.checked_mul(3))
+            .ok_or_else(|| {
+                ConversionError::InvalidInput("Image dimensions too large for RGB".to_string())
+            })?,
+        ColorType::Rgba => width
+            .checked_mul(height)
+            .and_then(|x| x.checked_mul(4))
+            .ok_or_else(|| {
+                ConversionError::InvalidInput("Image dimensions too large for RGBA".to_string())
+            })?,
+        ColorType::Grayscale => width.checked_mul(height).ok_or_else(|| {
+            ConversionError::InvalidInput("Image dimensions too large for Grayscale".to_string())
+        })?,
+        ColorType::GrayscaleAlpha => width
+            .checked_mul(height)
+            .and_then(|x| x.checked_mul(2))
+            .ok_or_else(|| {
+                ConversionError::InvalidInput(
+                    "Image dimensions too large for GrayscaleAlpha".to_string(),
+                )
+            })?,
     };
 
     // Check data length matches expected
     if image.data.len() != expected_len as usize {
         return Err(ConversionError::InvalidInput(format!(
             "Image data length mismatch: expected {} bytes for {}x{} {:?} image, got {} bytes",
-            expected_len, image.width, image.height, image.color_type, image.data.len()
+            expected_len,
+            image.width,
+            image.height,
+            image.color_type,
+            image.data.len()
         )));
     }
 
@@ -125,4 +117,3 @@ mod tests {
         assert!(validate_image_data(&image).is_err());
     }
 }
-

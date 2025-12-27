@@ -25,18 +25,19 @@ impl Default for JpegFormat {
 
 impl ImageReader for JpegFormat {
     fn read(&self, data: &[u8]) -> Result<ImageData> {
-        let img = image::load_from_memory_with_format(data, ImageFormat::Jpeg)
-            .map_err(|e| ConversionError::ConversionFailed(format!(
+        let img = image::load_from_memory_with_format(data, ImageFormat::Jpeg).map_err(|e| {
+            ConversionError::ConversionFailed(format!(
                 "Failed to read JPEG image ({} bytes): {}",
                 data.len(),
                 e
-            )))?;
+            ))
+        })?;
 
         let (width, height) = img.dimensions();
-        
+
         // JPEG doesn't support transparency, so convert to RGB
         let rgb_img = img.to_rgb8();
-        
+
         Ok(ImageData {
             width,
             height,
@@ -55,20 +56,29 @@ impl ImageWriter for JpegFormat {
         let rgb_data = convert_to_rgb(image);
 
         let img_buffer: image::ImageBuffer<image::Rgb<u8>, Vec<u8>> =
-            image::ImageBuffer::from_raw(image.width, image.height, rgb_data)
-                .ok_or_else(|| ConversionError::ConversionFailed("Invalid image dimensions".to_string()))?;
+            image::ImageBuffer::from_raw(image.width, image.height, rgb_data).ok_or_else(|| {
+                ConversionError::ConversionFailed("Invalid image dimensions".to_string())
+            })?;
 
         let img = DynamicImage::ImageRgb8(img_buffer);
 
         let mut buffer = Vec::new();
-        let mut encoder = image::codecs::jpeg::JpegEncoder::new_with_quality(&mut buffer, quality.quality);
+        let mut encoder =
+            image::codecs::jpeg::JpegEncoder::new_with_quality(&mut buffer, quality.quality);
         let rgb_bytes = img.as_bytes();
         encoder
-            .encode(rgb_bytes, image.width, image.height, image::ExtendedColorType::Rgb8)
-            .map_err(|e| ConversionError::ConversionFailed(format!(
-                "Failed to encode JPEG image ({}x{} quality={}): {}",
-                image.width, image.height, quality.quality, e
-            )))?;
+            .encode(
+                rgb_bytes,
+                image.width,
+                image.height,
+                image::ExtendedColorType::Rgb8,
+            )
+            .map_err(|e| {
+                ConversionError::ConversionFailed(format!(
+                    "Failed to encode JPEG image ({}x{} quality={}): {}",
+                    image.width, image.height, quality.quality, e
+                ))
+            })?;
 
         Ok(buffer)
     }
@@ -141,7 +151,7 @@ mod tests {
         assert!(result.is_ok());
         let jpeg_data = result.unwrap();
         assert!(!jpeg_data.is_empty());
-        
+
         // Verify we can read it back as RGB
         let read_result = format.read(&jpeg_data);
         assert!(read_result.is_ok());
@@ -180,14 +190,14 @@ mod tests {
             color_type: ColorType::Rgb,
         };
         let format = JpegFormat::new();
-        
+
         // Test different quality settings
         let quality_low = QualitySettings::new(50);
         let quality_high = QualitySettings::new(100);
-        
+
         let result_low = format.write(&image, &quality_low).unwrap();
         let result_high = format.write(&image, &quality_high).unwrap();
-        
+
         // Higher quality should generally produce larger files (though not always guaranteed)
         // At minimum, both should succeed
         assert!(!result_low.is_empty());

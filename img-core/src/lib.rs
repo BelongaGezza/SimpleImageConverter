@@ -8,6 +8,6 @@ pub mod quality;
 pub mod validation;
 
 pub use convert::ImageConverter;
+pub use formats::traits::{ColorType, ImageData, ImageReader, ImageWriter};
+pub use formats::{registry::ImageFormat, FormatRegistry};
 pub use quality::QualitySettings;
-pub use formats::{FormatRegistry, registry::ImageFormat};
-pub use formats::traits::{ImageData, ImageReader, ImageWriter, ColorType};
