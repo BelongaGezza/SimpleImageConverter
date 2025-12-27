@@ -1,8 +1,11 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 // Copyright (c) 2025 Simple Image Converter Contributors
 
-use crate::mesh::{Mesh, Normal};
+use crate::mesh::Mesh;
 use common::error::{ConversionError, Result};
+
+/// Epsilon value for floating point comparisons
+const EPSILON: f32 = 1e-6;
 
 /// Coordinate system types
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -32,7 +35,7 @@ pub enum CoordinateSystem {
 ///
 /// let mut mesh = Mesh::new();
 /// // ... add vertices ...
-/// let transformed = transform_coordinates(mesh, CoordinateSystem::ZUp, CoordinateSystem::YUp)?;
+/// let transformed = transform_coordinates(mesh, CoordinateSystem::ZUp, CoordinateSystem::YUp).unwrap();
 /// ```
 pub fn transform_coordinates(
     mut mesh: Mesh,
@@ -49,47 +52,23 @@ pub fn transform_coordinates(
     // Z-up: (x, y, z) -> (x, -z, y)
     for vertex in &mut mesh.vertices {
         let (x, y, z) = (vertex.x, vertex.y, vertex.z);
-        
-        match (from, to) {
-            (CoordinateSystem::ZUp, CoordinateSystem::YUp) => {
-                // Z-up to Y-up: (x, y, z) -> (x, z, -y)
-                vertex.x = x;
-                vertex.y = z;
-                vertex.z = -y;
-            }
-            (CoordinateSystem::YUp, CoordinateSystem::ZUp) => {
-                // Y-up to Z-up: (x, y, z) -> (x, -z, y)
-                vertex.x = x;
-                vertex.y = -z;
-                vertex.z = y;
-            }
-            _ => {
-                // Already handled by early return, but include for completeness
-            }
-        }
+        let (new_x, new_y, new_z) = transform_coord(x, y, z, from, to);
+        vertex.x = new_x;
+        vertex.y = new_y;
+        vertex.z = new_z;
     }
 
     // Transform normals: same transformation as vertices
     for normal in &mut mesh.normals {
         let (x, y, z) = (normal.x, normal.y, normal.z);
-        
-        match (from, to) {
-            (CoordinateSystem::ZUp, CoordinateSystem::YUp) => {
-                normal.x = x;
-                normal.y = z;
-                normal.z = -y;
-            }
-            (CoordinateSystem::YUp, CoordinateSystem::ZUp) => {
-                normal.x = x;
-                normal.y = -z;
-                normal.z = y;
-            }
-            _ => {}
-        }
+        let (new_x, new_y, new_z) = transform_coord(x, y, z, from, to);
+        normal.x = new_x;
+        normal.y = new_y;
+        normal.z = new_z;
         
         // Normalize the transformed normal
         let length = (normal.x * normal.x + normal.y * normal.y + normal.z * normal.z).sqrt();
-        if length > 1e-6 {
+        if length > EPSILON {
             normal.x /= length;
             normal.y /= length;
             normal.z /= length;
@@ -97,6 +76,43 @@ pub fn transform_coordinates(
     }
 
     Ok(mesh)
+}
+
+/// Transform a single coordinate point between coordinate systems
+///
+/// This is a helper function that performs the coordinate transformation
+/// logic for a single point, reducing code duplication.
+///
+/// # Arguments
+///
+/// * `x, y, z` - Input coordinates
+/// * `from` - Source coordinate system
+/// * `to` - Target coordinate system
+///
+/// # Returns
+///
+/// Transformed coordinates as (x, y, z) tuple
+fn transform_coord(
+    x: f32,
+    y: f32,
+    z: f32,
+    from: CoordinateSystem,
+    to: CoordinateSystem,
+) -> (f32, f32, f32) {
+    match (from, to) {
+        (CoordinateSystem::ZUp, CoordinateSystem::YUp) => {
+            // Z-up to Y-up: (x, y, z) -> (x, z, -y)
+            (x, z, -y)
+        }
+        (CoordinateSystem::YUp, CoordinateSystem::ZUp) => {
+            // Y-up to Z-up: (x, y, z) -> (x, -z, y)
+            (x, -z, y)
+        }
+        _ => {
+            // No transformation needed
+            (x, y, z)
+        }
+    }
 }
 
 /// Parse coordinate system from string

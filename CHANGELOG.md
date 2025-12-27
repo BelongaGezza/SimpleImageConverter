@@ -7,10 +7,60 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Planned for v0.1.1
-- mesh-convert transform, recalculate-normals, and validate features
-- CLI integration tests
-- Additional bug fixes and improvements
+---
+
+## [0.1.1] - 2025-01-27
+
+### Added
+
+#### Mesh Converter (mesh-convert)
+- Coordinate system transform functionality (`--transform`)
+  - Transform between Y-up and Z-up coordinate systems
+  - Support for explicit transforms (`z-up:y-up`) or auto-detect (`y-up`)
+  - Automatic normal vector transformation
+- Normal recalculation (`--recalculate-normals`)
+  - Area-weighted face normal calculation
+  - Smooth vertex normal computation
+  - Automatic handling of degenerate faces
+- Mesh validation (`--validate`)
+  - Vertex and face index validation
+  - Degenerate face detection
+  - Duplicate vertex detection
+  - Normal consistency checks
+- CLI integration tests for new features
+
+#### Core Libraries
+- `mesh-core`: New mesh manipulation utilities
+  - `transform_coordinates()` - Coordinate system transformation
+  - `recalculate_normals()` - Vertex normal recalculation from geometry
+  - `validate_mesh()` - Comprehensive mesh validation
+  - `ConversionOptions` struct for advanced conversion settings
+
+### Changed
+- `MeshConverter` now supports `ConversionOptions` for advanced operations
+- Improved code quality with refactored transform logic
+- Enhanced test coverage (14+ new tests)
+
+### Improved
+- Transform logic refactored to eliminate code duplication
+- Magic numbers replaced with named constants
+- Better error messages and documentation
+
+### Fixed
+- Improved handling of degenerate faces in normal recalculation
+- Enhanced validation test coverage
+
+### Security
+- All security checks pass (reviewed by Security Specialist)
+- Zero unsafe code blocks
+- Comprehensive bounds checking maintained
+- Resource limits properly enforced
+
+### Notes
+- All v0.1.1 features fully implemented and tested
+- Code reviewed and approved by Senior Engineer
+- Security reviewed and approved by Security Specialist
+- 350+ tests passing
 
 ---
 

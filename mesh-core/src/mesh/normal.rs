@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 // Copyright (c) 2025 Simple Image Converter Contributors
 
-use crate::mesh::{Mesh, Normal, Face};
+use crate::mesh::{Mesh, Normal};
 use common::error::{ConversionError, Result};
 use nalgebra::Vector3;
 
@@ -166,6 +166,38 @@ mod tests {
         
         let result = recalculate_normals(mesh);
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_recalculate_normals_skips_degenerate_faces() {
+        let mut mesh = Mesh::new();
+        
+        // Create a valid triangle
+        mesh.vertices.push(Vertex { x: 0.0, y: 0.0, z: 0.0 });
+        mesh.vertices.push(Vertex { x: 1.0, y: 0.0, z: 0.0 });
+        mesh.vertices.push(Vertex { x: 0.5, y: 1.0, z: 0.0 });
+        
+        // Add a valid face
+        mesh.faces.push(Face {
+            indices: [0, 1, 2],
+        });
+        
+        // Add a degenerate face (all vertices same point - area = 0)
+        mesh.faces.push(Face {
+            indices: [0, 0, 0], // Degenerate: all same vertex
+        });
+        
+        // Should succeed - degenerate face should be skipped
+        let result = recalculate_normals(mesh).unwrap();
+        
+        // Should still have normals for all vertices
+        assert_eq!(result.normals.len(), 3);
+        
+        // Normals should be calculated from the valid face only
+        // All normals should point in +Z direction
+        for normal in &result.normals {
+            assert!((normal.z - 1.0).abs() < 0.01, "Normal Z should be ~1.0, got {}", normal.z);
+        }
     }
 }
 

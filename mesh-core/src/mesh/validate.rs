@@ -189,9 +189,29 @@ mod tests {
         });
 
         // Should pass validation but generate warning
+        // Degenerate faces are warnings, not errors, so validation should succeed
         let result = validate_mesh(&mesh);
-        // Degenerate faces are warnings, not errors
-        assert!(result.is_ok() || result.is_err());
+        assert!(result.is_ok(), "Degenerate faces should only generate warnings, not errors");
+    }
+
+    #[test]
+    fn test_validate_normal_count_mismatch() {
+        let mut mesh = Mesh::new();
+        mesh.vertices.push(Vertex { x: 0.0, y: 0.0, z: 0.0 });
+        mesh.vertices.push(Vertex { x: 1.0, y: 0.0, z: 0.0 });
+        mesh.vertices.push(Vertex { x: 0.5, y: 1.0, z: 0.0 });
+        
+        mesh.faces.push(Face {
+            indices: [0, 1, 2],
+        });
+        
+        // Add only 2 normals when we have 3 vertices (mismatch)
+        mesh.normals.push(crate::mesh::Normal { x: 0.0, y: 0.0, z: 1.0 });
+        mesh.normals.push(crate::mesh::Normal { x: 0.0, y: 0.0, z: 1.0 });
+
+        // Should pass validation but generate warning about normal count mismatch
+        let result = validate_mesh(&mesh);
+        assert!(result.is_ok(), "Normal count mismatch should only generate warnings, not errors");
     }
 }
 

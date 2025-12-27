@@ -92,6 +92,9 @@ fn main() -> Result<()> {
     // Parse transform option
     if let Some(transform_str) = args.transform {
         // Parse transform string (e.g., "z-up:y-up" or just "y-up" for auto-detect)
+        // Note: When only one coordinate system is specified (e.g., "y-up"), we assume
+        // the input is Z-up (common for CAD/STL files) and transform to the specified
+        // coordinate system. For explicit transforms, use "from:to" format.
         let transform = if transform_str.contains(':') {
             let parts: Vec<&str> = transform_str.split(':').collect();
             if parts.len() != 2 {
