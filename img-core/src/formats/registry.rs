@@ -235,10 +235,10 @@ impl FormatRegistry {
         }
 
         // TIFF: 49 49 2A 00 (little-endian) or 4D 4D 00 2A (big-endian)
-        if data.len() >= 4 {
-            if data[0..4] == [0x49, 0x49, 0x2A, 0x00] || data[0..4] == [0x4D, 0x4D, 0x00, 0x2A] {
-                return Some(ImageFormat::Tiff);
-            }
+        if data.len() >= 4
+            && (data[0..4] == [0x49, 0x49, 0x2A, 0x00] || data[0..4] == [0x4D, 0x4D, 0x00, 0x2A])
+        {
+            return Some(ImageFormat::Tiff);
         }
 
         // WebP: 52 49 46 46 ?? ?? ?? ?? 57 45 42 50 (RIFF...WEBP)

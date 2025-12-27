@@ -99,35 +99,34 @@ impl OffFormat {
         let mut mesh = Mesh::new();
 
         // Parse vertices (lines 2 to 2+num_vertices)
-        for i in 2..(2 + num_vertices) {
-            let vertex_line = lines[i];
+        for (line_idx, vertex_line) in lines.iter().enumerate().skip(2).take(num_vertices) {
             let coords: Vec<&str> = vertex_line.split_whitespace().collect();
 
             if coords.len() < 3 {
                 return Err(ConversionError::InvalidInput(format!(
                     "OFF vertex line {} has insufficient coordinates",
-                    i - 1
+                    line_idx
                 )));
             }
 
             let x: f32 = coords[0].parse().map_err(|e| {
                 ConversionError::InvalidInput(format!(
                     "Invalid x coordinate in OFF vertex line {}: {}",
-                    i - 1, e
+                    line_idx, e
                 ))
             })?;
 
             let y: f32 = coords[1].parse().map_err(|e| {
                 ConversionError::InvalidInput(format!(
                     "Invalid y coordinate in OFF vertex line {}: {}",
-                    i - 1, e
+                    line_idx, e
                 ))
             })?;
 
             let z: f32 = coords[2].parse().map_err(|e| {
                 ConversionError::InvalidInput(format!(
                     "Invalid z coordinate in OFF vertex line {}: {}",
-                    i - 1, e
+                    line_idx, e
                 ))
             })?;
 
@@ -139,45 +138,49 @@ impl OffFormat {
 
         // Parse faces (lines 2+num_vertices to 2+num_vertices+num_faces)
         let face_start = 2 + num_vertices;
-        for i in face_start..(face_start + num_faces) {
-            let face_line = lines[i];
+        for (line_idx, face_line) in lines
+            .iter()
+            .enumerate()
+            .skip(face_start)
+            .take(num_faces)
+        {
             let parts: Vec<&str> = face_line.split_whitespace().collect();
 
             if parts.is_empty() {
                 return Err(ConversionError::InvalidInput(format!(
                     "OFF face line {} is empty",
-                    i - 1
+                    line_idx
                 )));
             }
 
             let num_face_vertices: usize = parts[0].parse().map_err(|e| {
                 ConversionError::InvalidInput(format!(
                     "Invalid vertex count in OFF face line {}: {}",
-                    i - 1, e
+                    line_idx, e
                 ))
             })?;
 
             if num_face_vertices < 3 {
                 return Err(ConversionError::InvalidInput(format!(
                     "OFF face line {} has fewer than 3 vertices: {}",
-                    i - 1, num_face_vertices
+                    line_idx, num_face_vertices
                 )));
             }
 
             if parts.len() < num_face_vertices + 1 {
                 return Err(ConversionError::InvalidInput(format!(
                     "OFF face line {} has insufficient indices",
-                    i - 1
+                    line_idx
                 )));
             }
 
             // Parse vertex indices for this face
             let mut indices = Vec::new();
-            for j in 1..=num_face_vertices {
-                let idx: usize = parts[j].parse().map_err(|e| {
+            for part in parts.iter().skip(1).take(num_face_vertices) {
+                let idx: usize = part.parse().map_err(|e| {
                     ConversionError::InvalidInput(format!(
                         "Invalid vertex index in OFF face line {}: {}",
-                        i - 1, e
+                        line_idx, e
                     ))
                 })?;
 

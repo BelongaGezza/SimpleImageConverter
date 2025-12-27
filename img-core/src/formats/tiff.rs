@@ -179,11 +179,9 @@ mod tests {
 
     #[test]
     fn test_tiff_format_new() {
-        let format = TiffFormat::new();
-        let format2 = TiffFormat::default();
+        let _format = TiffFormat::new();
+        let _format2 = TiffFormat::new();
         // Just verify they can be created
-        drop(format);
-        drop(format2);
     }
 
     #[test]

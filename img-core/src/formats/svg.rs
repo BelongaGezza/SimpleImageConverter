@@ -141,11 +141,9 @@ mod tests {
 
     #[test]
     fn test_svg_format_new() {
-        let format = SvgFormat::new();
-        let format2 = SvgFormat::default();
+        let _format = SvgFormat::new();
+        let _format2 = SvgFormat::new();
         // Just verify they can be created
-        drop(format);
-        drop(format2);
     }
 
     #[test]

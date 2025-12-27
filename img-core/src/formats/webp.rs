@@ -176,11 +176,9 @@ mod tests {
 
     #[test]
     fn test_webp_format_new() {
-        let format = WebPFormat::new();
-        let format2 = WebPFormat::default();
+        let _format = WebPFormat::new();
+        let _format2 = WebPFormat::new();
         // Just verify they can be created
-        drop(format);
-        drop(format2);
     }
 
     #[test]
