@@ -11,8 +11,12 @@ no-default-features = false
 # The database of advisories to check
 db-path = "~/.cargo/advisory-db"
 db-urls = ["https://github.com/rustsec/advisory-db"]
-# Ignore advisories for specific crates (add as needed)
-ignore = []
+# Ignore advisories for specific crates
+ignore = [
+    # paste is unmaintained but is a transitive dependency from image->ravif->rav1e
+    # No security vulnerability, just maintenance status
+    "RUSTSEC-2024-0436",
+]
 
 [licenses]
 # Allow permissive licenses
