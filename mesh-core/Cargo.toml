@@ -23,9 +23,9 @@ ahash.workspace = true
 # STEP support via truck (pure Rust)
 # Note: truck crates are optional and only available when step feature is enabled
 # Version 0.3 is the latest available as of 2025-01-27
-truck-modeling = { version = "0.3", optional = true }
-truck-polymesh = { version = "0.3", optional = true }
-truck-stepio = { version = "0.3", optional = true }
+truck-modeling = { version = "0.3.0", optional = true }
+truck-polymesh = { version = "0.3.0", optional = true }
+truck-stepio = { version = "0.3.0", optional = true }
 
 [dev-dependencies]
 common = { path = "../common" }
@@ -34,4 +34,3 @@ common = { path = "../common" }
 default = []
 # Enable STEP format support (requires truck crates)
 step = ["truck-modeling", "truck-polymesh", "truck-stepio"]
-
