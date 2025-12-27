@@ -12,8 +12,8 @@ use common::error::{ConversionError, Result};
 use common::limits::ResourceLimits;
 use std::io::{Cursor, Write};
 
-// Use ply-rs-bw (security-patched fork) with ply_rs alias for compatibility
-use ply_rs_bw as ply_rs;
+// Use ply-rs-bw (security-patched fork) - CVE-2020-25573 fixed
+use ply_rs_bw;
 
 /// PLY format handler
 pub struct PlyFormat {
@@ -50,8 +50,8 @@ impl MeshReader for PlyFormat {
 
         let mut cursor = Cursor::new(data);
 
-        // Use ply_rs to read PLY file
-        let ply_reader = ply_rs::parser::Parser::<ply_rs::ply::DefaultElement>::new();
+        // Use ply_rs_bw to read PLY file
+        let ply_reader = ply_rs_bw::parser::Parser::<ply_rs_bw::ply::DefaultElement>::new();
         let ply = ply_reader.read_ply(&mut cursor).map_err(|e| {
             ConversionError::ConversionFailed(format!(
                 "Failed to read PLY file ({} bytes): {}",
@@ -67,8 +67,8 @@ impl MeshReader for PlyFormat {
             for vertex_data in vertex_element {
                 // Extract x, y, z coordinates from Property enum
                 let x: f32 = match vertex_data.get("x") {
-                    Some(ply_rs::ply::Property::Float(f)) => *f,
-                    Some(ply_rs::ply::Property::Double(d)) => *d as f32,
+                    Some(ply_rs_bw::ply::Property::Float(f)) => *f,
+                    Some(ply_rs_bw::ply::Property::Double(d)) => *d as f32,
                     _ => {
                         return Err(ConversionError::InvalidInput(
                             "PLY vertex missing x coordinate".to_string(),
@@ -76,8 +76,8 @@ impl MeshReader for PlyFormat {
                     }
                 };
                 let y: f32 = match vertex_data.get("y") {
-                    Some(ply_rs::ply::Property::Float(f)) => *f,
-                    Some(ply_rs::ply::Property::Double(d)) => *d as f32,
+                    Some(ply_rs_bw::ply::Property::Float(f)) => *f,
+                    Some(ply_rs_bw::ply::Property::Double(d)) => *d as f32,
                     _ => {
                         return Err(ConversionError::InvalidInput(
                             "PLY vertex missing y coordinate".to_string(),
@@ -85,8 +85,8 @@ impl MeshReader for PlyFormat {
                     }
                 };
                 let z: f32 = match vertex_data.get("z") {
-                    Some(ply_rs::ply::Property::Float(f)) => *f,
-                    Some(ply_rs::ply::Property::Double(d)) => *d as f32,
+                    Some(ply_rs_bw::ply::Property::Float(f)) => *f,
+                    Some(ply_rs_bw::ply::Property::Double(d)) => *d as f32,
                     _ => {
                         return Err(ConversionError::InvalidInput(
                             "PLY vertex missing z coordinate".to_string(),
@@ -103,18 +103,18 @@ impl MeshReader for PlyFormat {
                     vertex_data.get("nz"),
                 ) {
                     let nx_val = match nx_prop {
-                        ply_rs::ply::Property::Float(f) => *f,
-                        ply_rs::ply::Property::Double(d) => *d as f32,
+                        ply_rs_bw::ply::Property::Float(f) => *f,
+                        ply_rs_bw::ply::Property::Double(d) => *d as f32,
                         _ => continue,
                     };
                     let ny_val = match ny_prop {
-                        ply_rs::ply::Property::Float(f) => *f,
-                        ply_rs::ply::Property::Double(d) => *d as f32,
+                        ply_rs_bw::ply::Property::Float(f) => *f,
+                        ply_rs_bw::ply::Property::Double(d) => *d as f32,
                         _ => continue,
                     };
                     let nz_val = match nz_prop {
-                        ply_rs::ply::Property::Float(f) => *f,
-                        ply_rs::ply::Property::Double(d) => *d as f32,
+                        ply_rs_bw::ply::Property::Float(f) => *f,
+                        ply_rs_bw::ply::Property::Double(d) => *d as f32,
                         _ => continue,
                     };
                     mesh.normals.push(Normal {
@@ -136,10 +136,10 @@ impl MeshReader for PlyFormat {
                 // PLY faces can have variable vertex counts, we need to triangulate
                 if let Some(vertex_indices_prop) = face_data.get("vertex_indices") {
                     let indices = match vertex_indices_prop {
-                        ply_rs::ply::Property::ListUInt(v) => {
+                        ply_rs_bw::ply::Property::ListUInt(v) => {
                             v.iter().map(|&i| i as usize).collect::<Vec<_>>()
                         }
-                        ply_rs::ply::Property::ListInt(v) => {
+                        ply_rs_bw::ply::Property::ListInt(v) => {
                             v.iter().map(|&i| i as usize).collect::<Vec<_>>()
                         }
                         _ => {

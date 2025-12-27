@@ -50,12 +50,12 @@ impl StepFormat {
         // 3. poly_mesh.faces() -> &[[usize; 3]]
         //
         // However, compilation errors indicate the API differs in v0.3.0
-        return Err(ConversionError::ConversionFailed(
+        Err(ConversionError::ConversionFailed(
             "STEP tessellation implementation requires API verification. \
             The truck-polymesh v0.3.0 API needs to be confirmed. \
             See TRUCK_API_RESEARCH.md for details."
                 .to_string(),
-        ));
+        ))
 
         /* Implementation will be uncommented once API is verified:
         let mut mesh = Mesh::new();
@@ -187,7 +187,7 @@ impl StepFormat {
         // 1. Checking docs.rs/truck-stepio/0.3.0
         // 2. Examining crate source on GitHub
         // 3. Creating minimal test program
-        return Err(ConversionError::ConversionFailed(format!(
+        Err(ConversionError::ConversionFailed(format!(
             "STEP format implementation requires API verification for truck-stepio v0.3.0.\n\
             The architecture documentation references v0.4 API which differs from v0.3.0.\n\
             File read successfully ({} bytes).\n\
@@ -200,7 +200,7 @@ impl StepFormat {
             \n\
             See TRUCK_API_RESEARCH.md for research findings.",
             data.len()
-        )));
+        )))
 
         /* Code below will be uncommented once API is verified:
 
@@ -265,16 +265,14 @@ mod tests {
     #[test]
     fn test_step_format_new() {
         let _format = StepFormat::new();
-        // Just verify it can be created
-        assert!(true);
+        // Just verify it can be created (no panic)
     }
 
     #[test]
     fn test_step_format_with_limits() {
         let limits = ResourceLimits::default();
         let _format = StepFormat::with_limits(limits);
-        // Just verify it can be created
-        assert!(true);
+        // Just verify it can be created (no panic)
     }
 
     #[test]
