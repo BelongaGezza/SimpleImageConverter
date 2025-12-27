@@ -10,15 +10,16 @@ use common::error::{ConversionError, Result};
 #[cfg(feature = "step")]
 use common::limits::ResourceLimits;
 // Truck types for geometry and tessellation
-// Note: Currently unused in active code but needed for function signatures
 #[cfg(feature = "step")]
 use truck_modeling::Shell;
-// Future use for tessellation:
-// use truck_meshalgo::tessellation::{MeshableShape, MeshedShape};
+// Tessellation imports (for future use when implementing convert_truck_to_mesh)
+// use truck_meshalgo::prelude::*;
 // use truck_polymesh::PolygonMesh;
+// use crate::mesh::{Face, Normal, Vertex};
+// use nalgebra::Vector3;
 // ruststep for STEP file parsing
 #[cfg(feature = "step")]
-use ruststep::parser;
+use ruststep::{ast, parser};
 
 /// STEP format handler
 ///
@@ -43,129 +44,82 @@ impl StepFormat {
         Self { limits }
     }
 
+    /// Try to extract a truck Shell from a STEP Record
+    ///
+    /// This attempts to identify and convert STEP geometric entities to truck Shell types.
+    /// STEP entity conversion is complex and requires understanding STEP entity structure.
+    ///
+    /// Currently identifies entity types but conversion logic needs to be implemented.
+    fn try_extract_shell(&self, record: &ast::Record) -> Result<Option<Shell>> {
+        // Identify entity type by name
+        let entity_name = &record.name;
+
+        // Common STEP geometric entity types that could be converted to Shell:
+        match entity_name.as_str() {
+            "MANIFOLD_SOLID_BREP" => {
+                // MANIFOLD_SOLID_BREP represents a solid with boundary representation
+                // Parameters: [solid_name, closed_shell_ref]
+                // TODO: Extract closed_shell reference and convert to Shell
+                // For now, skip - conversion not yet implemented
+                Ok(None)
+            }
+            "CLOSED_SHELL" => {
+                // CLOSED_SHELL represents a closed shell
+                // Parameters: [shell_name, face_list]
+                // TODO: Extract faces and convert to truck Shell
+                // For now, skip - conversion not yet implemented
+                Ok(None)
+            }
+            "ADVANCED_BREP_SHAPE_REPRESENTATION" => {
+                // Advanced BREP shape representation
+                // TODO: Extract underlying shell/solid and convert
+                Ok(None)
+            }
+            "FACETED_BREP" => {
+                // Faceted BREP (triangulated)
+                // TODO: Extract shell from faceted representation
+                Ok(None)
+            }
+            _ => {
+                // Unknown or non-geometric entity type
+                // Skip it (return None)
+                Ok(None)
+            }
+        }
+
+        // Note: Full implementation would require:
+        // 1. Building ruststep AP203 Tables from Exchange.data
+        // 2. Deserializing Records into AP203 structs using serde
+        // 3. Resolving entity references (#1, #2, etc.)
+        // 4. Converting AP203 geometric types to truck Shell
+        // 5. Handling coordinate transformations
+        // 6. Reconstructing topology (faces, edges, vertices)
+        //
+        // This is a major undertaking requiring deep understanding of:
+        // - STEP entity semantics
+        // - AP203 structure
+        // - truck geometry construction
+        // - BREP topology
+    }
+
     /// Convert truck Shell objects to our Mesh format
-    ///
-    /// NOTE: This implementation is blocked pending API verification.
-    /// The actual truck-polymesh API needs to be confirmed.
-    /// Architecture docs suggest `shell.triangulation(tolerance)` but this method doesn't exist.
-    ///
-    /// This method is intentionally left unimplemented for future STEP support when
-    /// truck-stepio adds input API support.
-    #[allow(dead_code)]
     fn convert_truck_to_mesh(&self, _shells: Vec<Shell>) -> Result<Mesh> {
-        // TODO: Verify truck-polymesh API for tessellation
-        // Architecture docs suggest: shell.triangulation(tolerance) -> PolygonMesh
-        // But compiler indicates this method doesn't exist on Shell type
-        // Need to check:
-        // 1. Is it a function in truck_polymesh module instead of a method?
-        // 2. Is there a different API pattern in v0.6.0?
-        // 3. Do we need to convert Shell to a different type first?
+        // TODO: Implement tessellation using truck-meshalgo
+        // The triangulation() method returns Shell<Point3, PolylineCurve, Option<PolygonMesh>>
+        // We need to extract PolygonMesh from each face's surface Option<PolygonMesh>
+        // This requires iterating through the shell's faces and collecting all PolygonMeshes
 
         Err(ConversionError::ConversionFailed(
-            "STEP tessellation cannot proceed - STEP file reading is not available.\n\
-            See STEP_IMPLEMENTATION_DECISION.md for details."
-                .to_string(),
+            "Tessellation implementation in progress. \
+            Shell tessellation requires extracting PolygonMesh from each face of the tessellated shell. \
+            Entity conversion framework is in place, tessellation to be completed next.".to_string()
         ))
 
-        // Implementation to uncomment once API is verified:
-        // let mut mesh = Mesh::new();
-        // let mut vertex_offset = 0;
-        // let tolerance = 0.01; // Tessellation quality parameter
-        //
-        // for (shell_idx, shell) in shells.iter().enumerate() {
-        //     // Tessellate shell to polygonal mesh
-        //     // TODO: Verify actual API - architecture docs suggest shell.triangulation(tolerance)
-        //     let poly_mesh: PolygonMesh = /* tessellation API call here */;
-
-        //     // Extract positions and faces from tessellated mesh
-        //     let positions = poly_mesh.positions();
-        //     let faces = poly_mesh.faces();
-        //
-        //     // Security: Check actual resource counts after tessellation
-        //     if let Err(e) = self.limits.check_mesh_resources(
-        //         mesh.vertices.len() + positions.len(),
-        //         mesh.faces.len() + faces.len(),
-        //     ) {
-        //         common::security::log_security_error(&e, None);
-        //         return Err(e);
-        //     }
-        //
-        //     // Convert positions to our Vertex format
-        //     for pos in positions.iter() {
-        //         mesh.vertices.push(Vertex {
-        //             x: pos.x as f32,
-        //             y: pos.y as f32,
-        //             z: pos.z as f32,
-        //         });
-        //     }
-        //
-        //     // Convert faces (triangles) with vertex offset adjustment
-        //     for face in faces.iter() {
-        //         // Validate face indices
-        //         if face[0] >= positions.len()
-        //             || face[1] >= positions.len()
-        //             || face[2] >= positions.len()
-        //         {
-        //             return Err(ConversionError::ConversionFailed(format!(
-        //                 "Invalid face indices in shell {}: face {:?} exceeds vertex count {}",
-        //                 shell_idx,
-        //                 face,
-        //                 positions.len()
-        //             )));
-        //         }
-        //
-        //         mesh.faces.push(Face {
-        //             indices: [
-        //                 vertex_offset + face[0],
-        //                 vertex_offset + face[1],
-        //                 vertex_offset + face[2],
-        //             ],
-        //         });
-        //     }
-        //
-        //     // Calculate normals for this shell's faces
-        //     // Note: We calculate face normals from the geometry
-        //     for face in faces.iter() {
-        //         let v0 = &positions[face[0]];
-        //         let v1 = &positions[face[1]];
-        //         let v2 = &positions[face[2]];
-        //
-        //         // Calculate face normal using cross product (using nalgebra)
-        //         let a = Vector3::new(
-        //             (v1.x - v0.x) as f64,
-        //             (v1.y - v0.y) as f64,
-        //             (v1.z - v0.z) as f64,
-        //         );
-        //         let b = Vector3::new(
-        //             (v2.x - v0.x) as f64,
-        //             (v2.y - v0.y) as f64,
-        //             (v2.z - v0.z) as f64,
-        //         );
-        //         let normal = a.cross(&b).normalize();
-        //
-        //         mesh.normals.push(Normal {
-        //             x: normal.x as f32,
-        //             y: normal.y as f32,
-        //             z: normal.z as f32,
-        //         });
-        //     }
-        //
-        //     vertex_offset += positions.len();
-        // }
-        //
-        // if mesh.vertices.is_empty() {
-        //     return Err(ConversionError::ConversionFailed(
-        //         "Tessellation produced no vertices".to_string(),
-        //     ));
-        // }
-        //
-        // if mesh.faces.is_empty() {
-        //     return Err(ConversionError::ConversionFailed(
-        //         "Tessellation produced no faces".to_string(),
-        //     ));
-        // }
-        //
-        // Ok(mesh)
+        // Implementation outline:
+        // 1. For each shell: shell.triangulation(tolerance) -> Shell<Point3, PolylineCurve, Option<PolygonMesh>>
+        // 2. Iterate through shell faces, extract Option<PolygonMesh> from each surface
+        // 3. Collect all PolygonMeshes and merge them into a single mesh
+        // 4. Convert to our Mesh format with vertices, faces, and normals
     }
 
     /// Parse STEP file and convert to mesh
@@ -192,41 +146,67 @@ impl StepFormat {
 
         // Extract geometric entities from the parsed STEP file
         // This is a complex conversion: ruststep AST → truck Shell/Solid types
-        // The ruststep parser gives us an AST (Abstract Syntax Tree) of STEP entities,
-        // but we need to convert these to truck's geometric types (Shell, Solid).
-        //
-        // This conversion is non-trivial because:
-        // - STEP entities are structured differently than truck types
-        // - We need to handle various STEP entity types (MANIFOLD_SOLID_BREP, SHELL, etc.)
-        // - Coordinate transformations may be needed
-        // - Complex topology needs to be reconstructed
 
-        // TODO: Implement ruststep AST → truck Shell/Solid conversion
-        // Steps needed:
-        // 1. Extract geometric entities from exchange.data (Vec<ast::Record>)
-        // 2. Identify entity types (MANIFOLD_SOLID_BREP, CLOSED_SHELL, etc.)
-        // 3. Convert STEP geometric entities to truck Shell/Solid types
-        // 4. Handle coordinate systems and transformations
-        // 5. Tessellate using truck-meshalgo
-        // 6. Convert tessellated mesh to our Mesh format
+        // Extract all entities from data sections
+        let mut shells = Vec::new();
 
-        let _exchange = exchange; // Parsed successfully, but conversion not yet implemented
+        for data_section in &exchange.data {
+            for entity_instance in &data_section.entities {
+                match entity_instance {
+                    ast::EntityInstance::Simple { id: _, record } => {
+                        // Try to extract geometric entities
+                        // For now, we'll identify and attempt to convert common STEP entity types
+                        if let Some(shell) = self.try_extract_shell(record)? {
+                            shells.push(shell);
+                        }
+                    }
+                    ast::EntityInstance::Complex { id: _, subsuper } => {
+                        // Complex entities (subtype/supertype relationships)
+                        // Extract from the subsuper records
+                        for record in subsuper {
+                            if let Some(shell) = self.try_extract_shell(record)? {
+                                shells.push(shell);
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
-        Err(ConversionError::ConversionFailed(format!(
-            "STEP format reading is under development.\n\
-            \n\
-            Status: STEP file parsed successfully ({} bytes), but entity conversion is in progress.\n\
-            \n\
-            Progress:\n\
-            - ✅ Dependencies added (ruststep 0.4 with ap203, truck-meshalgo 0.4)\n\
-            - ✅ STEP file parsing working\n\
-            - 🚧 Entity conversion (ruststep AST → truck Shell/Solid) - in progress\n\
-            - ⏳ Tessellation and mesh conversion - pending\n\
-            \n\
-            This is a complex conversion requiring mapping STEP geometric entities to truck types.\n\
-            See TASKS_SENIOR_ENGINEER_V0.2.0.md for implementation plan.",
-            data.len()
-        )))
+        // Check if we found any shells
+        if shells.is_empty() {
+            return Err(ConversionError::ConversionFailed(format!(
+                "STEP file parsed successfully ({} bytes), but no geometric entities could be converted to shells.\n\
+                \n\
+                This indicates that:\n\
+                - Either the STEP file doesn't contain supported geometric entity types, or\n\
+                - Entity conversion from STEP entities to truck Shell types is not yet fully implemented.\n\
+                \n\
+                Current status:\n\
+                - ✅ STEP file parsing working\n\
+                - ✅ Entity extraction framework in place\n\
+                - 🚧 STEP entity → truck Shell conversion - in progress\n\
+                - ⏳ Tessellation - pending\n\
+                \n\
+                The entity conversion requires mapping STEP entity structures (MANIFOLD_SOLID_BREP, CLOSED_SHELL, etc.) \
+                to truck Shell objects, which is a complex task requiring STEP entity semantics knowledge.",
+                data.len()
+            )));
+        }
+
+        // Security: Estimate resource usage before tessellation
+        let estimated_vertices = shells.len() * 1000; // Conservative estimate
+        let estimated_faces = shells.len() * 2000; // Conservative estimate
+        if let Err(e) = self
+            .limits
+            .check_mesh_resources(estimated_vertices, estimated_faces)
+        {
+            common::security::log_security_error(&e, None);
+            return Err(e);
+        }
+
+        // Convert truck shells to our mesh format
+        self.convert_truck_to_mesh(shells)
     }
 }
 
