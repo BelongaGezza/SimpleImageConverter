@@ -129,7 +129,7 @@ mesh-convert model.stl obj --output result.obj
 - **DXF** - Drawing Exchange Format
 
 **🚧 Partial Support:**
-- **STEP** - Standard for Exchange of Product Data (read-only, requires `--features step-truck`)
+- **STEP** - Standard for Exchange of Product Data (read-only, requires `--features step`, tessellation in progress - blocked by library limitation)
 
 ### Format Variants
 
@@ -167,7 +167,7 @@ mesh-convert large_model.stl obj \
     --max-faces 50000000
 
 # Note: Transform, recalculate-normals, and validate options
-# are planned for v0.1.1 (currently show warnings)
+# are FUTURE features planned for v0.1.1 (currently show warnings)
 ```
 
 ---

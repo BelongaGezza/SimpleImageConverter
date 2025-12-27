@@ -188,8 +188,10 @@ A: Researcher (weekly) + everyone (as learned)
 
 ---
 
-**Status:** ✅ Ready to Begin  
-**Next:** Initialize repository and start Sprint 1  
-**Team:** 8 agents ready
+**Status:** ✅ v0.1.0 Ready for Release  
+**Current:** All core formats implemented, comprehensive testing complete  
+**Next:** v0.1.1 features (mesh-convert advanced options, CLI integration tests)
+
+**Note:** This project has many historical status/review files from development. For current status, see README.md and CHANGELOG.md. Historical files (e.g., *REVIEW*.md, *COMPLETE*.md, *SUMMARY*.md) are kept for reference but may contain outdated information.
 
 🎉 **Let's build something great!**

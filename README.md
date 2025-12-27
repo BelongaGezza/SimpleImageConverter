@@ -90,7 +90,7 @@ workspace/
 ├── img-convert/         # 2D CLI binary
 ├── mesh-core/           # 3D mesh conversion library
 ├── mesh-convert/        # 3D CLI binary
-└── converter-gui/       # Future GUI (Phase 4)
+└── converter-gui/       # **FUTURE:** GUI (Phase 4, not yet implemented)
 ```
 
 **Design Principles:**
@@ -127,14 +127,11 @@ cargo fmt
 ### Feature Flags
 
 ```bash
-# Build with STEP support (default)
-cargo build --features step-truck
+# Build with STEP support (optional)
+cargo build --features step
 
-# Build without STEP support
+# Build without STEP support (default)
 cargo build --no-default-features
-
-# Future: OCCT fallback
-# cargo build --features step-occt
 ```
 
 ### Cross-Compilation (Linux → Windows)
@@ -182,7 +179,7 @@ cargo build --release --target x86_64-pc-windows-gnu
 ### 🚧 Current Phase
 
 **Sprint 6: Quality & Testing** 🚧 IN PROGRESS
-- [x] Test coverage (355+ tests, excellent coverage)
+- [x] Test coverage (365+ tests, excellent coverage)
 - [x] Code quality (no clippy warnings)
 - [x] Security posture (zero unsafe code)
 - [ ] Documentation updates (in progress)
@@ -196,7 +193,7 @@ cargo build --release --target x86_64-pc-windows-gnu
 - [ ] STEP read/write testing
 - [ ] CAD-specific validations
 
-**Sprint 9-12: GUI** 📅 PLANNED
+**Sprint 9-12: GUI** 📅 **FUTURE** (Planned for v1.0.0)
 - [ ] egui framework setup
 - [ ] Drag-and-drop interface
 - [ ] Batch processing
@@ -222,10 +219,11 @@ cargo bench
 ```
 
 Test coverage includes:
-- ✅ 275 unit tests covering all format implementations
-- ✅ 36 integration tests for format conversions
-- ✅ 29 security tests for format spoofing and malformed input
-- ⚠️ CLI integration tests (planned for v0.1.1)
+- ✅ 365+ tests total covering all format implementations
+- ✅ Unit tests for all format readers/writers
+- ✅ Integration tests for format conversions
+- ✅ Security tests for format spoofing and malformed input
+- ⚠️ CLI integration tests (**FUTURE:** planned for v0.1.1)
 - ✅ Edge case handling (empty files, invalid data, oversized files)
 
 ## 📦 Binary Sizes
@@ -251,14 +249,15 @@ This repository is currently **private** during initial development. Once mature
 ## 📚 Documentation
 
 - [Architecture Overview](docs/ARCHITECTURE.md)
-- [Implementation Plan](docs/IMPLEMENTATION_PLAN.md)
-- [API Documentation](docs/API.md) (Coming Soon)
-- [Format Support Matrix](docs/FORMATS.md) (Coming Soon)
+- [API Documentation](docs/API.md)
+- [Format Support Matrix](docs/FORMATS.md)
+- [Threat Model](docs/THREAT_MODEL.md)
+- [Secure by Design Guidance](docs/SECURE_BY_DESIGN_GUIDANCE.md)
 
 ## 🐛 Known Limitations
 
-- **STEP Format:** Feature-gated (`--features step`), read-only, tessellation in progress
-- **mesh-convert Advanced Features:** Transform, recalculate-normals, and validate options show "not yet implemented" warnings (planned for v0.1.1)
+- **STEP Format:** Feature-gated (`--features step`), read-only, tessellation in progress (blocked by library limitation - truck-stepio v0.3.0 input API not yet available)
+- **mesh-convert Advanced Features:** Transform, recalculate-normals, and validate options show "not yet implemented" warnings (**FUTURE:** planned for v0.1.1)
 - **FBX Format:** Not supported (proprietary, no open-source Rust library)
 - **DWG Format:** Not supported (proprietary)
 - **SVG Format:** Read-only (rasterization to bitmap), no SVG export
@@ -269,7 +268,7 @@ This repository is currently **private** during initial development. Once mature
 - [x] **v0.1.0** - Core converters (MVP) ✅ **READY FOR RELEASE**
   - All Tier 1 & Tier 2 image formats (PNG, JPEG, BMP, GIF, TIFF, WebP, SVG read)
   - All core mesh formats (STL, OBJ, PLY, OFF, glTF, DXF)
-  - Comprehensive test coverage (355+ tests)
+  - Comprehensive test coverage (365+ tests)
   - Production-ready security posture
 - [ ] **v0.1.1** - Feature completion (Planned: 2-3 weeks)
   - mesh-convert transform, recalculate-normals, validate features
@@ -308,7 +307,7 @@ For questions or issues during private development phase, contact the repository
 
 ---
 
-**Note:** This is a work in progress. Features and documentation will be updated as development progresses through the planned sprints.
-
 **Last Updated:** January 27, 2025  
-**Status:** Ready for v0.1.0 release - All core features implemented and tested
+**Status:** ✅ v0.1.0 Ready for Release - All core features implemented and tested (365+ tests passing)
+
+**Note:** Future features (GUI, additional formats, mesh-convert advanced options) are planned for subsequent releases. See Release Roadmap section above.

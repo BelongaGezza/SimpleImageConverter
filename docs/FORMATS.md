@@ -1,7 +1,8 @@
 # Format Support Matrix
 ## Simple Image Converter
 
-**Last Updated:** January 27, 2025 (Sprint 7-8 In Progress)
+**Last Updated:** January 27, 2025  
+**Status:** v0.1.0 - Core formats complete, STEP partial (feature-gated, blocked by library limitation)
 
 ---
 
@@ -13,16 +14,16 @@
 | JPEG | .jpg, .jpeg | ✅ | ✅ | Sprint 2 | Quality control |
 | BMP | .bmp | ✅ | ✅ | Sprint 2 ✅ | Windows bitmap |
 | GIF | .gif | ✅ | ✅ | Sprint 2 ✅ | First frame only (animated) |
-| TIFF | .tiff, .tif | 📅 | 📅 | Sprint 4 | Multi-page |
-| WebP | .webp | 📅 | 📅 | Sprint 4 | Lossy/lossless |
-| SVG | .svg | 📅 | ❌ | Sprint 4 | Rasterize only |
-| TGA | .tga | 📅 | 📅 | Sprint 4 | Tier 2 |
-| ICO | .ico | 📅 | 📅 | Sprint 4 | Tier 2 |
-| DDS | .dds | 📅 | 📅 | Sprint 4 | Optional |
-| HDR | .hdr | 📅 | 📅 | Sprint 4 | Optional |
-| OpenEXR | .exr | 📅 | 📅 | Sprint 4 | Tier 2 |
-| AVIF | .avif | 📅 | 📅 | Sprint 4 | Tier 3 |
-| PDF | .pdf | 📅 | ❌ | Sprint 4 | Page to image |
+| TIFF | .tiff, .tif | ✅ | ✅ | Sprint 4 ✅ | Multi-page |
+| WebP | .webp | ✅ | ✅ | Sprint 4 ✅ | Lossy/lossless |
+| SVG | .svg | ✅ | ❌ | Sprint 4 ✅ | Rasterize only (read-only) |
+| TGA | .tga | 📅 | 📅 | **FUTURE** | Tier 2 - Planned for future release |
+| ICO | .ico | 📅 | 📅 | **FUTURE** | Tier 2 - Planned for future release |
+| DDS | .dds | 📅 | 📅 | **FUTURE** | Optional - Planned for future release |
+| HDR | .hdr | 📅 | 📅 | **FUTURE** | Optional - Planned for future release |
+| OpenEXR | .exr | 📅 | 📅 | **FUTURE** | Tier 2 - Planned for future release |
+| AVIF | .avif | 📅 | 📅 | **FUTURE** | Tier 3 - Planned for future release |
+| PDF | .pdf | 📅 | ❌ | **FUTURE** | Page to image - Planned for future release |
 
 **Legend:**
 - ✅ Implemented
@@ -41,7 +42,7 @@
 | OFF | .off | ✅ | ✅ | Sprint 5 ✅ | Custom parser |
 | glTF | .gltf, .glb | ✅ | ✅ | Sprint 5 ✅ | Binary/text |
 | DXF | .dxf | ✅ | ✅ | Sprint 5 ✅ | 3D entities |
-| STEP | .step, .stp | 🚧 | ❌ | Sprint 7-8 | Blocked: truck-stepio input not yet available (library limitation) |
+| STEP | .step, .stp | 🚧 | ❌ | Sprint 7-8 🚧 | **FUTURE:** Read-only, feature-gated (`--features step`), tessellation in progress. Currently blocked by truck-stepio library limitation (input API not available in v0.3.0) |
 
 **Legend:**
 - ✅ Implemented
@@ -96,9 +97,9 @@ Formats are detected by:
 | Multi-page | TIFF, PDF | N/A |
 | Materials | N/A | OBJ, glTF |
 | Textures | N/A | OBJ, glTF |
-| Coordinate Transforms | N/A | All formats |
-| Normal Recalculation | N/A | All formats |
-| Mesh Validation | N/A | All formats |
+| Coordinate Transforms | N/A | **FUTURE:** Planned for v0.1.1 |
+| Normal Recalculation | N/A | **FUTURE:** Planned for v0.1.1 |
+| Mesh Validation | N/A | **FUTURE:** Planned for v0.1.1 |
 
 ---
 
@@ -143,7 +144,7 @@ Formats are detected by:
 
 - **SVG**: Read-only (rasterization), no write support
 - **PDF**: Read-only (page extraction), no write support
-- **STEP**: Skeleton implemented (Sprint 7-8). Read support in progress - tessellation implementation pending. Write support not planned (requires complex CAD modeling).
+- **STEP**: **FUTURE** - Skeleton implemented (Sprint 7-8). Read support in progress - tessellation implementation pending (blocked by truck-stepio v0.3.0 library limitation - input API not available). Write support not planned (requires complex CAD modeling). Feature-gated (`--features step`).
 - **FBX**: Not supported (proprietary, no open-source Rust library)
 - **DWG**: Not supported (proprietary)
 

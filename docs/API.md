@@ -83,6 +83,9 @@ pub enum ImageFormat {
     Jpeg,
     Bmp,
     Gif,
+    Tiff,
+    WebP,
+    Svg,
 }
 ```
 
@@ -95,6 +98,10 @@ pub enum MeshFormat {
     Stl,
     Obj,
     Ply,
+    Off,
+    Gltf,
+    Dxf,
+    Step,  // Requires --features step
 }
 ```
 
@@ -230,9 +237,11 @@ mesh-core = { path = "../mesh-core", features = ["step"] }
 ```
 
 ```bash
-# Build with STEP support
+# Build with STEP support (optional, feature-gated)
 cargo build --features step
 ```
+
+**Note:** STEP format support is currently partial (read-only, tessellation in progress) and blocked by truck-stepio library limitation (input API not available in v0.3.0).
 
 ---
 

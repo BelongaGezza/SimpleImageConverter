@@ -57,9 +57,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Integer overflow protection
 
 #### Testing
-- 275 unit tests covering all format implementations
-- 36 integration tests for format conversions
-- 29 security tests for format spoofing and malformed input
+- 365+ tests total covering all format implementations
+- Unit tests for all format readers/writers
+- Integration tests for format conversions
+- Security tests for format spoofing and malformed input
 - Edge case handling (empty files, invalid data, oversized files)
 
 ### Changed
