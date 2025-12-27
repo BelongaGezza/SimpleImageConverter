@@ -8,7 +8,7 @@
 
 - [ ] Git installed
 - [ ] GitHub account with access
-- [ ] Rust toolchain installed (1.70+)
+- [ ] Rust toolchain installed (1.92+)
 - [ ] Repository documentation files ready
 
 ---
@@ -144,7 +144,7 @@ members = [
 [workspace.package]
 version = "0.1.0"
 edition = "2021"
-rust-version = "1.70"
+rust-version = "1.92"
 authors = ["Your Name <you@example.com>"]
 license = "MIT"
 repository = "https://github.com/BelongaGezza/SimpleImageConverter"

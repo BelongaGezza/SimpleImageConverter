@@ -104,7 +104,7 @@ Created `.github/workflows/ci.yml` with:
    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
    
    # Verify installation
-   rustc --version  # Should be 1.70+
+   rustc --version  # Should be 1.92+
    cargo --version
    ```
 

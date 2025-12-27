@@ -84,7 +84,7 @@ All previous planning documents are also available:
    - ~4-6 MB binary (with STEP)
 
 ### Technology Stack
-- **Language:** Rust 1.70+
+- **Language:** Rust 1.92+
 - **Target:** x86-64 Windows 11 (primary)
 - **Architecture:** Library-first, trait-based
 - **STEP Support:** truck (pure Rust), OCCT FFI as fallback

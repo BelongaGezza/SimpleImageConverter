@@ -2,6 +2,8 @@
 # Security-focused dependency checking for SimpleImageConverter
 # Compatible with cargo-deny v0.16+
 
+version = 2
+
 [graph]
 targets = []
 all-features = false

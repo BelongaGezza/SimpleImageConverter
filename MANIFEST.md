@@ -73,7 +73,7 @@
    - CAD: DXF, STEP (via truck)
 
 ### Technology
-- **Language:** Rust 1.70+
+- **Language:** Rust 1.92+
 - **Target:** x86-64 Windows 11
 - **Architecture:** Library-first, trait-based
 - **Total Binary Size:** ~7-10 MB

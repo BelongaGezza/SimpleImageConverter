@@ -81,7 +81,7 @@ cargo build --release
 
 ## 📋 Requirements
 
-- **Rust:** 1.70+ (MSRV)
+- **Rust:** 1.92+ (MSRV)
 - **Target:** x86-64 Windows 11 (primary), cross-platform capable
 - **Memory:** 100MB+ recommended for large files
 

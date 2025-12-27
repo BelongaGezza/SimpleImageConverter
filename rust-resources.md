@@ -55,32 +55,30 @@
 ## Rust Language Updates
 
 ### Current Rust Version
-**Project MSRV:** 1.70.0 (confirmed in workspace Cargo.toml)  
+**Project MSRV:** 1.92.0 (confirmed in workspace Cargo.toml)  
 **Latest Stable:** Check `rustc --version` locally or [rust-lang.org](https://www.rust-lang.org/)  
 **Latest Edition:** 2021  
 **Workspace Edition:** 2021 (confirmed)
 
-### Relevant Features Since Our MSRV (1.70+)
+### Relevant Features Since Our MSRV (1.92+)
 
-#### Rust 1.70 (Our MSRV)
+#### Rust 1.92 (Our MSRV)
+- Latest stable features and improvements
+- Enhanced compiler diagnostics
+- Improved dependency resolution
+
+#### Previously Available Features (1.70-1.91)
 - `OnceCell` and `OnceLock` stabilized in std
 - Sparse registry protocol default
-- Improved error messages
-
-#### Rust 1.75
 - `async fn` and return position `impl Trait` in traits
 - Pointer byte offset APIs
-
-#### Rust 1.80
 - `LazyCell` and `LazyLock` stabilized
 - Exclusive range patterns `a..b`
-
-#### Rust 1.85
 - `unsafe extern` blocks stabilized
 - `gen` blocks for iterators
 
 **Action Items:**
-- [ ] Consider updating MSRV to 1.75 for async trait support (if needed)
+- [x] Updated MSRV to 1.92 for latest features and improvements
 - [ ] Use `LazyCell` for format registry initialization (optimization)
 
 ### Rust 2024 Edition (Future)
