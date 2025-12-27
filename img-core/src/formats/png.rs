@@ -88,9 +88,11 @@ impl ImageWriter for PngFormat {
                 let buffer: image::ImageBuffer<Rgb<u8>, Vec<u8>> =
                     image::ImageBuffer::from_raw(image.width, image.height, image.data.clone())
                         .ok_or_else(|| {
-                            ConversionError::ConversionFailed(
-                                "Invalid image dimensions".to_string(),
-                            )
+                            ConversionError::ConversionFailed(format!(
+                                "Cannot create {}x{} RGB image: data size {} doesn't match expected {}",
+                                image.width, image.height, image.data.len(),
+                                image.width as usize * image.height as usize * 3
+                            ))
                         })?;
                 DynamicImage::ImageRgb8(buffer)
             }
@@ -98,22 +100,32 @@ impl ImageWriter for PngFormat {
                 let buffer: image::ImageBuffer<Rgba<u8>, Vec<u8>> =
                     image::ImageBuffer::from_raw(image.width, image.height, image.data.clone())
                         .ok_or_else(|| {
-                            ConversionError::ConversionFailed(
-                                "Invalid image dimensions".to_string(),
-                            )
+                            ConversionError::ConversionFailed(format!(
+                                "Cannot create {}x{} RGBA image: data size {} doesn't match expected {}",
+                                image.width, image.height, image.data.len(),
+                                image.width as usize * image.height as usize * 4
+                            ))
                         })?;
                 DynamicImage::ImageRgba8(buffer)
             }
             crate::formats::traits::ColorType::Grayscale => DynamicImage::ImageLuma8(
                 image::ImageBuffer::from_raw(image.width, image.height, image.data.clone())
                     .ok_or_else(|| {
-                        ConversionError::ConversionFailed("Invalid image dimensions".to_string())
+                        ConversionError::ConversionFailed(format!(
+                            "Cannot create {}x{} Grayscale image: data size {} doesn't match expected {}",
+                            image.width, image.height, image.data.len(),
+                            image.width as usize * image.height as usize
+                        ))
                     })?,
             ),
             crate::formats::traits::ColorType::GrayscaleAlpha => DynamicImage::ImageLumaA8(
                 image::ImageBuffer::from_raw(image.width, image.height, image.data.clone())
                     .ok_or_else(|| {
-                        ConversionError::ConversionFailed("Invalid image dimensions".to_string())
+                        ConversionError::ConversionFailed(format!(
+                            "Cannot create {}x{} GrayscaleAlpha image: data size {} doesn't match expected {}",
+                            image.width, image.height, image.data.len(),
+                            image.width as usize * image.height as usize * 2
+                        ))
                     })?,
             ),
         };

@@ -72,59 +72,63 @@ impl ImageWriter for WebPFormat {
 
         // WebP quality is 0-100, similar to JPEG
         // The image crate handles quality internally for WebP
-        let img_buffer =
-            match image.color_type {
-                crate::formats::traits::ColorType::Rgb => {
-                    let rgb_data = convert_to_rgb(image);
-                    let buffer: image::ImageBuffer<image::Rgb<u8>, Vec<u8>> =
+        let img_buffer = match image.color_type {
+            crate::formats::traits::ColorType::Rgb => {
+                let rgb_data = convert_to_rgb(image);
+                let buffer: image::ImageBuffer<image::Rgb<u8>, Vec<u8>> =
                         image::ImageBuffer::from_raw(image.width, image.height, rgb_data)
                             .ok_or_else(|| {
-                                ConversionError::ConversionFailed(
-                                    "Invalid image dimensions".to_string(),
-                                )
+                                ConversionError::ConversionFailed(format!(
+                                    "Cannot create {}x{} RGB WebP: image data is corrupted or dimensions are invalid",
+                                    image.width, image.height
+                                ))
                             })?;
-                    DynamicImage::ImageRgb8(buffer)
-                }
-                crate::formats::traits::ColorType::Rgba => {
-                    let buffer: image::ImageBuffer<image::Rgba<u8>, Vec<u8>> =
+                DynamicImage::ImageRgb8(buffer)
+            }
+            crate::formats::traits::ColorType::Rgba => {
+                let buffer: image::ImageBuffer<image::Rgba<u8>, Vec<u8>> =
                         image::ImageBuffer::from_raw(image.width, image.height, image.data.clone())
                             .ok_or_else(|| {
-                                ConversionError::ConversionFailed(
-                                    "Invalid image dimensions".to_string(),
-                                )
+                                ConversionError::ConversionFailed(format!(
+                                    "Cannot create {}x{} RGBA WebP: data size {} doesn't match expected {}",
+                                    image.width, image.height, image.data.len(),
+                                    image.width as usize * image.height as usize * 4
+                                ))
                             })?;
-                    DynamicImage::ImageRgba8(buffer)
-                }
-                crate::formats::traits::ColorType::Grayscale => {
-                    // Convert grayscale to RGB for WebP
-                    let rgb_data = convert_to_rgb(image);
-                    let buffer: image::ImageBuffer<image::Rgb<u8>, Vec<u8>> =
+                DynamicImage::ImageRgba8(buffer)
+            }
+            crate::formats::traits::ColorType::Grayscale => {
+                // Convert grayscale to RGB for WebP
+                let rgb_data = convert_to_rgb(image);
+                let buffer: image::ImageBuffer<image::Rgb<u8>, Vec<u8>> =
                         image::ImageBuffer::from_raw(image.width, image.height, rgb_data)
                             .ok_or_else(|| {
-                                ConversionError::ConversionFailed(
-                                    "Invalid image dimensions".to_string(),
-                                )
+                                ConversionError::ConversionFailed(format!(
+                                    "Cannot create {}x{} WebP from Grayscale: image data is corrupted or dimensions are invalid",
+                                    image.width, image.height
+                                ))
                             })?;
-                    DynamicImage::ImageRgb8(buffer)
-                }
-                crate::formats::traits::ColorType::GrayscaleAlpha => {
-                    // Convert grayscale+alpha to RGBA (expand GA to RGBA)
-                    let rgba: Vec<u8> = image
-                        .data
-                        .chunks(2)
-                        .flat_map(|chunk| [chunk[0], chunk[0], chunk[0], chunk[1]])
-                        .collect();
-                    let buffer: image::ImageBuffer<image::Rgba<u8>, Vec<u8>> =
+                DynamicImage::ImageRgb8(buffer)
+            }
+            crate::formats::traits::ColorType::GrayscaleAlpha => {
+                // Convert grayscale+alpha to RGBA (expand GA to RGBA)
+                let rgba: Vec<u8> = image
+                    .data
+                    .chunks(2)
+                    .flat_map(|chunk| [chunk[0], chunk[0], chunk[0], chunk[1]])
+                    .collect();
+                let buffer: image::ImageBuffer<image::Rgba<u8>, Vec<u8>> =
                         image::ImageBuffer::from_raw(image.width, image.height, rgba).ok_or_else(
                             || {
-                                ConversionError::ConversionFailed(
-                                    "Invalid image dimensions".to_string(),
-                                )
+                                ConversionError::ConversionFailed(format!(
+                                    "Cannot create {}x{} WebP from GrayscaleAlpha: image data is corrupted or dimensions are invalid",
+                                    image.width, image.height
+                                ))
                             },
                         )?;
-                    DynamicImage::ImageRgba8(buffer)
-                }
-            };
+                DynamicImage::ImageRgba8(buffer)
+            }
+        };
 
         let mut buffer = Vec::new();
         img_buffer

@@ -808,7 +808,7 @@ mod tests {
     fn test_write_read_normal_properties() {
         let format = PlyFormat::new();
         let mut mesh = create_test_triangle();
-        
+
         // Add normals for all vertices
         mesh.normals.clear();
         mesh.normals.push(Normal {
@@ -829,7 +829,7 @@ mod tests {
 
         let ply_data = format.write(&mesh).unwrap();
         let ply_str = std::str::from_utf8(&ply_data).unwrap();
-        
+
         // Should include normal properties in header
         assert!(ply_str.contains("property float nx"));
         assert!(ply_str.contains("property float ny"));

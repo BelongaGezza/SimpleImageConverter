@@ -562,7 +562,8 @@ mod tests {
     fn test_read_obj_with_comments() {
         let format = ObjFormat::new();
         // OBJ file with comments should still parse
-        let obj_data = b"# This is a comment\nv 0.0 0.0 0.0\nv 1.0 0.0 0.0\nv 0.5 1.0 0.0\nf 1 2 3\n";
+        let obj_data =
+            b"# This is a comment\nv 0.0 0.0 0.0\nv 1.0 0.0 0.0\nv 0.5 1.0 0.0\nf 1 2 3\n";
 
         let result = format.read(obj_data);
         assert!(result.is_ok());
@@ -591,7 +592,8 @@ mod tests {
     fn test_read_obj_missing_mtl_file() {
         let format = ObjFormat::new();
         // OBJ file referencing a material file that doesn't exist
-        let obj_data = b"mtllib material.mtl\nv 0.0 0.0 0.0\nv 1.0 0.0 0.0\nv 0.5 1.0 0.0\nf 1 2 3\n";
+        let obj_data =
+            b"mtllib material.mtl\nv 0.0 0.0 0.0\nv 1.0 0.0 0.0\nv 0.5 1.0 0.0\nf 1 2 3\n";
 
         // Should still parse successfully (MTL loader returns empty materials)
         let result = format.read(obj_data);

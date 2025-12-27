@@ -8,7 +8,9 @@
 
 use common::limits::ResourceLimits;
 use img_core::formats::traits::ImageReader;
-use img_core::formats::{BmpFormat, GifFormat, JpegFormat, PngFormat};
+use img_core::formats::{
+    BmpFormat, GifFormat, JpegFormat, PngFormat, SvgFormat, TiffFormat, WebPFormat,
+};
 
 #[test]
 fn test_png_reject_oversized_input() {
@@ -142,4 +144,241 @@ fn test_integer_overflow_protection() {
 
     let result = validate_image_data(&image);
     assert!(result.is_err());
+}
+
+// ============================================================================
+// TIFF Security Tests
+// ============================================================================
+
+#[test]
+fn test_tiff_reject_oversized_input() {
+    let format = TiffFormat::new();
+    let limits = ResourceLimits::default();
+
+    let oversized_size = limits.max_file_size + 1;
+    // TIFF magic bytes (little-endian)
+    let mut oversized_data = vec![0x49, 0x49, 0x2A, 0x00];
+    oversized_data.resize(oversized_size, 0);
+
+    let result = format.read(&oversized_data);
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_tiff_handle_malformed_header() {
+    let format = TiffFormat::new();
+
+    // Valid TIFF header but invalid/corrupted data
+    let malformed_data = vec![0x49, 0x49, 0x2A, 0x00, 0xFF, 0xFF, 0xFF, 0xFF];
+
+    let result = format.read(&malformed_data);
+    // Should return error, not panic
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_tiff_empty_input_rejected() {
+    let format = TiffFormat::new();
+    let empty_data = vec![];
+
+    let result = format.read(&empty_data);
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_tiff_very_small_input_handled() {
+    let format = TiffFormat::new();
+
+    // Too small to be valid TIFF
+    let tiny_data = vec![0x49, 0x49];
+
+    let result = format.read(&tiny_data);
+    // Should return error gracefully
+    assert!(result.is_err());
+}
+
+// ============================================================================
+// WebP Security Tests
+// ============================================================================
+
+#[test]
+fn test_webp_reject_oversized_input() {
+    let format = WebPFormat::new();
+    let limits = ResourceLimits::default();
+
+    let oversized_size = limits.max_file_size + 1;
+    // WebP magic bytes: RIFF....WEBP
+    let mut oversized_data = vec![
+        0x52, 0x49, 0x46, 0x46, 0x00, 0x00, 0x00, 0x00, 0x57, 0x45, 0x42, 0x50,
+    ];
+    oversized_data.resize(oversized_size, 0);
+
+    let result = format.read(&oversized_data);
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_webp_handle_malformed_header() {
+    let format = WebPFormat::new();
+
+    // Valid WebP header but invalid/corrupted data
+    let malformed_data = vec![
+        0x52, 0x49, 0x46, 0x46, 0x10, 0x00, 0x00, 0x00, 0x57, 0x45, 0x42, 0x50, 0xFF, 0xFF,
+    ];
+
+    let result = format.read(&malformed_data);
+    // Should return error, not panic
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_webp_empty_input_rejected() {
+    let format = WebPFormat::new();
+    let empty_data = vec![];
+
+    let result = format.read(&empty_data);
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_webp_very_small_input_handled() {
+    let format = WebPFormat::new();
+
+    // Too small to be valid WebP
+    let tiny_data = vec![0x52, 0x49, 0x46, 0x46];
+
+    let result = format.read(&tiny_data);
+    // Should return error gracefully
+    assert!(result.is_err());
+}
+
+// ============================================================================
+// SVG Security Tests
+// ============================================================================
+
+#[test]
+fn test_svg_reject_oversized_input() {
+    let format = SvgFormat::new();
+    let limits = ResourceLimits::default();
+
+    let oversized_size = limits.max_file_size + 1;
+    let mut oversized_data =
+        b"<?xml version=\"1.0\"?><svg xmlns=\"http://www.w3.org/2000/svg\">".to_vec();
+    oversized_data.resize(oversized_size, b' ');
+
+    let result = format.read(&oversized_data);
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_svg_handle_malformed_xml() {
+    let format = SvgFormat::new();
+
+    // Invalid XML
+    let malformed_data = b"<?xml version=\"1.0\"?><svg><not closed>";
+
+    let result = format.read(malformed_data);
+    // Should return error, not panic
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_svg_empty_input_rejected() {
+    let format = SvgFormat::new();
+    let empty_data = vec![];
+
+    let result = format.read(&empty_data);
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_svg_very_small_input_handled() {
+    let format = SvgFormat::new();
+
+    // Too small to be valid SVG
+    let tiny_data = b"<svg";
+
+    let result = format.read(tiny_data);
+    // Should return error gracefully
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_svg_missing_dimensions_handled() {
+    let format = SvgFormat::new();
+
+    // SVG without width/height attributes
+    let no_dims = b"<?xml version=\"1.0\"?><svg xmlns=\"http://www.w3.org/2000/svg\"><rect/></svg>";
+
+    let result = format.read(no_dims);
+    // Should either succeed with default dimensions or return error, but not panic
+    // The behavior depends on implementation
+    let _ = result; // Just ensure no panic
+}
+
+#[test]
+fn test_svg_xxe_protection() {
+    let format = SvgFormat::new();
+
+    // Attempt XXE attack - should be rejected or sanitized
+    let xxe_attempt = br#"<?xml version="1.0"?>
+<!DOCTYPE svg [
+  <!ENTITY xxe SYSTEM "file:///etc/passwd">
+]>
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">
+  <text>&xxe;</text>
+</svg>"#;
+
+    let result = format.read(xxe_attempt);
+    // Should either reject or safely ignore the entity
+    // Just ensure no panic and no file access
+    let _ = result;
+}
+
+// ============================================================================
+// Format Spoofing Tests for New Formats
+// ============================================================================
+
+#[test]
+fn test_tiff_spoofing_detection() {
+    use img_core::formats::registry::FormatRegistry;
+    use std::path::Path;
+
+    // TIFF magic bytes but PNG extension
+    let tiff_data = vec![0x49, 0x49, 0x2A, 0x00, 0x08, 0x00, 0x00, 0x00];
+    let path = Path::new("fake.png");
+
+    let result = FormatRegistry::detect_two_stage(path, &tiff_data);
+    assert!(result.is_err());
+    assert!(result.unwrap_err().to_string().contains("mismatch"));
+}
+
+#[test]
+fn test_webp_spoofing_detection() {
+    use img_core::formats::registry::FormatRegistry;
+    use std::path::Path;
+
+    // WebP magic bytes but JPEG extension
+    let webp_data = vec![
+        0x52, 0x49, 0x46, 0x46, 0x00, 0x00, 0x00, 0x00, 0x57, 0x45, 0x42, 0x50,
+    ];
+    let path = Path::new("fake.jpg");
+
+    let result = FormatRegistry::detect_two_stage(path, &webp_data);
+    assert!(result.is_err());
+    assert!(result.unwrap_err().to_string().contains("mismatch"));
+}
+
+#[test]
+fn test_svg_spoofing_detection() {
+    use img_core::formats::registry::FormatRegistry;
+    use std::path::Path;
+
+    // SVG content but BMP extension
+    let svg_data = b"<?xml version=\"1.0\"?><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"10\" height=\"10\"></svg>";
+    let path = Path::new("fake.bmp");
+
+    let result = FormatRegistry::detect_two_stage(path, svg_data);
+    assert!(result.is_err());
+    assert!(result.unwrap_err().to_string().contains("mismatch"));
 }

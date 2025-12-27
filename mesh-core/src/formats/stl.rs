@@ -750,7 +750,7 @@ mod tests {
     fn test_round_trip_normal_preservation() {
         let format = StlFormat::new();
         let mut mesh = create_test_triangle();
-        
+
         // Set a specific normal
         mesh.normals[0] = Normal {
             x: 0.707,
