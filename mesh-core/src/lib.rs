@@ -5,6 +5,9 @@ pub mod convert;
 pub mod formats;
 pub mod mesh;
 
-pub use convert::MeshConverter;
+pub use convert::{ConversionOptions, MeshConverter};
 pub use formats::{FormatRegistry, MeshFormat, StlFormat};
-pub use mesh::{Face, Mesh, Normal, Vertex};
+pub use mesh::{
+    transform_coordinates, parse_coordinate_system, recalculate_normals, validate_mesh,
+    CoordinateSystem, Face, Mesh, Normal, Vertex,
+};

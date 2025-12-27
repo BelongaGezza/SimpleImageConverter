@@ -4,17 +4,13 @@
 #[cfg(feature = "step")]
 use crate::formats::traits::{MeshReader, MeshWriter};
 #[cfg(feature = "step")]
-use crate::mesh::{Face, Mesh, Normal, Vertex};
+use crate::mesh::Mesh;
 #[cfg(feature = "step")]
 use common::error::{ConversionError, Result};
 #[cfg(feature = "step")]
 use common::limits::ResourceLimits;
 #[cfg(feature = "step")]
-use nalgebra::Vector3;
-#[cfg(feature = "step")]
 use truck_modeling::Shell;
-#[cfg(feature = "step")]
-use truck_polymesh::PolygonMesh;
 
 /// STEP format handler
 ///
@@ -44,6 +40,10 @@ impl StepFormat {
     /// NOTE: This implementation is blocked pending API verification.
     /// The actual truck-polymesh API needs to be confirmed.
     /// Architecture docs suggest `shell.triangulation(tolerance)` but this method doesn't exist.
+    ///
+    /// This method is intentionally left unimplemented for future STEP support when
+    /// truck-stepio adds input API support.
+    #[allow(dead_code)]
     fn convert_truck_to_mesh(&self, _shells: Vec<Shell>) -> Result<Mesh> {
         // TODO: Verify truck-polymesh API for tessellation
         // Architecture docs suggest: shell.triangulation(tolerance) -> PolygonMesh
@@ -183,7 +183,7 @@ impl StepFormat {
         // But compiler indicates these don't exist
         // Need to check actual API in truck-stepio v0.3.0
 
-        return Err(ConversionError::ConversionFailed(format!(
+        Err(ConversionError::ConversionFailed(format!(
             "STEP format input is not yet supported.\n\
             \n\
             Status: truck-stepio 0.3.0 does not support STEP file input/reading yet.\n\
@@ -197,7 +197,7 @@ impl StepFormat {
             Workaround: Convert STEP files using external tools, then use this converter\n\
             for other formats (STL, OBJ, PLY, OFF, glTF, DXF all supported).",
             data.len()
-        )));
+        )))
 
         // Code to uncomment once API is verified:
         // let shells: Vec<Shell> = /* truck-stepio parsing API call here */;

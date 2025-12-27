@@ -32,7 +32,9 @@
       "Bash(gh run list:*)",
       "Bash(gh run watch:*)",
       "Bash(gh run view:*)",
-      "Bash(cargo doc:*)"
+      "Bash(cargo doc:*)",
+      "WebSearch",
+      "WebFetch(domain:crates.io)"
     ]
   }
 }

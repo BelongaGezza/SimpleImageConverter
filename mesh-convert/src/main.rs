@@ -5,7 +5,9 @@ use clap::Parser;
 use common::error::Result;
 use common::io::{read_file_bytes_checked, write_file_bytes};
 use common::limits::ResourceLimits;
-use mesh_core::{FormatRegistry, MeshConverter};
+use mesh_core::{
+    parse_coordinate_system, ConversionOptions, CoordinateSystem, FormatRegistry, MeshConverter,
+};
 use std::path::Path;
 
 #[derive(Parser)]
@@ -84,9 +86,44 @@ fn main() -> Result<()> {
     let reader = FormatRegistry::get_reader_with_limits(input_format, limits.clone())?;
     let writer = FormatRegistry::get_writer(output_format)?;
 
-    // Convert
+    // Build conversion options
+    let mut conversion_options = ConversionOptions::default();
+    
+    // Parse transform option
+    if let Some(transform_str) = args.transform {
+        // Parse transform string (e.g., "z-up:y-up" or just "y-up" for auto-detect)
+        let transform = if transform_str.contains(':') {
+            let parts: Vec<&str> = transform_str.split(':').collect();
+            if parts.len() != 2 {
+                return Err(common::error::ConversionError::InvalidInput(format!(
+                    "Invalid transform format: '{}'. Use 'from:to' (e.g., 'z-up:y-up')",
+                    transform_str
+                )));
+            }
+            (
+                parse_coordinate_system(parts[0])?,
+                parse_coordinate_system(parts[1])?,
+            )
+        } else {
+            // Auto-detect: assume Z-up input (common for CAD/STL), transform to specified
+            let to = parse_coordinate_system(&transform_str)?;
+            (CoordinateSystem::ZUp, to)
+        };
+        conversion_options.transform = Some(transform);
+    }
+    
+    // Set recalculation and validation flags
+    conversion_options.recalculate_normals = args.recalculate_normals;
+    conversion_options.validate = args.validate;
+
+    // Convert with options
     let converter = MeshConverter::new();
-    let output_data = converter.convert(&input_data, reader.as_ref(), writer.as_ref())?;
+    let output_data = converter.convert_with_options(
+        &input_data,
+        reader.as_ref(),
+        writer.as_ref(),
+        &conversion_options,
+    )?;
 
     // Write output file
     write_file_bytes(&output_path, &output_data)?;
@@ -105,23 +142,6 @@ fn main() -> Result<()> {
         args.input,
         output_path.display()
     );
-
-    // Note: Transform, recalculate_normals, and validate options are placeholders
-    // for future enhancements (Sprint 5+)
-    if let Some(transform) = args.transform {
-        eprintln!(
-            "Warning: Transform option '{}' not yet implemented",
-            transform
-        );
-    }
-
-    if args.recalculate_normals {
-        eprintln!("Warning: Recalculate normals option not yet implemented");
-    }
-
-    if args.validate {
-        eprintln!("Warning: Validate option not yet implemented");
-    }
 
     Ok(())
 }

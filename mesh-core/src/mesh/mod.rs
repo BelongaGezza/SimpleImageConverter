@@ -1,6 +1,14 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 // Copyright (c) 2025 Simple Image Converter Contributors
 
+pub mod normal;
+pub mod transform;
+pub mod validate;
+
+pub use normal::recalculate_normals;
+pub use transform::{transform_coordinates, parse_coordinate_system, CoordinateSystem};
+pub use validate::validate_mesh;
+
 /// 3D mesh data structure
 #[derive(Debug, Clone)]
 pub struct Mesh {
