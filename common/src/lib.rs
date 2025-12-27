@@ -3,7 +3,9 @@
 
 pub mod error;
 pub mod io;
+pub mod limits;
 pub mod progress;
 pub mod validation;
 
 pub use error::{ConversionError, Result};
+pub use limits::ResourceLimits;

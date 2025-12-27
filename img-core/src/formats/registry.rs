@@ -170,6 +170,103 @@ impl FormatRegistry {
             ImageFormat::Gif => Ok(Box::new(GifFormat::new())),
         }
     }
+
+    /// Detect format from file magic bytes
+    ///
+    /// This provides more reliable format detection than extension-based detection,
+    /// as it examines the actual file content.
+    ///
+    /// # Arguments
+    ///
+    /// * `data` - The file data (at least first 8 bytes needed)
+    ///
+    /// # Returns
+    ///
+    /// The detected `ImageFormat`, or `None` if the format is not recognized.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use img_core::{FormatRegistry, ImageFormat};
+    ///
+    /// // PNG magic bytes
+    /// let png_data = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
+    /// assert_eq!(FormatRegistry::detect_from_bytes(&png_data), Some(ImageFormat::Png));
+    ///
+    /// // JPEG magic bytes
+    /// let jpeg_data = [0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x00, 0x00, 0x00];
+    /// assert_eq!(FormatRegistry::detect_from_bytes(&jpeg_data), Some(ImageFormat::Jpeg));
+    /// ```
+    pub fn detect_from_bytes(data: &[u8]) -> Option<ImageFormat> {
+        if data.len() < 4 {
+            return None;
+        }
+
+        // PNG: 89 50 4E 47 0D 0A 1A 0A
+        if data.len() >= 8 && data[0..8] == [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A] {
+            return Some(ImageFormat::Png);
+        }
+
+        // JPEG: FF D8 FF
+        if data[0..3] == [0xFF, 0xD8, 0xFF] {
+            return Some(ImageFormat::Jpeg);
+        }
+
+        // BMP: 42 4D ("BM")
+        if data[0..2] == [0x42, 0x4D] {
+            return Some(ImageFormat::Bmp);
+        }
+
+        // GIF: 47 49 46 38 ("GIF8")
+        if data[0..4] == [0x47, 0x49, 0x46, 0x38] {
+            return Some(ImageFormat::Gif);
+        }
+
+        None
+    }
+
+    /// Verify that file content matches the expected format
+    ///
+    /// This performs a two-stage verification: checks if the magic bytes match
+    /// the expected format based on file extension.
+    ///
+    /// # Arguments
+    ///
+    /// * `data` - The file data
+    /// * `expected` - The expected format (usually from file extension)
+    ///
+    /// # Returns
+    ///
+    /// `Ok(())` if the format matches or cannot be determined from bytes,
+    /// `Err` if there's a clear mismatch.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use img_core::{FormatRegistry, ImageFormat};
+    ///
+    /// // JPEG data but expecting PNG - should error
+    /// let jpeg_data = [0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x00, 0x00, 0x00];
+    /// let result = FormatRegistry::verify_format(&jpeg_data, ImageFormat::Png);
+    /// assert!(result.is_err());
+    ///
+    /// // PNG data expecting PNG - should pass
+    /// let png_data = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
+    /// let result = FormatRegistry::verify_format(&png_data, ImageFormat::Png);
+    /// assert!(result.is_ok());
+    /// ```
+    pub fn verify_format(data: &[u8], expected: ImageFormat) -> Result<()> {
+        if let Some(detected) = Self::detect_from_bytes(data) {
+            if detected != expected {
+                return Err(ConversionError::InvalidFormat(format!(
+                    "Format mismatch: file extension suggests {:?} but content is {:?}",
+                    expected, detected
+                )));
+            }
+        }
+        // If we can't detect the format, we allow it (could be a valid format we don't recognize)
+        Ok(())
+    }
 }
 
 /// Image format enumeration
@@ -310,5 +407,77 @@ mod tests {
     fn test_get_writer_gif() {
         let writer = FormatRegistry::get_writer(ImageFormat::Gif);
         assert!(writer.is_ok());
+    }
+
+    // Magic byte detection tests
+
+    #[test]
+    fn test_detect_png_magic_bytes() {
+        let png_data = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00];
+        assert_eq!(
+            FormatRegistry::detect_from_bytes(&png_data),
+            Some(ImageFormat::Png)
+        );
+    }
+
+    #[test]
+    fn test_detect_jpeg_magic_bytes() {
+        let jpeg_data = [0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 0x4A, 0x46];
+        assert_eq!(
+            FormatRegistry::detect_from_bytes(&jpeg_data),
+            Some(ImageFormat::Jpeg)
+        );
+    }
+
+    #[test]
+    fn test_detect_bmp_magic_bytes() {
+        let bmp_data = [0x42, 0x4D, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00];
+        assert_eq!(
+            FormatRegistry::detect_from_bytes(&bmp_data),
+            Some(ImageFormat::Bmp)
+        );
+    }
+
+    #[test]
+    fn test_detect_gif_magic_bytes() {
+        let gif_data = [0x47, 0x49, 0x46, 0x38, 0x39, 0x61, 0x00, 0x00];
+        assert_eq!(
+            FormatRegistry::detect_from_bytes(&gif_data),
+            Some(ImageFormat::Gif)
+        );
+    }
+
+    #[test]
+    fn test_detect_unknown_magic_bytes() {
+        let unknown_data = [0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07];
+        assert_eq!(FormatRegistry::detect_from_bytes(&unknown_data), None);
+    }
+
+    #[test]
+    fn test_detect_too_short_data() {
+        let short_data = [0x89, 0x50, 0x4E];
+        assert_eq!(FormatRegistry::detect_from_bytes(&short_data), None);
+    }
+
+    #[test]
+    fn test_verify_format_match() {
+        let png_data = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
+        assert!(FormatRegistry::verify_format(&png_data, ImageFormat::Png).is_ok());
+    }
+
+    #[test]
+    fn test_verify_format_mismatch() {
+        // JPEG data but expecting PNG
+        let jpeg_data = [0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 0x4A, 0x46];
+        let result = FormatRegistry::verify_format(&jpeg_data, ImageFormat::Png);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("mismatch"));
+    }
+
+    #[test]
+    fn test_verify_format_unknown_allows() {
+        // Unknown format should be allowed (we can't disprove it)
+        let unknown_data = [0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07];
+        assert!(FormatRegistry::verify_format(&unknown_data, ImageFormat::Png).is_ok());
     }
 }

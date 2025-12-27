@@ -2,9 +2,10 @@
 // Copyright (c) 2025 Simple Image Converter Contributors
 
 use crate::formats::traits::{MeshReader, MeshWriter};
-use crate::formats::StlFormat;
+use crate::formats::{ObjFormat, PlyFormat, StlFormat};
 use common::error::{ConversionError, Result};
 use common::io::get_extension;
+use common::limits::ResourceLimits;
 use std::path::Path;
 
 /// Format registry for detecting and getting format handlers
@@ -128,10 +129,33 @@ impl FormatRegistry {
     pub fn get_reader(format: MeshFormat) -> Result<Box<dyn MeshReader>> {
         match format {
             MeshFormat::Stl => Ok(Box::new(StlFormat::new())),
-            _ => Err(ConversionError::UnsupportedFormat(format!(
-                "Format not yet implemented: {:?}",
-                format
-            ))),
+            MeshFormat::Obj => Ok(Box::new(ObjFormat::new())),
+            MeshFormat::Ply => Ok(Box::new(PlyFormat::new())),
+        }
+    }
+
+    /// Get reader for a format with custom resource limits
+    ///
+    /// Returns a boxed `MeshReader` trait object configured with resource limits
+    /// for security validation.
+    ///
+    /// # Arguments
+    ///
+    /// * `format` - The mesh format to get a reader for
+    /// * `limits` - Resource limits for validation
+    ///
+    /// # Returns
+    ///
+    /// A boxed reader instance with configured limits.
+    pub fn get_reader_with_limits(
+        format: MeshFormat,
+        limits: ResourceLimits,
+    ) -> Result<Box<dyn MeshReader>> {
+        match format {
+            MeshFormat::Stl => Ok(Box::new(StlFormat::with_limits(limits))),
+            // OBJ and PLY don't yet support limits - use default
+            MeshFormat::Obj => Ok(Box::new(ObjFormat::new())),
+            MeshFormat::Ply => Ok(Box::new(PlyFormat::new())),
         }
     }
 
@@ -152,7 +176,7 @@ impl FormatRegistry {
     /// ```
     /// use mesh_core::{FormatRegistry, MeshFormat, Mesh};
     /// use mesh_core::mesh::{Vertex, Face};
-    /// 
+    ///
     /// let writer = FormatRegistry::get_writer(MeshFormat::Stl)?;
     /// let mut mesh = Mesh::new();
     /// // Add vertices and faces to mesh
@@ -166,10 +190,8 @@ impl FormatRegistry {
     pub fn get_writer(format: MeshFormat) -> Result<Box<dyn MeshWriter>> {
         match format {
             MeshFormat::Stl => Ok(Box::new(StlFormat::new())),
-            _ => Err(ConversionError::UnsupportedFormat(format!(
-                "Format not yet implemented: {:?}",
-                format
-            ))),
+            MeshFormat::Obj => Ok(Box::new(ObjFormat::new())),
+            MeshFormat::Ply => Ok(Box::new(PlyFormat::new())),
         }
     }
 }
@@ -260,9 +282,15 @@ mod tests {
     }
 
     #[test]
-    fn test_get_reader_unsupported() {
+    fn test_get_reader_obj() {
         let reader = FormatRegistry::get_reader(MeshFormat::Obj);
-        assert!(reader.is_err());
+        assert!(reader.is_ok());
+    }
+
+    #[test]
+    fn test_get_reader_ply() {
+        let reader = FormatRegistry::get_reader(MeshFormat::Ply);
+        assert!(reader.is_ok());
     }
 
     #[test]
@@ -272,8 +300,14 @@ mod tests {
     }
 
     #[test]
-    fn test_get_writer_unsupported() {
+    fn test_get_writer_obj() {
+        let writer = FormatRegistry::get_writer(MeshFormat::Obj);
+        assert!(writer.is_ok());
+    }
+
+    #[test]
+    fn test_get_writer_ply() {
         let writer = FormatRegistry::get_writer(MeshFormat::Ply);
-        assert!(writer.is_err());
+        assert!(writer.is_ok());
     }
 }

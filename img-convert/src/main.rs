@@ -2,8 +2,9 @@
 // Copyright (c) 2025 Simple Image Converter Contributors
 
 use clap::Parser;
-use common::error::Result;
-use common::io::{read_file_bytes, write_file_bytes};
+use common::error::{ConversionError, Result};
+use common::io::{read_file_bytes_checked, write_file_bytes};
+use common::limits::ResourceLimits;
 use img_core::{FormatRegistry, ImageConverter, QualitySettings};
 use std::path::Path;
 
@@ -21,19 +22,44 @@ struct Args {
     #[arg(short, long)]
     output: Option<String>,
 
-    /// Quality setting (0-100)
+    /// Quality setting (1-100)
     #[arg(short, long, default_value_t = 90)]
     quality: u8,
+
+    /// Maximum file size in MB (default: 100)
+    #[arg(long, default_value_t = 100)]
+    max_file_size_mb: usize,
+
+    /// Maximum image dimension in pixels (default: 65535)
+    #[arg(long, default_value_t = 65535)]
+    max_dimension: u32,
+
+    /// Skip format verification (not recommended)
+    #[arg(long)]
+    skip_format_check: bool,
 }
 
 fn main() -> Result<()> {
     let args = Args::parse();
 
+    // Validate quality parameter (must be 1-100)
+    if args.quality == 0 || args.quality > 100 {
+        return Err(ConversionError::InvalidInput(
+            "Quality must be between 1 and 100".to_string(),
+        ));
+    }
+
+    // Build resource limits from CLI args
+    let limits = ResourceLimits::builder()
+        .max_file_size_mb(args.max_file_size_mb)
+        .max_image_dimension(args.max_dimension)
+        .build();
+
     // Validate input file using common validation
     let input_path = Path::new(&args.input);
     common::validation::validate_file_path(input_path)?;
 
-    // Detect input format
+    // Detect input format from extension
     let input_format = FormatRegistry::detect_from_path(input_path)?;
 
     // Detect output format
@@ -49,8 +75,13 @@ fn main() -> Result<()> {
         output
     };
 
-    // Read input file
-    let input_data = read_file_bytes(input_path)?;
+    // Read input file with size validation
+    let input_data = read_file_bytes_checked(input_path, &limits)?;
+
+    // Verify format matches file content (security check)
+    if !args.skip_format_check {
+        FormatRegistry::verify_format(&input_data, input_format)?;
+    }
 
     // Get format handlers
     let reader = FormatRegistry::get_reader(input_format)?;

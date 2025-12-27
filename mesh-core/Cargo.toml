@@ -15,4 +15,7 @@ thiserror.workspace = true
 # Mesh processing
 stl_io.workspace = true
 nalgebra.workspace = true
+tobj.workspace = true
+ply-rs.workspace = true
+ahash.workspace = true
 

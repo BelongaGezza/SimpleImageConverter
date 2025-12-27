@@ -35,6 +35,7 @@ Both tools share a common architecture based on trait-based format handlers, all
 SimpleImageConverter/
 ├── common/              # Shared utilities
 │   ├── error.rs        # Common error types
+│   ├── limits.rs       # Resource limits (security)
 │   ├── progress.rs     # Progress reporting
 │   ├── validation.rs   # File validation
 │   └── io.rs           # I/O helpers
@@ -109,6 +110,21 @@ All operations return `Result<T, ConversionError>`:
 - CLI tests
 - Performance benchmarks
 
+### 6. Security-First Design
+
+All external input is treated as untrusted:
+
+- **Resource Limits**: File size, image dimensions, mesh vertices/faces
+- **Input Validation**: Magic bytes, format verification, path validation
+- **Integer Safety**: Checked arithmetic for all size calculations
+- **Error Sanitization**: No sensitive data in user-facing error messages
+- **No Unsafe Code**: Pure safe Rust (unless documented justification)
+
+**Key Security Components:**
+- `common::limits::ResourceLimits` - Centralized limit configuration
+- `common::io::read_file_bytes_checked()` - Size-validated file reading
+- `FormatRegistry::verify_format()` - Magic byte validation
+
 ---
 
 ## Module Architecture
@@ -118,9 +134,10 @@ All operations return `Result<T, ConversionError>`:
 Provides shared functionality:
 
 - **Error Types**: `ConversionError`, `Result<T>`
+- **Resource Limits**: `ResourceLimits` - configurable security limits
 - **Progress Reporting**: `ProgressReporter` trait
-- **Validation**: File path and format validation
-- **I/O Helpers**: File reading/writing utilities
+- **Validation**: File path, format, and security validation
+- **I/O Helpers**: Size-validated file reading/writing utilities
 
 ### Image Core Module
 
@@ -162,7 +179,11 @@ Provides shared functionality:
 ```
 Input File
     ↓
-[Format Detection]
+[File Size Validation] ← ResourceLimits
+    ↓
+[Format Detection + Magic Bytes]
+    ↓
+[Dimension Validation] ← ResourceLimits
     ↓
 [ImageReader.read()] → ImageData
     ↓
@@ -178,9 +199,13 @@ Output File
 ```
 Input File
     ↓
+[File Size Validation] ← ResourceLimits
+    ↓
 [Format Detection]
     ↓
 [MeshReader.read()] → Mesh
+    ↓
+[Resource Validation] ← ResourceLimits (vertices, faces)
     ↓
 [MeshConverter.convert()]
     ↓
@@ -205,12 +230,20 @@ pub enum ConversionError {
     ConversionFailed(String),
     ValidationFailed(String),
     InvalidInput(String),
+    ResourceLimitExceeded(String),  // Security: resource limits
 }
 ```
 
 ### Error Propagation
 
 Errors are propagated using `?` operator and `Result<T>` types. Context is preserved through error messages and error chaining.
+
+### Error Sanitization
+
+User-facing error messages are sanitized to prevent information disclosure:
+- Full paths are replaced with filenames only
+- Internal details are omitted
+- File sizes and dimensions are shown but not exploitable details
 
 ---
 
@@ -222,6 +255,7 @@ Each module has unit tests:
 - Format readers/writers
 - Data structure operations
 - Utility functions
+- Validation functions
 
 ### Integration Tests
 
@@ -230,12 +264,23 @@ End-to-end conversion tests:
 - Round-trip tests
 - Edge case handling
 
+### Security Tests
+
+Security-focused test cases:
+- Malformed file headers (reject gracefully)
+- Oversized files (reject with clear error)
+- Extreme dimensions (reject with clear error)
+- Path traversal attempts (reject)
+- Integer overflow conditions (handle safely)
+- Format spoofing (detect and reject)
+
 ### CLI Tests
 
 Test the command-line interface:
 - Argument parsing
 - Error messages
 - Output validation
+- Quality parameter validation
 
 ### Benchmarks
 

@@ -4,15 +4,25 @@
 use crate::formats::traits::{MeshReader, MeshWriter};
 use crate::mesh::{Face, Mesh, Normal, Vertex};
 use common::error::{ConversionError, Result};
+use common::limits::ResourceLimits;
 use std::io::{Cursor, Write};
 
 /// STL format handler
-pub struct StlFormat;
+pub struct StlFormat {
+    limits: ResourceLimits,
+}
 
 impl StlFormat {
-    /// Create a new STL format handler
+    /// Create a new STL format handler with default resource limits
     pub fn new() -> Self {
-        Self
+        Self {
+            limits: ResourceLimits::default(),
+        }
+    }
+
+    /// Create a new STL format handler with custom resource limits
+    pub fn with_limits(limits: ResourceLimits) -> Self {
+        Self { limits }
     }
 }
 
@@ -34,6 +44,10 @@ impl MeshReader for StlFormat {
                 e
             ))
         })?;
+
+        // Security: Validate mesh resource counts before allocating
+        self.limits
+            .check_mesh_resources(stl_mesh.vertices.len(), stl_mesh.faces.len())?;
 
         // Convert stl_io IndexedMesh to our Mesh structure
         let mut mesh = Mesh::new();
@@ -106,9 +120,7 @@ impl MeshWriter for StlFormat {
 
         // Write 80-byte header (empty or with comment)
         let header = [0u8; 80];
-        buffer
-            .write_all(&header)
-            .map_err(ConversionError::Io)?;
+        buffer.write_all(&header).map_err(ConversionError::Io)?;
 
         // Write number of triangles (4 bytes, little-endian)
         let num_triangles = mesh.faces.len() as u32;
@@ -160,9 +172,7 @@ impl MeshWriter for StlFormat {
             }
 
             // Write attribute byte count (2 bytes, typically 0)
-            buffer
-                .write_all(&[0u8; 2])
-                .map_err(ConversionError::Io)?;
+            buffer.write_all(&[0u8; 2]).map_err(ConversionError::Io)?;
         }
 
         Ok(buffer)
@@ -498,5 +508,37 @@ mod tests {
         // This might succeed or fail depending on stl_io's parsing
         // But it's good to test that invalid data is handled
         assert!(result.is_err() || result.is_ok()); // Either is acceptable for now
+    }
+
+    // Security tests
+
+    #[test]
+    fn test_with_custom_limits() {
+        let limits = ResourceLimits::builder()
+            .max_vertices(100)
+            .max_faces(50)
+            .build();
+        let format = StlFormat::with_limits(limits);
+
+        // Create a mesh that we'll test with
+        let mesh = create_test_cube();
+
+        // Write the mesh (this should work, limits are checked on read)
+        let stl_data = format.write(&mesh).unwrap();
+
+        // Reading back should work since cube is small
+        let result = format.read(&stl_data);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_limits_with_permissive() {
+        let limits = ResourceLimits::permissive();
+        let format = StlFormat::with_limits(limits);
+
+        let mesh = create_test_cube();
+        let stl_data = format.write(&mesh).unwrap();
+        let result = format.read(&stl_data);
+        assert!(result.is_ok());
     }
 }

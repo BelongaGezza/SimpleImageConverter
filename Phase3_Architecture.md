@@ -19,6 +19,7 @@
 9. [CLI Interface Design](#9-cli-interface-design)
 10. [Build Configuration](#10-build-configuration)
 11. [Testing Strategy](#11-testing-strategy)
+12. [Security Architecture](#12-security-architecture)
 
 ---
 
@@ -209,15 +210,17 @@ debug = true
 ```
 common/
 ├── error.rs        # Shared error types
+├── limits.rs       # Resource limits configuration (NEW)
 ├── progress.rs     # Progress reporting trait
 ├── validation.rs   # File validation utilities
-└── io.rs          # I/O helpers
+└── io.rs          # I/O helpers (with size validation)
 ```
 
 **Purpose:** Shared utilities used by both img-core and mesh-core
 
 **Key Types:**
 - `ConversionError` - Common error enum
+- `ResourceLimits` - Centralized resource limits (NEW)
 - `ProgressReporter` - Trait for progress callbacks
 - `FileValidator` - File existence/format checks
 
@@ -2161,6 +2164,347 @@ criterion_main!(benches);
 
 ---
 
+## 12. SECURITY ARCHITECTURE
+
+**Added:** December 26, 2025 (Post Security Review)
+
+This section defines the security architecture for handling untrusted input safely.
+
+### 12.1 Threat Model
+
+**Core Principle:** All file inputs are untrusted. Every buffer is a potential overflow.
+
+**Attack Surface:**
+- Image files (PNG, JPEG, BMP, GIF, etc.)
+- Mesh files (STL, OBJ, PLY, etc.)
+- CLI-provided file paths
+- File-declared sizes and dimensions
+
+**Attack Vectors:**
+1. Memory exhaustion (large files, large dimensions)
+2. Integer overflow (dimension calculations)
+3. Path traversal (malicious paths)
+4. Panic-based DoS (malformed input)
+5. Information disclosure (error messages)
+
+### 12.2 Resource Limits
+
+A centralized resource limits system prevents denial-of-service attacks.
+
+```rust
+// common/src/limits.rs
+/// Centralized resource limits for the converter
+/// 
+/// All limits are configurable at runtime via CLI flags or programmatically.
+#[derive(Debug, Clone)]
+pub struct ResourceLimits {
+    /// Maximum file size in bytes (default: 100MB)
+    pub max_file_size: usize,
+    
+    /// Maximum image dimension in pixels (default: 65535)
+    pub max_image_dimension: u32,
+    
+    /// Maximum number of mesh vertices (default: 10 million)
+    pub max_vertices: usize,
+    
+    /// Maximum number of mesh faces (default: 10 million)
+    pub max_faces: usize,
+}
+
+impl Default for ResourceLimits {
+    fn default() -> Self {
+        Self {
+            max_file_size: 100 * 1024 * 1024,      // 100MB
+            max_image_dimension: 65535,             // Standard maximum
+            max_vertices: 10_000_000,               // 10 million
+            max_faces: 10_000_000,                  // 10 million
+        }
+    }
+}
+
+impl ResourceLimits {
+    /// Create limits with custom values
+    pub fn new() -> Self {
+        Self::default()
+    }
+    
+    /// Create permissive limits (for trusted input only)
+    pub fn permissive() -> Self {
+        Self {
+            max_file_size: 1024 * 1024 * 1024,     // 1GB
+            max_image_dimension: 131072,            // 128K
+            max_vertices: 100_000_000,              // 100 million
+            max_faces: 100_000_000,                 // 100 million
+        }
+    }
+    
+    /// Validate file size against limit
+    pub fn check_file_size(&self, size: usize) -> Result<()> {
+        if size > self.max_file_size {
+            return Err(ConversionError::InvalidInput(format!(
+                "File too large: {} bytes (max: {} bytes)",
+                size, self.max_file_size
+            )));
+        }
+        Ok(())
+    }
+    
+    /// Validate image dimensions against limit
+    pub fn check_image_dimensions(&self, width: u32, height: u32) -> Result<()> {
+        if width > self.max_image_dimension || height > self.max_image_dimension {
+            return Err(ConversionError::InvalidInput(format!(
+                "Image dimensions too large: {}x{} (max: {}x{})",
+                width, height, self.max_image_dimension, self.max_image_dimension
+            )));
+        }
+        Ok(())
+    }
+    
+    /// Validate mesh resources against limits
+    pub fn check_mesh_resources(&self, vertices: usize, faces: usize) -> Result<()> {
+        if vertices > self.max_vertices {
+            return Err(ConversionError::InvalidInput(format!(
+                "Too many vertices: {} (max: {})",
+                vertices, self.max_vertices
+            )));
+        }
+        if faces > self.max_faces {
+            return Err(ConversionError::InvalidInput(format!(
+                "Too many faces: {} (max: {})",
+                faces, self.max_faces
+            )));
+        }
+        Ok(())
+    }
+}
+```
+
+### 12.3 Validation Architecture
+
+Validation occurs at multiple layers:
+
+**Layer 1: File Level (I/O)**
+```
+File → [Size Check] → [Read] → Bytes
+```
+
+**Layer 2: Format Level (Parser)**
+```
+Bytes → [Magic Bytes] → [Dimension Check] → [Parse] → Data
+```
+
+**Layer 3: Data Level (Validation)**
+```
+Data → [Integrity Check] → [Resource Check] → Validated Data
+```
+
+```rust
+// Enhanced I/O with size validation
+// common/src/io.rs
+
+use crate::limits::ResourceLimits;
+
+/// Read file with size validation
+pub fn read_file_bytes_checked(
+    path: &Path, 
+    limits: &ResourceLimits
+) -> Result<Vec<u8>> {
+    // Check file size before reading
+    let metadata = fs::metadata(path)?;
+    let size = metadata.len() as usize;
+    limits.check_file_size(size)?;
+    
+    fs::read(path).map_err(ConversionError::Io)
+}
+```
+
+### 12.4 Format Detection Security
+
+Two-stage format detection prevents format spoofing:
+
+```rust
+// img-core/src/formats/registry.rs
+
+/// Magic bytes for format detection
+const PNG_MAGIC: [u8; 8] = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
+const JPEG_MAGIC: [u8; 3] = [0xFF, 0xD8, 0xFF];
+const BMP_MAGIC: [u8; 2] = [0x42, 0x4D];
+const GIF_MAGIC: [u8; 4] = [0x47, 0x49, 0x46, 0x38];
+
+impl FormatRegistry {
+    /// Detect format from magic bytes
+    pub fn detect_from_bytes(data: &[u8]) -> Option<ImageFormat> {
+        if data.len() < 8 { return None; }
+        
+        if data.starts_with(&PNG_MAGIC) {
+            Some(ImageFormat::Png)
+        } else if data.starts_with(&JPEG_MAGIC) {
+            Some(ImageFormat::Jpeg)
+        } else if data.starts_with(&BMP_MAGIC) {
+            Some(ImageFormat::Bmp)
+        } else if data.starts_with(&GIF_MAGIC) {
+            Some(ImageFormat::Gif)
+        } else {
+            None
+        }
+    }
+    
+    /// Verify format matches expected (two-stage detection)
+    pub fn verify_format(data: &[u8], expected: ImageFormat) -> Result<()> {
+        if let Some(detected) = Self::detect_from_bytes(data) {
+            if detected != expected {
+                return Err(ConversionError::InvalidFormat(format!(
+                    "File extension suggests {:?} but content is {:?}",
+                    expected, detected
+                )));
+            }
+        }
+        Ok(())
+    }
+}
+```
+
+### 12.5 Error Message Sanitization
+
+Error messages must not leak sensitive information:
+
+```rust
+// common/src/error.rs
+
+impl ConversionError {
+    /// Get user-safe error message (sanitized)
+    pub fn user_message(&self) -> String {
+        match self {
+            ConversionError::Io(_) => 
+                "File operation failed".to_string(),
+            ConversionError::InvalidInput(msg) => 
+                sanitize_error_message(msg),
+            ConversionError::ConversionFailed(msg) => 
+                sanitize_error_message(msg),
+            // ... other variants
+        }
+    }
+}
+
+fn sanitize_error_message(msg: &str) -> String {
+    // Remove full paths, keep only filename
+    // Remove internal details
+    // Limit message length
+    msg.chars().take(200).collect()
+}
+```
+
+### 12.6 Integer Overflow Protection
+
+All dimension calculations use checked arithmetic:
+
+```rust
+// Pattern for safe dimension calculation
+let total_size = width
+    .checked_mul(height)
+    .and_then(|v| v.checked_mul(channels))
+    .ok_or_else(|| ConversionError::InvalidInput(
+        "Image dimensions cause integer overflow".to_string()
+    ))?;
+```
+
+### 12.7 CLI Security
+
+CLI validates all inputs before processing:
+
+```rust
+// CLI argument validation
+impl Cli {
+    pub fn validate(&self, limits: &ResourceLimits) -> Result<()> {
+        // Validate input path exists
+        common::validation::validate_file_path(&self.input)?;
+        
+        // Validate quality range
+        if self.quality == 0 || self.quality > 100 {
+            return Err(ConversionError::InvalidInput(
+                "Quality must be between 1 and 100".to_string()
+            ));
+        }
+        
+        // Validate output path (if specified)
+        if let Some(ref output) = self.output {
+            common::validation::validate_output_path(output)?;
+        }
+        
+        Ok(())
+    }
+}
+```
+
+### 12.8 Dependency Security
+
+**Required CI/CD checks:**
+```yaml
+# .github/workflows/security.yml
+name: Security Audit
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '0 0 * * 0'  # Weekly
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install cargo-audit
+        run: cargo install cargo-audit
+        
+      - name: Security Audit
+        run: cargo audit
+        
+      - name: Check for unsafe code
+        run: |
+          cargo install cargo-geiger
+          cargo geiger --update-readme --output-format GitHubMarkdown
+```
+
+### 12.9 Security Testing
+
+**Required test cases:**
+- Malformed file headers
+- Files with extreme dimensions
+- Files with mismatched extension/content
+- Path traversal attempts
+- Integer overflow conditions
+
+```rust
+#[test]
+fn test_reject_oversized_dimensions() {
+    let limits = ResourceLimits::default();
+    let result = limits.check_image_dimensions(100_000, 100_000);
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_reject_oversized_file() {
+    let limits = ResourceLimits::default();
+    let result = limits.check_file_size(200 * 1024 * 1024);  // 200MB
+    assert!(result.is_err());
+}
+```
+
+### 12.10 Security Checklist
+
+For every PR:
+- [ ] No unsafe code (or documented justification)
+- [ ] All external input validated
+- [ ] Error messages sanitized
+- [ ] Resource limits enforced
+- [ ] Integer overflow protection used
+- [ ] No panics on bad input
+- [ ] Dependency audit passed
+
+---
+
 ## SUMMARY
 
 This architecture provides:
@@ -2169,7 +2513,8 @@ This architecture provides:
 ✓ **Extensibility** - Trait-based format system
 ✓ **Type safety** - Rust's strong type system
 ✓ **Error handling** - Comprehensive error types
-✓ **Testing** - Unit, integration, and benchmarks
+✓ **Security** - Resource limits, input validation, sanitization
+✓ **Testing** - Unit, integration, security, and benchmarks
 ✓ **STEP support** - Pure Rust (truck) with OCCT fallback
 ✓ **Build flexibility** - Feature flags, cross-compilation
 ✓ **CLI usability** - Clear, documented interfaces

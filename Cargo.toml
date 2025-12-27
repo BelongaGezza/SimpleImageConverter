@@ -37,9 +37,15 @@ image = "0.25"
 # 3D mesh processing
 stl_io = "0.7"
 nalgebra = "0.33"
+tobj = "4.0"
+ply-rs = "0.1"
+ahash = "0.8"
 
 # Benchmarking
 criterion = { version = "0.5", features = ["html_reports"] }
+
+# Testing
+tempfile = "3.10"
 
 [profile.release]
 opt-level = "z"  # Optimize for size

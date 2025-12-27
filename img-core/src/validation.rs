@@ -3,16 +3,31 @@
 
 use crate::formats::traits::{ColorType, ImageData};
 use common::error::{ConversionError, Result};
+use common::limits::ResourceLimits;
 
-/// Validate image data dimensions and data length
+/// Validate image data dimensions and data length using default limits
 pub fn validate_image_data(image: &ImageData) -> Result<()> {
-    // Check dimensions are valid
+    validate_image_data_with_limits(image, &ResourceLimits::default())
+}
+
+/// Validate image data dimensions and data length with custom limits
+///
+/// Performs security validation:
+/// - Checks dimensions are greater than zero
+/// - Checks dimensions don't exceed resource limits
+/// - Checks for integer overflow in size calculations
+/// - Checks data length matches expected size
+pub fn validate_image_data_with_limits(image: &ImageData, limits: &ResourceLimits) -> Result<()> {
+    // Check dimensions are valid (non-zero)
     if image.width == 0 || image.height == 0 {
         return Err(ConversionError::InvalidInput(format!(
             "Image dimensions must be greater than zero: {}x{}",
             image.width, image.height
         )));
     }
+
+    // Check dimensions against resource limits (security)
+    limits.check_image_dimensions(image.width, image.height)?;
 
     // Check for overflow in size calculation
     let width = image.width as u64;
@@ -115,5 +130,57 @@ mod tests {
             color_type: ColorType::Rgb,
         };
         assert!(validate_image_data(&image).is_err());
+    }
+
+    // Security tests
+
+    #[test]
+    fn test_validate_dimension_exceeds_limit() {
+        // Create restrictive limits
+        let limits = ResourceLimits::builder().max_image_dimension(100).build();
+
+        let image = ImageData {
+            width: 200,
+            height: 50,
+            data: vec![0; 200 * 50 * 3],
+            color_type: ColorType::Rgb,
+        };
+
+        let result = validate_image_data_with_limits(&image, &limits);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("exceeds limit"));
+    }
+
+    #[test]
+    fn test_validate_at_dimension_limit() {
+        let limits = ResourceLimits::builder().max_image_dimension(100).build();
+
+        let image = ImageData {
+            width: 100,
+            height: 100,
+            data: vec![0; 100 * 100 * 3],
+            color_type: ColorType::Rgb,
+        };
+
+        // At limit should pass
+        assert!(validate_image_data_with_limits(&image, &limits).is_ok());
+    }
+
+    #[test]
+    fn test_validate_with_permissive_limits() {
+        let limits = ResourceLimits::permissive();
+
+        let image = ImageData {
+            width: 100_000,
+            height: 100,
+            data: vec![], // Won't pass length check but tests dimension check
+            color_type: ColorType::Rgb,
+        };
+
+        // With permissive limits, large dimensions should pass dimension check
+        // but fail on length mismatch
+        let result = validate_image_data_with_limits(&image, &limits);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("length mismatch"));
     }
 }
