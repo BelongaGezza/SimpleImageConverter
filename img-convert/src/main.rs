@@ -55,6 +55,9 @@ fn main() -> Result<()> {
     let input_path = Path::new(&args.input);
     common::validation::validate_file_path(input_path)?;
 
+    // Read input file with size validation (must be done before format detection)
+    let input_data = read_file_bytes_checked(input_path, &limits)?;
+
     // Security: Two-stage format detection (extension + magic bytes)
     let input_format = FormatRegistry::detect_two_stage(input_path, &input_data)?;
 
@@ -71,10 +74,7 @@ fn main() -> Result<()> {
         output
     };
 
-    // Read input file with size validation
-    let input_data = read_file_bytes_checked(input_path, &limits)?;
-
-    // Security: Verify format matches file content (two-stage detection)
+    // Security: Verify format matches file content (already done in detect_two_stage, but double-check)
     if let Err(e) = FormatRegistry::verify_format(&input_data, input_format) {
         common::security::log_security_error(&e, Some(input_path));
         return Err(e);

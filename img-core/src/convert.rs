@@ -111,13 +111,7 @@ impl ImageConverter {
         writer: &dyn ImageWriter,
         quality: &QualitySettings,
     ) -> Result<Vec<u8>> {
-        self.convert_with_progress(
-            input_data,
-            reader,
-            writer,
-            quality,
-            &NoOpProgressReporter,
-        )
+        self.convert_with_progress(input_data, reader, writer, quality, &NoOpProgressReporter)
     }
 
     /// Convert image with progress reporting

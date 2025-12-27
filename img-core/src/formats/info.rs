@@ -58,7 +58,7 @@ impl FormatInfo {
                 extensions: &["gif"],
                 supports_transparency: true,
                 supports_animation: true, // Animated GIFs supported (first frame only currently)
-                is_lossy: true, // GIF uses lossy compression (palette-based)
+                is_lossy: true,           // GIF uses lossy compression (palette-based)
                 supports_multipage: false,
             },
         }
@@ -128,9 +128,10 @@ mod tests {
     #[test]
     fn test_capability_queries() {
         assert!(FormatCapabilities::supports_transparency(ImageFormat::Png));
-        assert!(!FormatCapabilities::supports_transparency(ImageFormat::Jpeg));
+        assert!(!FormatCapabilities::supports_transparency(
+            ImageFormat::Jpeg
+        ));
         assert!(FormatCapabilities::is_lossy(ImageFormat::Jpeg));
         assert!(!FormatCapabilities::is_lossy(ImageFormat::Png));
     }
 }
-
