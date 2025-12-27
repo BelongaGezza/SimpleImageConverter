@@ -1,0 +1,59 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug img-convert",
+      "cargo": {
+        "args": [
+          "build",
+          "--bin=img-convert",
+          "--package=img-convert"
+        ],
+        "filter": {
+          "name": "img-convert",
+          "kind": "bin"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug mesh-convert",
+      "cargo": {
+        "args": [
+          "build",
+          "--bin=mesh-convert",
+          "--package=mesh-convert"
+        ],
+        "filter": {
+          "name": "mesh-convert",
+          "kind": "bin"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug Current Test",
+      "cargo": {
+        "args": [
+          "test",
+          "--no-run",
+          "--message-format=json"
+        ],
+        "filter": {
+          "kind": "test"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    }
+  ]
+}
+
