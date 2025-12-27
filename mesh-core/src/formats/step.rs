@@ -4,13 +4,15 @@
 #[cfg(feature = "step")]
 use crate::formats::traits::{MeshReader, MeshWriter};
 #[cfg(feature = "step")]
-use crate::mesh::{Face, Mesh, Normal, Vertex};
+use crate::mesh::Mesh;
 #[cfg(feature = "step")]
 use common::error::{ConversionError, Result};
 #[cfg(feature = "step")]
 use common::limits::ResourceLimits;
 #[cfg(feature = "step")]
-use nalgebra::Vector3;
+use truck_modeling::Shell;
+// Note: Face, Normal, Vertex, Vector3, PolygonMesh are used in commented-out code
+// and will be uncommented once API is verified
 
 /// STEP format handler
 ///
@@ -35,78 +37,37 @@ impl StepFormat {
         Self { limits }
     }
 
-    /// Parse STEP file and convert to mesh
-    fn parse_step(&self, data: &[u8]) -> Result<Mesh> {
-        // Security: Validate input size BEFORE parsing
-        if let Err(e) = self.limits.check_file_size(data.len()) {
-            common::security::log_security_error(&e, None);
-            return Err(e);
-        }
-
-        // Convert bytes to string (STEP files are ASCII)
-        let step_text = std::str::from_utf8(data).map_err(|e| {
-            ConversionError::ConversionFailed(format!(
-                "STEP file is not valid UTF-8 ({} bytes): {}",
-                data.len(),
-                e
-            ))
-        })?;
-
-        // Parse STEP file using truck-stepio
-        // TODO: Verify actual API - architecture docs may reference different version
-        // Expected: truck_stepio::read(&str) -> Result<Vec<Shell>>
-        // Actual API needs verification via cargo doc or crate source
+    /// Convert truck Shell objects to our Mesh format
+    /// 
+    /// NOTE: This function is a placeholder until the truck API is verified.
+    /// The actual API for v0.3.0 needs to be confirmed.
+    #[allow(dead_code)] // Will be used once API is verified
+    fn convert_truck_to_mesh(&self, _shells: Vec<Shell>) -> Result<Mesh> {
+        // Placeholder implementation - will be completed once API is verified
+        // The architecture docs suggest:
+        // 1. shell.triangulation(tolerance) -> PolygonMesh
+        // 2. poly_mesh.positions() -> &[Point3]
+        // 3. poly_mesh.faces() -> &[[usize; 3]]
         //
-        // For now, return informative error indicating API research needed
-        return Err(ConversionError::ConversionFailed(format!(
-            "STEP format implementation requires API verification. The truck-stepio API in v0.3.0 needs to be verified.\n\
-            File read successfully ({} bytes). Next steps:\n\
-            1. Run: cargo doc -p truck-stepio --open\n\
-            2. Verify actual read() function signature\n\
-            3. Update implementation with verified API\n\
-            \n\
-            See TRUCK_API_RESEARCH.md for research findings.",
-            data.len()
-        )));
-
-        // Check if we have any shells
-        if shells.is_empty() {
-            return Err(ConversionError::ConversionFailed(
-                "STEP file contains no geometric data (no shells found)".to_string(),
-            ));
-        }
-
-        // Security: Estimate resource usage before tessellation
-        // Note: We can't know exact counts until tessellation, so we use a conservative estimate
-        let estimated_vertices = shells.len() * 1000; // Conservative estimate
-        let estimated_faces = shells.len() * 2000; // Conservative estimate
-        if let Err(e) = self
-            .limits
-            .check_mesh_resources(estimated_vertices, estimated_faces)
-        {
-            common::security::log_security_error(&e, None);
-            return Err(e);
-        }
-
-        // Tessellate all shells and combine into single mesh
+        // However, compilation errors indicate the API differs in v0.3.0
+        return Err(ConversionError::ConversionFailed(
+            "STEP tessellation implementation requires API verification. \
+            The truck-polymesh v0.3.0 API needs to be confirmed. \
+            See TRUCK_API_RESEARCH.md for details.".to_string()
+        ));
+        
+        /* Implementation will be uncommented once API is verified:
         let mut mesh = Mesh::new();
         let mut vertex_offset = 0;
+        let tolerance = 0.01; // Tessellation quality parameter
 
-        // This code is commented out until API is verified
-        // Uncomment and adjust once truck API is confirmed
-
-        /*
         for (shell_idx, shell) in shells.iter().enumerate() {
-            // Tessellate shell with configurable tolerance
-            // Smaller tolerance = higher quality but more triangles
-            let tolerance = 0.01;
-
-            // Use truck-polymesh for tessellation
-            // TODO: Verify actual API - may be shell.triangulation() or different method
-            let poly_mesh = shell.triangulation(tolerance);
+            // Tessellate shell to polygonal mesh
+            // API verification needed: shell.triangulation() may not exist or may be different
+            let poly_mesh: PolygonMesh = shell.triangulation(tolerance);
 
             // Extract positions and faces from tessellated mesh
-            // TODO: Verify actual API methods - may be positions(), faces(), or different
+            // Note: API verification needed - actual method names may differ
             let positions = poly_mesh.positions();
             let faces = poly_mesh.faces();
 
@@ -181,10 +142,7 @@ impl StepFormat {
 
             vertex_offset += positions.len();
         }
-        */
 
-        // Placeholder - remove once implementation is complete
-        let _shells = shells;
         if mesh.vertices.is_empty() {
             return Err(ConversionError::ConversionFailed(
                 "Tessellation produced no vertices".to_string(),
@@ -198,6 +156,78 @@ impl StepFormat {
         }
 
         Ok(mesh)
+        */
+    }
+
+    /// Parse STEP file and convert to mesh
+    fn parse_step(&self, data: &[u8]) -> Result<Mesh> {
+        // Security: Validate input size BEFORE parsing
+        if let Err(e) = self.limits.check_file_size(data.len()) {
+            common::security::log_security_error(&e, None);
+            return Err(e);
+        }
+
+        // Convert bytes to string (STEP files are ASCII)
+        // Note: _step_text is unused until API is verified, but we validate UTF-8 anyway
+        let _step_text = std::str::from_utf8(data).map_err(|e| {
+            ConversionError::ConversionFailed(format!(
+                "STEP file is not valid UTF-8 ({} bytes): {}",
+                data.len(),
+                e
+            ))
+        })?;
+
+        // Parse STEP file using truck-stepio
+        // API verification needed: The actual API in v0.3.0 differs from architecture docs
+        // Try different patterns: truck_stepio::read, truck_stepio::step::read, etc.
+        // For now, return informative error until API is verified
+        //
+        // TODO: Verify actual API by:
+        // 1. Checking docs.rs/truck-stepio/0.3.0
+        // 2. Examining crate source on GitHub
+        // 3. Creating minimal test program
+        return Err(ConversionError::ConversionFailed(format!(
+            "STEP format implementation requires API verification for truck-stepio v0.3.0.\n\
+            The architecture documentation references v0.4 API which differs from v0.3.0.\n\
+            File read successfully ({} bytes).\n\
+            \n\
+            Next steps:\n\
+            1. Check https://docs.rs/truck-stepio/0.3.0/ for actual API\n\
+            2. Verify function name and signature for parsing STEP strings\n\
+            3. Verify triangulation API in truck-polymesh v0.3.0\n\
+            4. Update implementation with verified API\n\
+            \n\
+            See TRUCK_API_RESEARCH.md for research findings.",
+            data.len()
+        )));
+
+        /* Code below will be uncommented once API is verified:
+        
+        // Parse STEP file - API verification needed
+        let shells: Vec<Shell> = /* truck_stepio API call here */;
+
+        // Check if we have any shells
+        if shells.is_empty() {
+            return Err(ConversionError::ConversionFailed(
+                "STEP file contains no geometric data (no shells found)".to_string(),
+            ));
+        }
+
+        // Security: Estimate resource usage before tessellation
+        // Note: We can't know exact counts until tessellation, so we use a conservative estimate
+        let estimated_vertices = shells.len() * 1000; // Conservative estimate
+        let estimated_faces = shells.len() * 2000; // Conservative estimate
+        if let Err(e) = self
+            .limits
+            .check_mesh_resources(estimated_vertices, estimated_faces)
+        {
+            common::security::log_security_error(&e, None);
+            return Err(e);
+        }
+
+        // Convert truck shells to our mesh format
+        self.convert_truck_to_mesh(shells)
+        */
     }
 }
 
@@ -233,7 +263,7 @@ mod tests {
 
     #[test]
     fn test_step_format_new() {
-        let format = StepFormat::new();
+        let _format = StepFormat::new();
         // Just verify it can be created
         assert!(true);
     }
@@ -241,7 +271,7 @@ mod tests {
     #[test]
     fn test_step_format_with_limits() {
         let limits = ResourceLimits::default();
-        let format = StepFormat::with_limits(limits);
+        let _format = StepFormat::with_limits(limits);
         // Just verify it can be created
         assert!(true);
     }
