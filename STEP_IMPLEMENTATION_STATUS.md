@@ -1,154 +1,73 @@
 # STEP Implementation Status
-## Current State and Next Steps
 
 **Date:** January 27, 2025  
-**Status:** 🚧 API Verification Required  
-**Priority:** 🔴 HIGH
+**Status:** 🚧 In Progress - API Discovery Needed
 
----
+## Issue
 
-## Current Status
+The STEP implementation is blocked because the actual truck library APIs don't match the architecture documentation. The code structure is in place, but the actual function/method names need to be discovered.
 
-### ✅ Completed
-- STEP format handler skeleton created
-- Format registry integration complete
-- Feature flags configured
-- Security validation in place
-- Error handling structure ready
-- Research document created (`TRUCK_API_RESEARCH.md`)
-- **Compilation errors fixed** - Code compiles successfully with placeholder implementation
-- **Code structure in place** - Ready for API verification and completion
+## Current Errors
 
-### ⚠️ Blocked - CRITICAL FINDING
-- **API Verification Required:** Actual truck crates v0.3.0 API differs from architecture documentation
-- **CRITICAL:** Research indicates truck-stepio v0.3.0 may not support STEP reading yet
-  - Documentation states "Input functionality is planned for future development"
-  - Only output functionality is confirmed in v0.3.0
-  - However, `step-to-mesh` example is mentioned - need to verify
-- Implementation cannot proceed until API availability is confirmed
-- Current implementation returns informative error messages until API is confirmed
-- See `STEP_API_CRITICAL_FINDING.md` for details
+1. **truck-stepio parsing API:**
+   - Architecture docs suggest: `truck_stepio::read()` or `truck_stepio::in::read()`
+   - Actual API: Unknown - compiler errors indicate these don't exist
+   - `in` is a Rust keyword, so module access requires special syntax
 
----
+2. **truck-polymesh tessellation API:**
+   - Architecture docs suggest: `shell.triangulation(tolerance)`
+   - Actual API: Unknown - method doesn't exist on Shell type
+   - `truck_polymesh::prelude` doesn't exist
 
-## API Verification Tasks
+## Version Information
 
-### Immediate Actions Required
+- `truck-stepio`: 0.3.0 (specified in Cargo.toml)
+- `truck-modeling`: 0.6.0 (resolved by truck-stepio dependency)
+- `truck-polymesh`: 0.6.0 (resolved by truck-stepio dependency)
 
-1. **Verify truck-stepio API:**
-   ```bash
-   cargo doc -p truck-stepio --open --features step
-   ```
-   - Check for `read()` function or alternative
-   - Verify function signature
-   - Check return types
-
-2. **Verify truck-polymesh API:**
-   ```bash
-   cargo doc -p truck-polymesh --open --features step
-   ```
-   - Check module structure (prelude exists?)
-   - Verify `triangulation()` method
-   - Check return type and methods
-
-3. **Verify truck-modeling API:**
-   ```bash
-   cargo doc -p truck-modeling --open --features step
-   ```
-   - Check Shell type
-   - Verify available methods
-   - Check Vector3 type if needed
-
-### Research Methods
-
-1. **Crate Documentation:**
-   - Use `cargo doc` to generate local docs
-   - Check docs.rs for online documentation
-   - Review GitHub repository examples
-
-2. **Crate Source:**
-   - Check examples in crate repository
-   - Review test files
-   - Look for usage patterns
-
-3. **Minimal Test Program:**
-   - Create simple test to explore API
-   - Try different import patterns
-   - Document what works
-
----
-
-## Implementation Plan (After API Verification)
-
-Once API is verified, implementation should follow this pattern:
-
-### Step 1: Parse STEP File
-```rust
-// Use verified API
-let shells = verified_read_function(step_text)?;
-```
-
-### Step 2: Tessellate Shells
-```rust
-for shell in shells {
-    let mesh = verified_tessellation_method(shell, tolerance)?;
-    // Extract geometry
-}
-```
-
-### Step 3: Convert to Mesh Format
-```rust
-// Convert tessellated geometry to our Mesh structure
-mesh.vertices = ...;
-mesh.faces = ...;
-mesh.normals = ...;
-```
-
----
-
-## Files to Update After API Verification
-
-1. **`mesh-core/src/formats/step.rs`**
-   - Replace placeholder with verified API calls
-   - Complete tessellation implementation
-   - Add comprehensive error handling
-
-2. **`TRUCK_API_RESEARCH.md`**
-   - Update with verified API documentation
-   - Add working code examples
-   - Note version-specific details
-
-3. **`rust-resources.md`**
-   - Add truck API patterns
-   - Document gotchas
-   - Add usage examples
-
----
+**Note:** Version mismatch - we specified 0.3.0 but get 0.6.0 dependencies.
 
 ## Next Steps
 
-1. **CRITICAL - Immediate:** Verify if STEP reading is actually available in v0.3.0
-   - Check https://docs.rs/truck-stepio/0.3.0/ for actual API
-   - Find `step-to-mesh` example code in repository
-   - Determine if reading is available via different API or different crate
+1. **Examine actual crate source code:**
+   - Check GitHub: https://github.com/ricosjp/truck
+   - Look at examples in the repository
+   - Check actual exported functions/types
 
-2. **If STEP Reading Not Available:**
-   - Document limitation clearly
-   - Evaluate alternatives (opencascade-sys)
-   - Update project plan and Sprint 7-8 timeline
-   - Consider deferring STEP support to future release
+2. **Generate and examine documentation:**
+   ```bash
+   cargo doc --open --package truck-stepio
+   cargo doc --open --package truck-polymesh
+   cargo doc --open --package truck-modeling
+   ```
 
-3. **If STEP Reading Available:**
-   - Update implementation with verified API
-   - Test with sample STEP files
-   - Update documentation
+3. **Create minimal test program:**
+   - Create a simple test that imports the crates
+   - Try to discover available functions/methods
+   - Document what actually works
 
----
+4. **Check for API changes:**
+   - Architecture docs may reference v0.4 API
+   - Actual crates are v0.3.0/v0.6.0 mix
+   - API may have changed between versions
 
-**Blocked On:** Confirmation of STEP input support in v0.3.0  
-**Estimated Time After Unblock:** 
-- If available: 2-3 days for full implementation
-- If not available: Need to evaluate alternatives or defer feature  
-**Priority:** 🔴 HIGH - Critical Path  
-**See Also:** `STEP_API_CRITICAL_FINDING.md`, `TRUCK_GITHUB_ANALYSIS.md`
+## Code Structure Ready
 
+The code structure in `mesh-core/src/formats/step.rs` is ready:
+- ✅ Error handling structure
+- ✅ Resource limits validation
+- ✅ Security validation
+- ✅ Mesh conversion logic (commented, needs API)
+- ✅ Test structure
+
+All that's needed is the correct API calls for:
+1. Parsing STEP file → Vec<Shell>
+2. Tessellating Shell → PolygonMesh
+
+## Alternative Approaches
+
+If truck API proves difficult:
+1. Check if there are examples in truck repository
+2. Consider if we need to update to newer versions
+3. Look at truck user book: https://www.truckkernel.com/
+4. Check if there's a different API pattern (function-based vs method-based)

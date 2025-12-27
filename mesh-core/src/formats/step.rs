@@ -4,15 +4,17 @@
 #[cfg(feature = "step")]
 use crate::formats::traits::{MeshReader, MeshWriter};
 #[cfg(feature = "step")]
-use crate::mesh::Mesh;
+use crate::mesh::{Face, Mesh, Normal, Vertex};
 #[cfg(feature = "step")]
 use common::error::{ConversionError, Result};
 #[cfg(feature = "step")]
 use common::limits::ResourceLimits;
 #[cfg(feature = "step")]
+use nalgebra::Vector3;
+#[cfg(feature = "step")]
 use truck_modeling::Shell;
-// Note: Face, Normal, Vertex, Vector3, PolygonMesh are used in commented-out code
-// and will be uncommented once API is verified
+#[cfg(feature = "step")]
+use truck_polymesh::PolygonMesh;
 
 /// STEP format handler
 ///
@@ -39,125 +41,123 @@ impl StepFormat {
 
     /// Convert truck Shell objects to our Mesh format
     ///
-    /// NOTE: This function is a placeholder until the truck API is verified.
-    /// The actual API for v0.3.0 needs to be confirmed.
-    #[allow(dead_code)] // Will be used once API is verified
+    /// NOTE: This implementation is blocked pending API verification.
+    /// The actual truck-polymesh API needs to be confirmed.
+    /// Architecture docs suggest `shell.triangulation(tolerance)` but this method doesn't exist.
     fn convert_truck_to_mesh(&self, _shells: Vec<Shell>) -> Result<Mesh> {
-        // Placeholder implementation - will be completed once API is verified
-        // The architecture docs suggest:
-        // 1. shell.triangulation(tolerance) -> PolygonMesh
-        // 2. poly_mesh.positions() -> &[Point3]
-        // 3. poly_mesh.faces() -> &[[usize; 3]]
-        //
-        // However, compilation errors indicate the API differs in v0.3.0
+        // TODO: Verify truck-polymesh API for tessellation
+        // Architecture docs suggest: shell.triangulation(tolerance) -> PolygonMesh
+        // But compiler indicates this method doesn't exist on Shell type
+        // Need to check:
+        // 1. Is it a function in truck_polymesh module instead of a method?
+        // 2. Is there a different API pattern in v0.6.0?
+        // 3. Do we need to convert Shell to a different type first?
+
         Err(ConversionError::ConversionFailed(
-            "STEP tessellation implementation requires API verification. \
-            The truck-polymesh v0.3.0 API needs to be confirmed. \
-            See TRUCK_API_RESEARCH.md for details."
+            "STEP tessellation cannot proceed - STEP file reading is not available.\n\
+            See STEP_IMPLEMENTATION_DECISION.md for details."
                 .to_string(),
         ))
 
-        /* Implementation will be uncommented once API is verified:
-        let mut mesh = Mesh::new();
-        let mut vertex_offset = 0;
-        let tolerance = 0.01; // Tessellation quality parameter
+        // Implementation to uncomment once API is verified:
+        // let mut mesh = Mesh::new();
+        // let mut vertex_offset = 0;
+        // let tolerance = 0.01; // Tessellation quality parameter
+        //
+        // for (shell_idx, shell) in shells.iter().enumerate() {
+        //     // Tessellate shell to polygonal mesh
+        //     // TODO: Verify actual API - architecture docs suggest shell.triangulation(tolerance)
+        //     let poly_mesh: PolygonMesh = /* tessellation API call here */;
 
-        for (shell_idx, shell) in shells.iter().enumerate() {
-            // Tessellate shell to polygonal mesh
-            // API verification needed: shell.triangulation() may not exist or may be different
-            let poly_mesh: PolygonMesh = shell.triangulation(tolerance);
-
-            // Extract positions and faces from tessellated mesh
-            // Note: API verification needed - actual method names may differ
-            let positions = poly_mesh.positions();
-            let faces = poly_mesh.faces();
-
-            // Security: Check actual resource counts after tessellation
-            if let Err(e) = self.limits.check_mesh_resources(
-                mesh.vertices.len() + positions.len(),
-                mesh.faces.len() + faces.len(),
-            ) {
-                common::security::log_security_error(&e, None);
-                return Err(e);
-            }
-
-            // Convert positions to our Vertex format
-            for pos in positions.iter() {
-                mesh.vertices.push(Vertex {
-                    x: pos.x as f32,
-                    y: pos.y as f32,
-                    z: pos.z as f32,
-                });
-            }
-
-            // Convert faces (triangles) with vertex offset adjustment
-            for face in faces.iter() {
-                // Validate face indices
-                if face[0] >= positions.len()
-                    || face[1] >= positions.len()
-                    || face[2] >= positions.len()
-                {
-                    return Err(ConversionError::ConversionFailed(format!(
-                        "Invalid face indices in shell {}: face {:?} exceeds vertex count {}",
-                        shell_idx,
-                        face,
-                        positions.len()
-                    )));
-                }
-
-                mesh.faces.push(Face {
-                    indices: [
-                        vertex_offset + face[0],
-                        vertex_offset + face[1],
-                        vertex_offset + face[2],
-                    ],
-                });
-            }
-
-            // Calculate normals for this shell's faces
-            // Note: We calculate face normals from the geometry
-            for face in faces.iter() {
-                let v0 = &positions[face[0]];
-                let v1 = &positions[face[1]];
-                let v2 = &positions[face[2]];
-
-                // Calculate face normal using cross product (using nalgebra)
-                let a = Vector3::new(
-                    (v1.x - v0.x) as f64,
-                    (v1.y - v0.y) as f64,
-                    (v1.z - v0.z) as f64,
-                );
-                let b = Vector3::new(
-                    (v2.x - v0.x) as f64,
-                    (v2.y - v0.y) as f64,
-                    (v2.z - v0.z) as f64,
-                );
-                let normal = a.cross(&b).normalize();
-
-                mesh.normals.push(Normal {
-                    x: normal.x as f32,
-                    y: normal.y as f32,
-                    z: normal.z as f32,
-                });
-            }
-
-            vertex_offset += positions.len();
-        }
-
-        if mesh.vertices.is_empty() {
-            return Err(ConversionError::ConversionFailed(
-                "Tessellation produced no vertices".to_string(),
-            ));
-        }
-
-        if mesh.faces.is_empty() {
-            return Err(ConversionError::ConversionFailed(
-                "Tessellation produced no faces".to_string(),
-            ));
-        }
-
-        Ok(mesh)
-        */
+        //     // Extract positions and faces from tessellated mesh
+        //     let positions = poly_mesh.positions();
+        //     let faces = poly_mesh.faces();
+        //
+        //     // Security: Check actual resource counts after tessellation
+        //     if let Err(e) = self.limits.check_mesh_resources(
+        //         mesh.vertices.len() + positions.len(),
+        //         mesh.faces.len() + faces.len(),
+        //     ) {
+        //         common::security::log_security_error(&e, None);
+        //         return Err(e);
+        //     }
+        //
+        //     // Convert positions to our Vertex format
+        //     for pos in positions.iter() {
+        //         mesh.vertices.push(Vertex {
+        //             x: pos.x as f32,
+        //             y: pos.y as f32,
+        //             z: pos.z as f32,
+        //         });
+        //     }
+        //
+        //     // Convert faces (triangles) with vertex offset adjustment
+        //     for face in faces.iter() {
+        //         // Validate face indices
+        //         if face[0] >= positions.len()
+        //             || face[1] >= positions.len()
+        //             || face[2] >= positions.len()
+        //         {
+        //             return Err(ConversionError::ConversionFailed(format!(
+        //                 "Invalid face indices in shell {}: face {:?} exceeds vertex count {}",
+        //                 shell_idx,
+        //                 face,
+        //                 positions.len()
+        //             )));
+        //         }
+        //
+        //         mesh.faces.push(Face {
+        //             indices: [
+        //                 vertex_offset + face[0],
+        //                 vertex_offset + face[1],
+        //                 vertex_offset + face[2],
+        //             ],
+        //         });
+        //     }
+        //
+        //     // Calculate normals for this shell's faces
+        //     // Note: We calculate face normals from the geometry
+        //     for face in faces.iter() {
+        //         let v0 = &positions[face[0]];
+        //         let v1 = &positions[face[1]];
+        //         let v2 = &positions[face[2]];
+        //
+        //         // Calculate face normal using cross product (using nalgebra)
+        //         let a = Vector3::new(
+        //             (v1.x - v0.x) as f64,
+        //             (v1.y - v0.y) as f64,
+        //             (v1.z - v0.z) as f64,
+        //         );
+        //         let b = Vector3::new(
+        //             (v2.x - v0.x) as f64,
+        //             (v2.y - v0.y) as f64,
+        //             (v2.z - v0.z) as f64,
+        //         );
+        //         let normal = a.cross(&b).normalize();
+        //
+        //         mesh.normals.push(Normal {
+        //             x: normal.x as f32,
+        //             y: normal.y as f32,
+        //             z: normal.z as f32,
+        //         });
+        //     }
+        //
+        //     vertex_offset += positions.len();
+        // }
+        //
+        // if mesh.vertices.is_empty() {
+        //     return Err(ConversionError::ConversionFailed(
+        //         "Tessellation produced no vertices".to_string(),
+        //     ));
+        // }
+        //
+        // if mesh.faces.is_empty() {
+        //     return Err(ConversionError::ConversionFailed(
+        //         "Tessellation produced no faces".to_string(),
+        //     ));
+        // }
+        //
+        // Ok(mesh)
     }
 
     /// Parse STEP file and convert to mesh
@@ -169,7 +169,6 @@ impl StepFormat {
         }
 
         // Convert bytes to string (STEP files are ASCII)
-        // Note: _step_text is unused until API is verified, but we validate UTF-8 anyway
         let _step_text = std::str::from_utf8(data).map_err(|e| {
             ConversionError::ConversionFailed(format!(
                 "STEP file is not valid UTF-8 ({} bytes): {}",
@@ -179,56 +178,51 @@ impl StepFormat {
         })?;
 
         // Parse STEP file using truck-stepio
-        // API verification needed: The actual API in v0.3.0 differs from architecture docs
-        // Try different patterns: truck_stepio::read, truck_stepio::step::read, etc.
-        // For now, return informative error until API is verified
-        //
-        // TODO: Verify actual API by:
-        // 1. Checking docs.rs/truck-stepio/0.3.0
-        // 2. Examining crate source on GitHub
-        // 3. Creating minimal test program
-        Err(ConversionError::ConversionFailed(format!(
-            "STEP format implementation requires API verification for truck-stepio v0.3.0.\n\
-            The architecture documentation references v0.4 API which differs from v0.3.0.\n\
-            File read successfully ({} bytes).\n\
+        // TODO: Verify actual truck-stepio API
+        // Architecture docs suggest truck_stepio::read() or truck_stepio::in::read()
+        // But compiler indicates these don't exist
+        // Need to check actual API in truck-stepio v0.3.0
+
+        return Err(ConversionError::ConversionFailed(format!(
+            "STEP format input is not yet supported.\n\
             \n\
-            Next steps:\n\
-            1. Check https://docs.rs/truck-stepio/0.3.0/ for actual API\n\
-            2. Verify function name and signature for parsing STEP strings\n\
-            3. Verify triangulation API in truck-polymesh v0.3.0\n\
-            4. Update implementation with verified API\n\
+            Status: truck-stepio 0.3.0 does not support STEP file input/reading yet.\n\
+            The library is currently designed for STEP output (writing) only.\n\
             \n\
-            See TRUCK_API_RESEARCH.md for research findings.",
+            File received: {} bytes (valid UTF-8)\n\
+            \n\
+            This limitation is a dependency on truck-stepio adding input support.\n\
+            See STEP_IMPLEMENTATION_DECISION.md for details.\n\
+            \n\
+            Workaround: Convert STEP files using external tools, then use this converter\n\
+            for other formats (STL, OBJ, PLY, OFF, glTF, DXF all supported).",
             data.len()
-        )))
+        )));
 
-        /* Code below will be uncommented once API is verified:
-
-        // Parse STEP file - API verification needed
-        let shells: Vec<Shell> = /* truck_stepio API call here */;
-
-        // Check if we have any shells
-        if shells.is_empty() {
-            return Err(ConversionError::ConversionFailed(
-                "STEP file contains no geometric data (no shells found)".to_string(),
-            ));
-        }
-
-        // Security: Estimate resource usage before tessellation
-        // Note: We can't know exact counts until tessellation, so we use a conservative estimate
-        let estimated_vertices = shells.len() * 1000; // Conservative estimate
-        let estimated_faces = shells.len() * 2000; // Conservative estimate
-        if let Err(e) = self
-            .limits
-            .check_mesh_resources(estimated_vertices, estimated_faces)
-        {
-            common::security::log_security_error(&e, None);
-            return Err(e);
-        }
-
-        // Convert truck shells to our mesh format
-        self.convert_truck_to_mesh(shells)
-        */
+        // Code to uncomment once API is verified:
+        // let shells: Vec<Shell> = /* truck-stepio parsing API call here */;
+        //
+        // // Check if we have any shells
+        // if shells.is_empty() {
+        //     return Err(ConversionError::ConversionFailed(
+        //         "STEP file contains no geometric data (no shells found)".to_string(),
+        //     ));
+        // }
+        //
+        // // Security: Estimate resource usage before tessellation
+        // // Note: We can't know exact counts until tessellation, so we use a conservative estimate
+        // let estimated_vertices = shells.len() * 1000; // Conservative estimate
+        // let estimated_faces = shells.len() * 2000; // Conservative estimate
+        // if let Err(e) = self
+        //     .limits
+        //     .check_mesh_resources(estimated_vertices, estimated_faces)
+        // {
+        //     common::security::log_security_error(&e, None);
+        //     return Err(e);
+        // }
+        //
+        // // Convert truck shells to our mesh format
+        // self.convert_truck_to_mesh(shells)
     }
 }
 

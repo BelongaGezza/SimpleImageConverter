@@ -41,7 +41,7 @@
 | OFF | .off | ✅ | ✅ | Sprint 5 ✅ | Custom parser |
 | glTF | .gltf, .glb | ✅ | ✅ | Sprint 5 ✅ | Binary/text |
 | DXF | .dxf | ✅ | ✅ | Sprint 5 ✅ | 3D entities |
-| STEP | .step, .stp | 🚧 | ❌ | Sprint 7-8 | Skeleton implemented, tessellation pending |
+| STEP | .step, .stp | 🚧 | ❌ | Sprint 7-8 | Blocked: truck-stepio input not yet available (library limitation) |
 
 **Legend:**
 - ✅ Implemented
