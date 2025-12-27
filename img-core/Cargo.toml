@@ -12,6 +12,8 @@ common = { path = "../common" }
 anyhow.workspace = true
 thiserror.workspace = true
 image.workspace = true
+resvg.workspace = true
+tiny-skia.workspace = true
 
 [dev-dependencies]
 criterion.workspace = true

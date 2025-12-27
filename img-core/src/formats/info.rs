@@ -61,6 +61,30 @@ impl FormatInfo {
                 is_lossy: true,           // GIF uses lossy compression (palette-based)
                 supports_multipage: false,
             },
+            ImageFormat::Tiff => FormatInfo {
+                name: "TIFF",
+                extensions: &["tiff", "tif"],
+                supports_transparency: true,
+                supports_animation: false,
+                is_lossy: false,
+                supports_multipage: true, // TIFF supports multi-page (read first page only)
+            },
+            ImageFormat::WebP => FormatInfo {
+                name: "WebP",
+                extensions: &["webp"],
+                supports_transparency: true,
+                supports_animation: false, // Animated WebP not yet supported
+                is_lossy: true,
+                supports_multipage: false,
+            },
+            ImageFormat::Svg => FormatInfo {
+                name: "SVG",
+                extensions: &["svg"],
+                supports_transparency: true,
+                supports_animation: false, // SVG animation not yet supported
+                is_lossy: false,
+                supports_multipage: false,
+            },
         }
     }
 }

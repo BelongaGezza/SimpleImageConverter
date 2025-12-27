@@ -2,7 +2,7 @@
 // Copyright (c) 2025 Simple Image Converter Contributors
 
 use crate::formats::traits::{ImageReader, ImageWriter};
-use crate::formats::{BmpFormat, GifFormat, JpegFormat, PngFormat};
+use crate::formats::{BmpFormat, GifFormat, JpegFormat, PngFormat, SvgFormat, TiffFormat, WebPFormat};
 use common::error::{ConversionError, Result};
 use common::io::get_extension;
 use std::path::Path;
@@ -63,6 +63,9 @@ impl FormatRegistry {
             "jpg" | "jpeg" => Ok(ImageFormat::Jpeg),
             "bmp" => Ok(ImageFormat::Bmp),
             "gif" => Ok(ImageFormat::Gif),
+            "tiff" | "tif" => Ok(ImageFormat::Tiff),
+            "webp" => Ok(ImageFormat::WebP),
+            "svg" => Ok(ImageFormat::Svg),
             _ => Err(ConversionError::UnsupportedFormat(format!(
                 "Unsupported format: {}",
                 extension
@@ -132,6 +135,9 @@ impl FormatRegistry {
             ImageFormat::Jpeg => Ok(Box::new(JpegFormat::new())),
             ImageFormat::Bmp => Ok(Box::new(BmpFormat::new())),
             ImageFormat::Gif => Ok(Box::new(GifFormat::new())),
+            ImageFormat::Tiff => Ok(Box::new(TiffFormat::new())),
+            ImageFormat::WebP => Ok(Box::new(WebPFormat::new())),
+            ImageFormat::Svg => Ok(Box::new(SvgFormat::new())),
         }
     }
 
@@ -168,6 +174,12 @@ impl FormatRegistry {
             ImageFormat::Jpeg => Ok(Box::new(JpegFormat::new())),
             ImageFormat::Bmp => Ok(Box::new(BmpFormat::new())),
             ImageFormat::Gif => Ok(Box::new(GifFormat::new())),
+            ImageFormat::Tiff => Ok(Box::new(TiffFormat::new())),
+            ImageFormat::WebP => Ok(Box::new(WebPFormat::new())),
+            // SVG is a vector format and cannot be written as raster
+            ImageFormat::Svg => Err(ConversionError::UnsupportedFormat(
+                "SVG is a vector format and cannot be written as raster".to_string(),
+            )),
         }
     }
 
@@ -220,6 +232,31 @@ impl FormatRegistry {
         // GIF: 47 49 46 38 ("GIF8")
         if data[0..4] == [0x47, 0x49, 0x46, 0x38] {
             return Some(ImageFormat::Gif);
+        }
+
+        // TIFF: 49 49 2A 00 (little-endian) or 4D 4D 00 2A (big-endian)
+        if data.len() >= 4 {
+            if data[0..4] == [0x49, 0x49, 0x2A, 0x00] || data[0..4] == [0x4D, 0x4D, 0x00, 0x2A] {
+                return Some(ImageFormat::Tiff);
+            }
+        }
+
+        // WebP: 52 49 46 46 ?? ?? ?? ?? 57 45 42 50 (RIFF...WEBP)
+        if data.len() >= 12
+            && data[0..4] == [0x52, 0x49, 0x46, 0x46]
+            && data[8..12] == [0x57, 0x45, 0x42, 0x50]
+        {
+            return Some(ImageFormat::WebP);
+        }
+
+        // SVG: Check for XML declaration or <svg tag
+        if data.len() >= 5 {
+            let start = String::from_utf8_lossy(&data[0..data.len().min(100)]);
+            if start.trim_start().starts_with("<?xml")
+                || start.trim_start().starts_with("<svg")
+            {
+                return Some(ImageFormat::Svg);
+            }
         }
 
         None
@@ -321,6 +358,9 @@ pub enum ImageFormat {
     Jpeg,
     Bmp,
     Gif,
+    Tiff,
+    WebP,
+    Svg,
 }
 
 #[cfg(test)]
@@ -452,6 +492,138 @@ mod tests {
     fn test_get_writer_gif() {
         let writer = FormatRegistry::get_writer(ImageFormat::Gif);
         assert!(writer.is_ok());
+    }
+
+    #[test]
+    fn test_detect_format_tiff() {
+        assert_eq!(
+            FormatRegistry::detect_format("tiff").unwrap(),
+            ImageFormat::Tiff
+        );
+        assert_eq!(
+            FormatRegistry::detect_format("tif").unwrap(),
+            ImageFormat::Tiff
+        );
+        assert_eq!(
+            FormatRegistry::detect_format("TIFF").unwrap(),
+            ImageFormat::Tiff
+        );
+    }
+
+    #[test]
+    fn test_detect_format_webp() {
+        assert_eq!(
+            FormatRegistry::detect_format("webp").unwrap(),
+            ImageFormat::WebP
+        );
+        assert_eq!(
+            FormatRegistry::detect_format("WEBP").unwrap(),
+            ImageFormat::WebP
+        );
+    }
+
+    #[test]
+    fn test_detect_format_svg() {
+        assert_eq!(
+            FormatRegistry::detect_format("svg").unwrap(),
+            ImageFormat::Svg
+        );
+        assert_eq!(
+            FormatRegistry::detect_format("SVG").unwrap(),
+            ImageFormat::Svg
+        );
+    }
+
+    #[test]
+    fn test_get_reader_tiff() {
+        let reader = FormatRegistry::get_reader(ImageFormat::Tiff);
+        assert!(reader.is_ok());
+    }
+
+    #[test]
+    fn test_get_reader_webp() {
+        let reader = FormatRegistry::get_reader(ImageFormat::WebP);
+        assert!(reader.is_ok());
+    }
+
+    #[test]
+    fn test_get_reader_svg() {
+        let reader = FormatRegistry::get_reader(ImageFormat::Svg);
+        assert!(reader.is_ok());
+    }
+
+    #[test]
+    fn test_get_writer_tiff() {
+        let writer = FormatRegistry::get_writer(ImageFormat::Tiff);
+        assert!(writer.is_ok());
+    }
+
+    #[test]
+    fn test_get_writer_webp() {
+        let writer = FormatRegistry::get_writer(ImageFormat::WebP);
+        assert!(writer.is_ok());
+    }
+
+    #[test]
+    fn test_get_writer_svg_fails() {
+        // SVG is read-only, so get_writer should fail
+        let writer = FormatRegistry::get_writer(ImageFormat::Svg);
+        assert!(writer.is_err());
+        match writer {
+            Err(e) => {
+                let err_msg = e.to_string();
+                assert!(err_msg.contains("vector format"));
+            }
+            Ok(_) => panic!("Expected error for SVG writer"),
+        }
+    }
+
+    #[test]
+    fn test_detect_tiff_magic_bytes() {
+        // TIFF little-endian
+        let tiff_data_le = [0x49, 0x49, 0x2A, 0x00, 0x00, 0x00, 0x00, 0x00];
+        assert_eq!(
+            FormatRegistry::detect_from_bytes(&tiff_data_le),
+            Some(ImageFormat::Tiff)
+        );
+
+        // TIFF big-endian
+        let tiff_data_be = [0x4D, 0x4D, 0x00, 0x2A, 0x00, 0x00, 0x00, 0x00];
+        assert_eq!(
+            FormatRegistry::detect_from_bytes(&tiff_data_be),
+            Some(ImageFormat::Tiff)
+        );
+    }
+
+    #[test]
+    fn test_detect_webp_magic_bytes() {
+        // WebP: RIFF...WEBP
+        let webp_data = [
+            0x52, 0x49, 0x46, 0x46, // RIFF
+            0x00, 0x00, 0x00, 0x00, // size (dummy)
+            0x57, 0x45, 0x42, 0x50, // WEBP
+        ];
+        assert_eq!(
+            FormatRegistry::detect_from_bytes(&webp_data),
+            Some(ImageFormat::WebP)
+        );
+    }
+
+    #[test]
+    fn test_detect_svg_magic_bytes() {
+        // SVG with XML declaration
+        let svg_data_xml = b"<?xml version=\"1.0\"?><svg></svg>";
+        assert_eq!(
+            FormatRegistry::detect_from_bytes(svg_data_xml),
+            Some(ImageFormat::Svg)
+        );
+
+        // SVG without XML declaration
+        let svg_data_direct = b"<svg xmlns=\"http://www.w3.org/2000/svg\"></svg>";
+        assert_eq!(
+            FormatRegistry::detect_from_bytes(svg_data_direct),
+            Some(ImageFormat::Svg)
+        );
     }
 
     // Magic byte detection tests

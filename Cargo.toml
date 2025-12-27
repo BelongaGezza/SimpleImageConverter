@@ -33,6 +33,8 @@ log = "0.4"
 
 # 2D image processing
 image = "0.25"
+resvg = "0.40"
+tiny-skia = "0.11"
 
 # 3D mesh processing
 stl_io = "0.7"
