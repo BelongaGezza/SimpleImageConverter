@@ -1,5 +1,7 @@
 {
   // Rust Analyzer settings
+  // Note: checkOnSave uses separate property format (not an object)
+  // If you see "expected a boolean" errors, check user-level settings for conflicts
   "rust-analyzer.checkOnSave.command": "clippy",
   "rust-analyzer.checkOnSave.allTargets": true,
   "rust-analyzer.cargo.allFeatures": true,
