@@ -267,6 +267,51 @@ impl FormatRegistry {
         // If we can't detect the format, we allow it (could be a valid format we don't recognize)
         Ok(())
     }
+
+    /// Detect format using two-stage detection (extension + magic bytes)
+    ///
+    /// This is the recommended method for format detection as it provides
+    /// defense-in-depth against format spoofing.
+    ///
+    /// # Arguments
+    ///
+    /// * `path` - File path (for extension detection)
+    /// * `data` - File data (for magic byte detection)
+    ///
+    /// # Returns
+    ///
+    /// The detected format, or an error if:
+    /// - Extension and magic bytes don't match
+    /// - Format cannot be determined
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use img_core::{FormatRegistry, ImageFormat};
+    /// use std::path::Path;
+    ///
+    /// let path = Path::new("photo.png");
+    /// let data = std::fs::read(path)?;
+    /// let format = FormatRegistry::detect_two_stage(path, &data)?;
+    /// assert_eq!(format, ImageFormat::Png);
+    /// # Ok::<(), Box<dyn std::error::Error>>(())
+    /// ```
+    pub fn detect_two_stage(path: &Path, data: &[u8]) -> Result<ImageFormat> {
+        // Stage 1: Detect from extension
+        let extension_format = Self::detect_from_path(path)?;
+
+        // Stage 2: Verify with magic bytes
+        if let Some(magic_format) = Self::detect_from_bytes(data) {
+            if magic_format != extension_format {
+                return Err(ConversionError::InvalidFormat(format!(
+                    "Format mismatch: extension suggests {:?} but magic bytes indicate {:?}",
+                    extension_format, magic_format
+                )));
+            }
+        }
+
+        Ok(extension_format)
+    }
 }
 
 /// Image format enumeration

@@ -34,6 +34,12 @@ impl Default for StlFormat {
 
 impl MeshReader for StlFormat {
     fn read(&self, data: &[u8]) -> Result<Mesh> {
+        // Security: Validate input size BEFORE parsing to prevent memory exhaustion
+        if let Err(e) = self.limits.check_file_size(data.len()) {
+            common::security::log_security_error(&e, None);
+            return Err(e);
+        }
+
         let mut cursor = Cursor::new(data);
 
         // Use stl_io to read the STL file (auto-detects binary/ASCII)

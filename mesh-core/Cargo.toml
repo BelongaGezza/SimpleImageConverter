@@ -12,10 +12,26 @@ common = { path = "../common" }
 anyhow.workspace = true
 thiserror.workspace = true
 
-# Mesh processing
+# Mesh processing (always included)
 stl_io.workspace = true
 nalgebra.workspace = true
 tobj.workspace = true
 ply-rs.workspace = true
 ahash.workspace = true
+
+# Optional format support (feature-gated)
+# STEP support via truck (pure Rust)
+# Note: truck crates are optional and only available when step feature is enabled
+# Version 0.3 is the latest available as of 2025-01-27
+truck-modeling = { version = "0.3", optional = true }
+truck-polymesh = { version = "0.3", optional = true }
+truck-stepio = { version = "0.3", optional = true }
+
+[dev-dependencies]
+common = { path = "../common" }
+
+[features]
+default = []
+# Enable STEP format support (requires truck crates)
+step = ["truck-modeling", "truck-polymesh", "truck-stepio"]
 

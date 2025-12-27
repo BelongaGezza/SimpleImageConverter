@@ -91,6 +91,15 @@ fn main() -> Result<()> {
     // Write output file
     write_file_bytes(&output_path, &output_data)?;
 
+    // Security: Validate output file by verifying it can be read back
+    // This ensures the conversion produced a valid file
+    let output_data_read = read_file_bytes_checked(&output_path, &limits)?;
+    // Try to read the output file back to verify it's valid
+    let output_reader = FormatRegistry::get_reader_with_limits(output_format, limits.clone())?;
+    if output_reader.read(&output_data_read).is_err() {
+        eprintln!("Warning: Output file validation failed - file may be corrupted");
+    }
+
     println!(
         "Successfully converted {} to {}",
         args.input,

@@ -25,6 +25,14 @@ impl Default for JpegFormat {
 
 impl ImageReader for JpegFormat {
     fn read(&self, data: &[u8]) -> Result<ImageData> {
+        // Security: Validate input size before parsing to prevent memory exhaustion
+        use common::limits::ResourceLimits;
+        let limits = ResourceLimits::default();
+        if let Err(e) = limits.check_file_size(data.len()) {
+            common::security::log_security_error(&e, None);
+            return Err(e);
+        }
+
         let img = image::load_from_memory_with_format(data, ImageFormat::Jpeg).map_err(|e| {
             ConversionError::ConversionFailed(format!(
                 "Failed to read JPEG image ({} bytes): {}",

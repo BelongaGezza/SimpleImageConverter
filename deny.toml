@@ -1,0 +1,38 @@
+# Cargo Deny Configuration
+# Security-focused dependency checking for SimpleImageConverter
+
+[advisories]
+# Check for security advisories from RustSec
+vulnerability = "deny"
+# Warn about unmaintained crates (but don't fail)
+unmaintained = "warn"
+# Warn about yanked crates
+yanked = "warn"
+# Ignore advisories for specific crates (add as needed)
+ignore = []
+
+[licenses]
+# Allow MIT OR Apache-2.0 (per workspace license)
+default = "deny"
+allow = [
+    "MIT",
+    "Apache-2.0",
+    "MIT OR Apache-2.0",
+]
+# Copyleft licenses are denied by default
+copyleft = "deny"
+
+[bans]
+# Check for duplicate dependencies
+duplicates = "warn"
+# Check for multiple versions
+multiple-versions = "warn"
+
+[sources]
+# Only allow crates from crates.io
+unknown-registry = "deny"
+# Allow git dependencies (but warn)
+git = "warn"
+# Allow path dependencies (for workspace)
+path = "allow"
+

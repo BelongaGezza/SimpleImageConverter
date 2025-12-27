@@ -3,6 +3,7 @@
 
 pub mod bmp;
 pub mod gif;
+pub mod info;
 pub mod jpg;
 pub mod png;
 pub mod registry;

@@ -4,15 +4,25 @@
 use crate::formats::traits::{MeshReader, MeshWriter};
 use crate::mesh::{Face, Mesh, Normal, Vertex};
 use common::error::{ConversionError, Result};
+use common::limits::ResourceLimits;
 use std::io::{Cursor, Write};
 
 /// PLY format handler
-pub struct PlyFormat;
+pub struct PlyFormat {
+    limits: ResourceLimits,
+}
 
 impl PlyFormat {
-    /// Create a new PLY format handler
+    /// Create a new PLY format handler with default resource limits
     pub fn new() -> Self {
-        Self
+        Self {
+            limits: ResourceLimits::default(),
+        }
+    }
+
+    /// Create a new PLY format handler with custom resource limits
+    pub fn with_limits(limits: ResourceLimits) -> Self {
+        Self { limits }
     }
 }
 
@@ -24,6 +34,12 @@ impl Default for PlyFormat {
 
 impl MeshReader for PlyFormat {
     fn read(&self, data: &[u8]) -> Result<Mesh> {
+        // Security: Validate input size BEFORE parsing to prevent memory exhaustion
+        if let Err(e) = self.limits.check_file_size(data.len()) {
+            common::security::log_security_error(&e, None);
+            return Err(e);
+        }
+
         let mut cursor = Cursor::new(data);
 
         // Use ply_rs to read PLY file
@@ -175,6 +191,10 @@ impl MeshReader for PlyFormat {
                 }
             }
         }
+
+        // Security: Validate mesh resource counts against limits
+        self.limits
+            .check_mesh_resources(mesh.vertices.len(), mesh.faces.len())?;
 
         Ok(mesh)
     }

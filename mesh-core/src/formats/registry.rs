@@ -153,9 +153,8 @@ impl FormatRegistry {
     ) -> Result<Box<dyn MeshReader>> {
         match format {
             MeshFormat::Stl => Ok(Box::new(StlFormat::with_limits(limits))),
-            // OBJ and PLY don't yet support limits - use default
-            MeshFormat::Obj => Ok(Box::new(ObjFormat::new())),
-            MeshFormat::Ply => Ok(Box::new(PlyFormat::new())),
+            MeshFormat::Obj => Ok(Box::new(ObjFormat::with_limits(limits))),
+            MeshFormat::Ply => Ok(Box::new(PlyFormat::with_limits(limits))),
         }
     }
 

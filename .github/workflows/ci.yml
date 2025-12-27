@@ -55,6 +55,25 @@ jobs:
     - name: Run clippy
       run: cargo clippy --workspace -- -D warnings
 
+  security:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: dtolnay/rust-toolchain@stable
+    - name: Install cargo-audit
+      run: cargo install cargo-audit --locked
+    - name: Install cargo-deny
+      run: cargo install cargo-deny --locked
+    - name: Run cargo audit
+      run: cargo audit
+    - name: Run cargo deny
+      run: cargo deny check advisories
+    - name: Check for unsafe code
+      run: |
+        cargo install cargo-geiger --locked || true
+        cargo geiger --update-readme --output-format GitHubMarkdown || echo "cargo-geiger not available, skipping"
+
   build-windows:
     name: Build Windows
     runs-on: windows-latest
@@ -80,4 +99,15 @@ jobs:
       run: |
         cargo build --release --bin img-convert
         cargo build --release --bin mesh-convert
+
+  test-security:
+    name: Security Tests
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: dtolnay/rust-toolchain@stable
+    - name: Run security tests
+      run: cargo test --workspace security
+    - name: Run integration tests
+      run: cargo test --workspace integration
 

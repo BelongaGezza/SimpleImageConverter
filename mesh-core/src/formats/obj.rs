@@ -4,15 +4,25 @@
 use crate::formats::traits::{MeshReader, MeshWriter};
 use crate::mesh::{Face, Mesh, Normal, Vertex};
 use common::error::{ConversionError, Result};
+use common::limits::ResourceLimits;
 use std::io::{Cursor, Write};
 
 /// OBJ format handler
-pub struct ObjFormat;
+pub struct ObjFormat {
+    limits: ResourceLimits,
+}
 
 impl ObjFormat {
-    /// Create a new OBJ format handler
+    /// Create a new OBJ format handler with default resource limits
     pub fn new() -> Self {
-        Self
+        Self {
+            limits: ResourceLimits::default(),
+        }
+    }
+
+    /// Create a new OBJ format handler with custom resource limits
+    pub fn with_limits(limits: ResourceLimits) -> Self {
+        Self { limits }
     }
 }
 
@@ -24,6 +34,12 @@ impl Default for ObjFormat {
 
 impl MeshReader for ObjFormat {
     fn read(&self, data: &[u8]) -> Result<Mesh> {
+        // Security: Validate input size BEFORE parsing to prevent memory exhaustion
+        if let Err(e) = self.limits.check_file_size(data.len()) {
+            common::security::log_security_error(&e, None);
+            return Err(e);
+        }
+
         // Convert bytes to string for OBJ parsing
         let obj_str = std::str::from_utf8(data).map_err(|e| {
             ConversionError::ConversionFailed(format!("Failed to parse OBJ file as UTF-8: {}", e))
@@ -114,6 +130,10 @@ impl MeshReader for ObjFormat {
                 "OBJ file contains no faces".to_string(),
             ));
         }
+
+        // Security: Validate mesh resource counts against limits
+        self.limits
+            .check_mesh_resources(mesh.vertices.len(), mesh.faces.len())?;
 
         Ok(mesh)
     }

@@ -1,0 +1,30 @@
+[package]
+name = "simpleimageconverter-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+img-core = { path = "../img-core" }
+mesh-core = { path = "../mesh-core" }
+common = { path = "../common" }
+
+[[bin]]
+name = "fuzz_png_reader"
+path = "fuzz_targets/fuzz_png_reader.rs"
+test = false
+
+[[bin]]
+name = "fuzz_jpeg_reader"
+path = "fuzz_targets/fuzz_jpeg_reader.rs"
+test = false
+
+[[bin]]
+name = "fuzz_stl_reader"
+path = "fuzz_targets/fuzz_stl_reader.rs"
+test = false
+

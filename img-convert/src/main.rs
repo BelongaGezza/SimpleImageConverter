@@ -33,10 +33,6 @@ struct Args {
     /// Maximum image dimension in pixels (default: 65535)
     #[arg(long, default_value_t = 65535)]
     max_dimension: u32,
-
-    /// Skip format verification (not recommended)
-    #[arg(long)]
-    skip_format_check: bool,
 }
 
 fn main() -> Result<()> {
@@ -59,8 +55,8 @@ fn main() -> Result<()> {
     let input_path = Path::new(&args.input);
     common::validation::validate_file_path(input_path)?;
 
-    // Detect input format from extension
-    let input_format = FormatRegistry::detect_from_path(input_path)?;
+    // Security: Two-stage format detection (extension + magic bytes)
+    let input_format = FormatRegistry::detect_two_stage(input_path, &input_data)?;
 
     // Detect output format
     let output_format = FormatRegistry::detect_format(&args.format)?;
@@ -78,9 +74,10 @@ fn main() -> Result<()> {
     // Read input file with size validation
     let input_data = read_file_bytes_checked(input_path, &limits)?;
 
-    // Verify format matches file content (security check)
-    if !args.skip_format_check {
-        FormatRegistry::verify_format(&input_data, input_format)?;
+    // Security: Verify format matches file content (two-stage detection)
+    if let Err(e) = FormatRegistry::verify_format(&input_data, input_format) {
+        common::security::log_security_error(&e, Some(input_path));
+        return Err(e);
     }
 
     // Get format handlers
@@ -94,6 +91,18 @@ fn main() -> Result<()> {
 
     // Write output file
     write_file_bytes(&output_path, &output_data)?;
+
+    // Security: Validate output file by verifying it can be read back
+    // This ensures the conversion produced a valid file
+    let output_data_read = read_file_bytes_checked(&output_path, &limits)?;
+    if let Some(detected_format) = FormatRegistry::detect_from_bytes(&output_data_read) {
+        if detected_format != output_format {
+            eprintln!(
+                "Warning: Output file format verification failed (expected {:?}, detected {:?})",
+                output_format, detected_format
+            );
+        }
+    }
 
     println!(
         "Successfully converted {} to {}",

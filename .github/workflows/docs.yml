@@ -1,0 +1,23 @@
+name: Documentation
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  docs:
+    name: Generate Documentation
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: dtolnay/rust-toolchain@stable
+    - name: Generate API Documentation
+      run: cargo doc --workspace --no-deps
+    - name: Check Documentation
+      run: |
+        # Check that documentation was generated
+        test -d target/doc || exit 1
+        echo "Documentation generated successfully"
+

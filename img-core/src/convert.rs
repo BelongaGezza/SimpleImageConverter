@@ -4,6 +4,7 @@
 use crate::formats::traits::{ImageReader, ImageWriter};
 use crate::quality::QualitySettings;
 use common::error::Result;
+use common::progress::{NoOpProgressReporter, ProgressReporter};
 
 /// Main image converter orchestrator
 ///
@@ -88,6 +89,21 @@ impl ImageConverter {
     /// let output = converter.convert(&input, reader.as_ref(), writer.as_ref(), &quality)?;
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
+    /// Convert image from one format to another
+    ///
+    /// This method reads an image using the provided reader, then writes it
+    /// using the provided writer with the specified quality settings.
+    ///
+    /// # Arguments
+    ///
+    /// * `input_data` - The raw image data to convert
+    /// * `reader` - Format-specific reader for the input format
+    /// * `writer` - Format-specific writer for the output format
+    /// * `quality` - Quality settings for the conversion
+    ///
+    /// # Returns
+    ///
+    /// The converted image data as a byte vector, or an error if conversion fails.
     pub fn convert(
         &self,
         input_data: &[u8],
@@ -95,8 +111,47 @@ impl ImageConverter {
         writer: &dyn ImageWriter,
         quality: &QualitySettings,
     ) -> Result<Vec<u8>> {
+        self.convert_with_progress(
+            input_data,
+            reader,
+            writer,
+            quality,
+            &NoOpProgressReporter,
+        )
+    }
+
+    /// Convert image with progress reporting
+    ///
+    /// Same as `convert()` but accepts a progress reporter for status updates.
+    ///
+    /// # Arguments
+    ///
+    /// * `input_data` - The raw image data to convert
+    /// * `reader` - Format-specific reader for the input format
+    /// * `writer` - Format-specific writer for the output format
+    /// * `quality` - Quality settings for the conversion
+    /// * `progress` - Progress reporter for status updates
+    ///
+    /// # Returns
+    ///
+    /// The converted image data as a byte vector, or an error if conversion fails.
+    pub fn convert_with_progress(
+        &self,
+        input_data: &[u8],
+        reader: &dyn ImageReader,
+        writer: &dyn ImageWriter,
+        quality: &QualitySettings,
+        progress: &dyn ProgressReporter,
+    ) -> Result<Vec<u8>> {
+        progress.status("Reading input image...");
+        progress.report(0.1);
         let image = reader.read(input_data)?;
-        writer.write(&image, quality)
+        progress.report(0.5);
+        progress.status("Writing output image...");
+        let output = writer.write(&image, quality)?;
+        progress.report(1.0);
+        progress.status("Conversion complete");
+        Ok(output)
     }
 }
 

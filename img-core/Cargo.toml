@@ -15,6 +15,7 @@ image.workspace = true
 
 [dev-dependencies]
 criterion.workspace = true
+common = { path = "../common" }
 
 [[bench]]
 name = "conversion_bench"
