@@ -1,226 +1,588 @@
 # Task Assignment: Sam Parker (Junior Engineer - 2D Formats)
-## Next Sprint Tasks
+## Sprint 4: Advanced 2D Formats
 
 **Assigned By:** Jordan Rivera (Senior Engineer)  
-**Date:** December 27, 2025  
-**Sprint Status:** Sprint 2 ✅ Complete | Preparing for Sprint 4
+**Date:** January 27, 2025  
+**Sprint Status:** Sprint 2 ✅ Complete | Sprint 3 ✅ Complete | **Sprint 4 - Ready to Begin**  
+**Priority:** 🔴 **HIGH - Sprint 4 Implementation**
 
 ---
 
 ## 🎉 Congratulations!
 
-**Excellent work on Sprint 2!** Your implementations of BMP and GIF formats are production-ready and demonstrate excellent code quality. All tests passing, no issues found in code review.
+**Excellent work on Sprint 2!** Your implementations of PNG, JPEG, BMP, and GIF formats are production-ready and demonstrate excellent code quality. All tests passing, no issues found in code review.
+
+Sprint 3 (Mesh Core) is now complete, so we're ready to move forward with Sprint 4!
 
 ---
 
 ## Current Status
 
-**Sprint 2:** ✅ **COMPLETE**
-- ✅ PNG format (production-ready)
-- ✅ JPEG format (production-ready)
-- ✅ BMP format (production-ready) - **Your work**
-- ✅ GIF format (production-ready) - **Your work**
+**Completed Sprints:**
+- ✅ **Sprint 2:** PNG, JPEG, BMP, GIF formats (production-ready)
+- ✅ **Sprint 3:** STL, OBJ, PLY formats (Riley's work - complete)
 
-**Next Sprint:** Sprint 4 (Advanced 2D Formats) - **Not yet started**
+**Current Sprint:** **Sprint 4 - Advanced 2D Formats** - **YOUR TASK**
 
 ---
 
-## Task Assignment Strategy
+## Sprint 4 Overview
 
-Since Sprint 3 (Mesh Core) is still in progress and needs to complete before Sprint 4, you have two options:
+**Goal:** Add Tier 2 image formats and advanced features
 
-### Option A: Support Sprint 3 (Recommended)
-Help Riley complete Sprint 3 by:
-- Reviewing OBJ/PLY implementations when ready
-- Testing mesh conversions
-- Providing feedback
-
-### Option B: Prepare for Sprint 4 (Alternative)
-Begin research and preparation for Sprint 4 advanced formats.
-
-**I recommend Option A** to maintain team cohesion and ensure Sprint 3 completes successfully.
+**Duration:** 2 weeks (14 days)  
+**Focus:** TIFF, WebP, SVG (rasterization), and optional Tier 2 formats
 
 ---
 
-## Task 1: Code Quality Maintenance (Ongoing)
+## Task 1: Implement TIFF Format Handler
 
-**Priority:** Medium  
-**Estimated Time:** 1-2 hours  
-**Status:** Ongoing
+**Priority:** 🔴 **HIGH**  
+**Estimated Time:** 3-4 days  
+**Difficulty:** Medium (multi-page support adds complexity)
 
 ### Requirements
 
-1. **Monitor Code Quality**
-   - Review any new PRs or changes
-   - Ensure code follows established patterns
-   - Maintain test coverage
+1. **Create the format handler:**
+   - File: `img-core/src/formats/tiff.rs`
+   - Follow the exact pattern from `png.rs` and `jpg.rs`
+   - Implement `TiffFormat` struct
+   - Implement `ImageReader` trait
+   - Implement `ImageWriter` trait
 
-2. **Documentation**
-   - Keep code comments up-to-date
-   - Update examples if needed
-   - Document any edge cases discovered
+2. **Use `image` crate:**
+   - The `image` crate already supports TIFF
+   - Use `image::open()` for reading
+   - Use `image::save()` for writing
+   - Handle multi-page TIFF files (read first page, write single page)
 
-3. **Testing**
-   - Run full test suite regularly
-   - Verify all image format tests pass
-   - Test with real-world image files
+3. **Handle TIFF-specific features:**
+   - Multi-page TIFF (read first page only for now)
+   - Compression options (LZW, Deflate) - use image crate defaults
+   - Color modes (RGB, RGBA, Grayscale)
+   - Bit depth support (8-bit, 16-bit)
+
+4. **Error handling:**
+   - Invalid TIFF structure
+   - Unsupported compression
+   - Corrupted files
+   - Empty files
+
+5. **Write implementation:**
+   - Write single-page TIFF files
+   - Support common color modes
+   - Use appropriate compression
+
+### Implementation Pattern
+
+Follow the PNG/JPEG pattern exactly:
+
+```rust
+pub struct TiffFormat;
+
+impl TiffFormat {
+    pub fn new() -> Self {
+        Self
+    }
+}
+
+impl Default for TiffFormat {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl ImageReader for TiffFormat {
+    fn read(&self, path: &Path) -> Result<Image, FormatError> {
+        // Validate path
+        self.validate_path(path)?;
+        
+        // Use image crate to read TIFF
+        let img = image::open(path)
+            .map_err(|e| FormatError::ReadError(e.to_string()))?;
+        
+        Ok(Image::from_dynamic(img))
+    }
+}
+
+impl ImageWriter for TiffFormat {
+    fn write(&self, image: &Image, path: &Path, options: &WriteOptions) -> Result<(), FormatError> {
+        // Validate path
+        self.validate_path(path)?;
+        
+        // Convert to DynamicImage and save
+        let dynamic = image.to_dynamic_image()?;
+        dynamic.save(path)
+            .map_err(|e| FormatError::WriteError(e.to_string()))?;
+        
+        Ok(())
+    }
+}
+```
+
+### Testing Requirements
+
+Write comprehensive tests (aim for 10-12 tests):
+
+1. **Unit Tests:**
+   - `test_tiff_format_new`
+   - `test_read_rgb_tiff`
+   - `test_read_rgba_tiff`
+   - `test_read_grayscale_tiff`
+   - `test_read_multi_page_tiff` (first page only)
+   - `test_read_invalid_tiff`
+   - `test_read_empty_file`
+   - `test_write_rgb_tiff`
+   - `test_write_rgba_tiff`
+   - `test_write_grayscale_tiff`
+   - `test_round_trip_rgb`
+   - `test_round_trip_rgba`
+
+2. **Integration Tests:**
+   - Add to `img-core/tests/integration.rs`
+   - `test_tiff_round_trip_conversion`
+   - `test_image_converter_tiff_round_trip`
 
 ### Success Criteria
-- ✅ All tests continue to pass
-- ✅ No regressions introduced
-- ✅ Code quality maintained
+- ✅ TIFF format handler implemented
+- ✅ 10+ unit tests (all passing)
+- ✅ Integration tests added
+- ✅ Registered in format registry
+- ✅ Follows PNG/JPEG pattern exactly
+- ✅ No linter errors
+- ✅ Documentation complete
 
 ---
 
-## Task 2: Sprint 4 Research & Preparation (Optional)
+## Task 2: Implement WebP Format Handler
 
-**Priority:** Low (can start after Sprint 3 completes)  
+**Priority:** 🔴 **HIGH**  
 **Estimated Time:** 2-3 days  
-**Status:** Pending Sprint 3 completion
+**Difficulty:** Medium (lossy/lossless modes)
 
-### Research Tasks
+### Requirements
 
-1. **TIFF Format Research**
-   - Study TIFF specification
-   - Research multi-page TIFF handling
-   - Evaluate `image` crate TIFF support
-   - Document findings
+1. **Create the format handler:**
+   - File: `img-core/src/formats/webp.rs`
+   - Follow the exact pattern from other formats
+   - Implement `WebPFormat` struct
+   - Implement `ImageReader` trait
+   - Implement `ImageWriter` trait
 
-2. **WebP Format Research**
-   - Study WebP format features
-   - Research lossy vs lossless modes
-   - Evaluate `image` crate WebP support
-   - Test quality settings
+2. **Use `image` crate:**
+   - The `image` crate supports WebP
+   - Use `image::open()` for reading
+   - Use `image::save_with_format()` for writing
+   - Handle quality settings via `WriteOptions`
 
-3. **SVG Rasterization Research**
-   - Research `resvg` crate
-   - Study DPI/resolution handling
-   - Evaluate performance considerations
-   - Document approach
+3. **Handle WebP-specific features:**
+   - Lossy compression (default)
+   - Lossless compression (optional)
+   - Quality settings (0-100)
+   - Transparency support (RGBA)
 
-### Deliverables
-- Research document with findings
-- Code examples for each format
-- Library evaluation notes
-- Implementation approach recommendations
+4. **Error handling:**
+   - Invalid WebP structure
+   - Corrupted files
+   - Quality parameter validation
+
+5. **Write implementation:**
+   - Support quality settings from `WriteOptions`
+   - Handle transparency correctly
+   - Use appropriate compression mode
+
+### Implementation Pattern
+
+Follow the JPEG pattern (similar quality handling):
+
+```rust
+pub struct WebPFormat;
+
+impl WebPFormat {
+    pub fn new() -> Self {
+        Self
+    }
+}
+
+impl ImageWriter for WebPFormat {
+    fn write(&self, image: &Image, path: &Path, options: &WriteOptions) -> Result<(), FormatError> {
+        self.validate_path(path)?;
+        
+        let dynamic = image.to_dynamic_image()?;
+        
+        // WebP quality is 0-100, similar to JPEG
+        let quality = options.quality.unwrap_or(90);
+        
+        // Save with quality setting
+        dynamic.save_with_format(path, image::ImageFormat::WebP)
+            .map_err(|e| FormatError::WriteError(e.to_string()))?;
+        
+        Ok(())
+    }
+}
+```
+
+### Testing Requirements
+
+Write comprehensive tests (aim for 10+ tests):
+
+1. **Unit Tests:**
+   - `test_webp_format_new`
+   - `test_read_rgb_webp`
+   - `test_read_rgba_webp` (transparency)
+   - `test_read_lossless_webp`
+   - `test_read_invalid_webp`
+   - `test_write_rgb_webp`
+   - `test_write_rgba_webp`
+   - `test_write_with_quality`
+   - `test_round_trip_rgb`
+   - `test_round_trip_rgba`
+
+2. **Integration Tests:**
+   - Add to `img-core/tests/integration.rs`
+   - `test_webp_round_trip_conversion`
 
 ### Success Criteria
-- ✅ Research document complete
-- ✅ Library choices evaluated
-- ✅ Implementation approach documented
-- ✅ Ready to implement when Sprint 4 starts
+- ✅ WebP format handler implemented
+- ✅ 10+ unit tests (all passing)
+- ✅ Integration tests added
+- ✅ Quality settings functional
+- ✅ Registered in format registry
+- ✅ Follows established pattern
+- ✅ No linter errors
 
 ---
 
-## Task 3: Support Sprint 3 (Recommended)
+## Task 3: Implement SVG Rasterization (Read-Only)
 
-**Priority:** High (if needed)  
-**Estimated Time:** As needed  
-**Status:** Available for support
+**Priority:** 🔴 **HIGH**  
+**Estimated Time:** 3-4 days  
+**Difficulty:** Medium-High (new dependency, rasterization logic)
 
-### Support Activities
+### Requirements
 
-1. **Code Review**
-   - Review Riley's OBJ/PLY implementations
-   - Provide feedback on code quality
-   - Suggest improvements if needed
+1. **Create the format handler:**
+   - File: `img-core/src/formats/svg.rs`
+   - Implement `SvgFormat` struct
+   - Implement `ImageReader` trait (read-only)
+   - **DO NOT** implement `ImageWriter` (SVG is vector, not raster)
 
-2. **Testing Support**
-   - Test mesh conversions
-   - Verify CLI functionality
-   - Report any issues found
+2. **Use `resvg` crate:**
+   - Add `resvg = "0.40"` to `img-core/Cargo.toml`
+   - Use `resvg` to rasterize SVG to bitmap
+   - Handle DPI/resolution settings
+   - Default to 96 DPI (standard screen resolution)
 
-3. **Documentation**
-   - Review documentation updates
-   - Ensure consistency with image formats
-   - Help with user-facing docs
+3. **Handle SVG-specific features:**
+   - Rasterize to RGB or RGBA (based on SVG content)
+   - Configurable output size (via DPI or explicit dimensions)
+   - Handle embedded images
+   - Handle text rendering
+
+4. **Error handling:**
+   - Invalid SVG syntax
+   - Unsupported SVG features
+   - File read errors
+   - Rasterization failures
+
+5. **Implementation notes:**
+   - SVG is **read-only** (we rasterize SVG → bitmap)
+   - Cannot write SVG (that would be vector graphics generation)
+   - Output size can be controlled via DPI setting
+
+### Implementation Pattern
+
+```rust
+pub struct SvgFormat;
+
+impl SvgFormat {
+    pub fn new() -> Self {
+        Self
+    }
+    
+    /// Rasterize SVG with specified DPI
+    fn rasterize(&self, data: &[u8], dpi: f32) -> Result<DynamicImage, FormatError> {
+        use resvg::prelude::*;
+        
+        let opt = resvg::Options::default();
+        let tree = resvg::Tree::from_data(data, &opt)
+            .map_err(|e| FormatError::ReadError(format!("SVG parse error: {}", e)))?;
+        
+        let size = tree.size();
+        let pixmap_size = size.to_int_size();
+        
+        let mut pixmap = tiny_skia::Pixmap::new(
+            pixmap_size.width(),
+            pixmap_size.height()
+        ).ok_or_else(|| FormatError::ReadError("Failed to create pixmap".to_string()))?;
+        
+        resvg::render(&tree, resvg::FitTo::Original, pixmap.as_mut())
+            .ok_or_else(|| FormatError::ReadError("Failed to render SVG".to_string()))?;
+        
+        // Convert pixmap to DynamicImage
+        // ... conversion logic ...
+    }
+}
+
+impl ImageReader for SvgFormat {
+    fn read(&self, path: &Path) -> Result<Image, FormatError> {
+        self.validate_path(path)?;
+        
+        let data = std::fs::read(path)
+            .map_err(|e| FormatError::ReadError(e.to_string()))?;
+        
+        // Rasterize at 96 DPI (standard)
+        let dynamic = self.rasterize(&data, 96.0)?;
+        
+        Ok(Image::from_dynamic(dynamic))
+    }
+}
+
+// NO ImageWriter implementation - SVG is read-only
+```
+
+### Dependencies to Add
+
+Add to `img-core/Cargo.toml`:
+
+```toml
+[dependencies]
+# ... existing dependencies ...
+resvg = "0.40"  # For SVG rasterization
+tiny-skia = "0.11"  # Required by resvg
+```
+
+### Testing Requirements
+
+Write comprehensive tests (aim for 8-10 tests):
+
+1. **Unit Tests:**
+   - `test_svg_format_new`
+   - `test_read_simple_svg`
+   - `test_read_svg_with_transparency`
+   - `test_read_svg_with_text`
+   - `test_read_invalid_svg`
+   - `test_read_empty_file`
+   - `test_rasterize_at_different_dpi`
+   - `test_svg_to_png_conversion` (integration)
+
+2. **Integration Tests:**
+   - Add to `img-core/tests/integration.rs`
+   - `test_svg_to_raster_conversion`
 
 ### Success Criteria
-- ✅ Sprint 3 completes successfully
-- ✅ Code quality maintained
-- ✅ Team collaboration effective
+- ✅ SVG format handler implemented (read-only)
+- ✅ 8+ unit tests (all passing)
+- ✅ Integration tests added
+- ✅ Registered in format registry
+- ✅ Rasterization working correctly
+- ✅ No linter errors
+- ✅ Documentation notes SVG is read-only
 
 ---
 
-## Task 4: Image Format Enhancements (Optional)
+## Task 4: Update Format Registry
 
-**Priority:** Low  
-**Estimated Time:** 1-2 days  
-**Status:** Optional improvements
+**Priority:** 🔴 **HIGH**  
+**Estimated Time:** 1 hour  
+**Difficulty:** Easy
 
-### Enhancement Ideas
+### Requirements
 
-1. **Better Error Messages**
-   - Add more context to error messages
-   - Include file size in errors
-   - Suggest solutions for common errors
+1. **Update `img-core/src/formats/registry.rs`:**
+   - Add TIFF to `ImageFormat` enum
+   - Add WebP to `ImageFormat` enum
+   - Add SVG to `ImageFormat` enum
+   - Add format detection logic (magic bytes)
+   - Add to `get_reader()` method
+   - Add to `get_writer()` method (TIFF, WebP only - no SVG writer)
 
-2. **Performance Improvements**
-   - Profile current implementations
-   - Identify optimization opportunities
-   - Implement if significant gains possible
+2. **Update format detection:**
+   - TIFF magic bytes: `49 49 2A 00` (little-endian) or `4D 4D 00 2A` (big-endian)
+   - WebP magic bytes: `52 49 46 46 ?? ?? ?? ?? 57 45 42 50` (RIFF...WEBP)
+   - SVG detection: Check for `<?xml` or `<svg` at start
 
-3. **Additional Tests**
-   - Add tests for edge cases
-   - Test with various image sizes
-   - Test with corrupted files
+3. **Update tests:**
+   - Add tests for format detection
+   - Add tests for get_reader/get_writer
 
-4. **Metadata Handling**
-   - Research EXIF data preservation
-   - Plan metadata extraction
-   - Document approach
+### Code Changes
+
+```rust
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ImageFormat {
+    Png,
+    Jpeg,
+    Bmp,
+    Gif,
+    Tiff,  // ADD THIS
+    WebP,  // ADD THIS
+    Svg,   // ADD THIS (read-only)
+}
+
+pub fn get_reader(format: ImageFormat) -> Result<Box<dyn ImageReader>> {
+    match format {
+        ImageFormat::Png => Ok(Box::new(PngFormat::new())),
+        ImageFormat::Jpeg => Ok(Box::new(JpegFormat::new())),
+        ImageFormat::Bmp => Ok(Box::new(BmpFormat::new())),
+        ImageFormat::Gif => Ok(Box::new(GifFormat::new())),
+        ImageFormat::Tiff => Ok(Box::new(TiffFormat::new())),  // ADD THIS
+        ImageFormat::WebP => Ok(Box::new(WebPFormat::new())),   // ADD THIS
+        ImageFormat::Svg => Ok(Box::new(SvgFormat::new())),    // ADD THIS
+    }
+}
+
+pub fn get_writer(format: ImageFormat) -> Result<Box<dyn ImageWriter>> {
+    match format {
+        ImageFormat::Png => Ok(Box::new(PngFormat::new())),
+        ImageFormat::Jpeg => Ok(Box::new(JpegFormat::new())),
+        ImageFormat::Bmp => Ok(Box::new(BmpFormat::new())),
+        ImageFormat::Gif => Ok(Box::new(GifFormat::new())),
+        ImageFormat::Tiff => Ok(Box::new(TiffFormat::new())),   // ADD THIS
+        ImageFormat::WebP => Ok(Box::new(WebPFormat::new())),   // ADD THIS
+        // SVG is read-only, no writer
+        ImageFormat::Svg => Err(FormatError::UnsupportedOperation(
+            "SVG is a vector format and cannot be written as raster".to_string()
+        )),
+    }
+}
+```
 
 ### Success Criteria
-- ✅ Improvements don't break existing functionality
-- ✅ Tests still pass
-- ✅ Code quality maintained
+- ✅ Registry updated with TIFF, WebP, SVG
+- ✅ Format detection working
+- ✅ All registry tests pass
+- ✅ No regressions
 
 ---
 
-## Recommended Workflow
+## Task 5: Optional - Tier 2 Formats (If Time Permits)
 
-### This Week (While Sprint 3 Completes)
+**Priority:** 🟡 **MEDIUM** (Optional)  
+**Estimated Time:** 2-3 days per format  
+**Difficulty:** Easy (all use `image` crate)
 
-1. **Day 1-2:** Code quality maintenance
-   - Review any changes
-   - Run full test suite
-   - Verify everything still works
+### Optional Formats
 
-2. **Day 3-4:** Support Sprint 3 (if needed)
-   - Review Riley's code
-   - Test mesh conversions
-   - Provide feedback
+If you complete Tasks 1-4 ahead of schedule, you can implement:
 
-3. **Day 5:** Begin Sprint 4 research (optional)
-   - Start TIFF research
-   - Document findings
-   - Prepare for Sprint 4
+1. **TGA Format** (Targa)
+   - File: `img-core/src/formats/tga.rs`
+   - Uses `image` crate
+   - Follow same pattern
 
-### Next Week (After Sprint 3 Completes)
+2. **ICO Format** (Windows Icon)
+   - File: `img-core/src/formats/ico.rs`
+   - Uses `image` crate
+   - Handle multiple icon sizes
 
-1. **Full Sprint 4 Preparation**
-   - Complete format research
-   - Evaluate libraries
-   - Plan implementation approach
+3. **HDR Format** (Radiance HDR)
+   - File: `img-core/src/formats/hdr.rs`
+   - Uses `image` crate
+   - High dynamic range support
 
-2. **Begin Sprint 4 Implementation**
-   - Start with TIFF format
-   - Follow established patterns
-   - Write comprehensive tests
+**Note:** These are optional. Focus on TIFF, WebP, and SVG first!
+
+---
+
+## Task 6: Update Documentation
+
+**Priority:** 🟡 **MEDIUM**  
+**Estimated Time:** 1 hour  
+**Difficulty:** Easy
+
+### Requirements
+
+1. **Update `docs/FORMATS.md`:**
+   - Mark TIFF as ✅ implemented
+   - Mark WebP as ✅ implemented
+   - Mark SVG as ✅ implemented (read-only)
+   - Update Sprint 4 status
+
+2. **Update code documentation:**
+   - Ensure all public APIs documented
+   - Add examples if needed
+   - Note SVG is read-only
+
+### Success Criteria
+- ✅ FORMATS.md updated
+- ✅ All docs accurate
+- ✅ Examples work
+
+---
+
+## Dependencies to Add
+
+Add these to `img-core/Cargo.toml`:
+
+```toml
+[dependencies]
+# ... existing dependencies ...
+resvg = "0.40"      # For SVG rasterization
+tiny-skia = "0.11"  # Required by resvg
+```
+
+**Note:** TIFF and WebP are already supported by the `image` crate (no additional dependencies needed).
+
+---
+
+## Implementation Checklist
+
+### TIFF Format
+- [ ] Create `tiff.rs` file
+- [ ] Implement `TiffFormat` struct
+- [ ] Implement `ImageReader` for TIFF
+- [ ] Implement `ImageWriter` for TIFF
+- [ ] Write 10+ unit tests
+- [ ] Add integration tests
+- [ ] Register in format registry
+- [ ] Update documentation
+
+### WebP Format
+- [ ] Create `webp.rs` file
+- [ ] Implement `WebPFormat` struct
+- [ ] Implement `ImageReader` for WebP
+- [ ] Implement `ImageWriter` for WebP
+- [ ] Write 10+ unit tests
+- [ ] Add integration tests
+- [ ] Register in format registry
+- [ ] Update documentation
+
+### SVG Format (Read-Only)
+- [ ] Add `resvg` and `tiny-skia` dependencies
+- [ ] Create `svg.rs` file
+- [ ] Implement `SvgFormat` struct
+- [ ] Implement `ImageReader` for SVG (rasterization)
+- [ ] Write 8+ unit tests
+- [ ] Add integration tests
+- [ ] Register in format registry (read-only)
+- [ ] Update documentation (note read-only)
+
+### Format Registry
+- [ ] Update `ImageFormat` enum
+- [ ] Add format detection logic
+- [ ] Update `get_reader()` method
+- [ ] Update `get_writer()` method
+- [ ] Add registry tests
+
+### Documentation
+- [ ] Update `docs/FORMATS.md`
+- [ ] Update code documentation
+- [ ] Verify all examples work
 
 ---
 
 ## Code Quality Standards
 
-Remember to maintain the excellent standards you've established:
-
 ### ✅ Do's
-- Follow established patterns (PNG/JPEG/BMP/GIF)
-- Write comprehensive tests (unit + integration)
+- Follow PNG/JPEG/BMP/GIF pattern exactly
+- Write comprehensive tests (10+ per format)
 - Include proper error handling
 - Document public APIs
 - Use descriptive error messages
 - Validate inputs thoroughly
+- Test edge cases (empty files, invalid data, etc.)
+- Note SVG is read-only in documentation
 
 ### ❌ Don'ts
 - Don't skip tests
@@ -228,41 +590,27 @@ Remember to maintain the excellent standards you've established:
 - Don't use unsafe code
 - Don't copy-paste without understanding
 - Don't commit without testing
+- Don't forget to register in format registry
+- Don't try to implement SVG writer (it's vector, not raster)
 
 ---
 
-## Questions & Support
+## Reference Materials
 
-If you have questions or need clarification:
+1. **Existing Format Implementations:**
+   - `img-core/src/formats/png.rs` - Reference pattern
+   - `img-core/src/formats/jpg.rs` - Quality handling example
+   - `img-core/src/formats/bmp.rs` - Your excellent work
+   - `img-core/src/formats/gif.rs` - Your excellent work
 
-1. **Check Documentation**
+2. **Documentation:**
    - `docs/ARCHITECTURE.md`
    - `docs/FORMATS.md`
    - `Phase3_Architecture.md`
 
-2. **Review Reference Implementations**
-   - PNG/JPEG/BMP/GIF formats
-   - Follow the same patterns
-
-3. **Ask for Help**
-   - Senior Engineer (Jordan) available for questions
-   - Code review available anytime
-   - Pair programming if needed
-
----
-
-## Success Metrics
-
-**This Sprint:**
-- ✅ Maintain code quality (no regressions)
-- ✅ Support Sprint 3 completion
-- ✅ Prepare for Sprint 4 (research complete)
-
-**Overall:**
-- ✅ All tests passing
-- ✅ Code quality maintained
-- ✅ Documentation up-to-date
-- ✅ Ready for Sprint 4
+3. **Library Documentation:**
+   - `image` crate: https://docs.rs/image/
+   - `resvg` crate: https://docs.rs/resvg/
 
 ---
 
@@ -270,27 +618,70 @@ If you have questions or need clarification:
 
 | Task | Duration | Start | End |
 |------|----------|-------|-----|
-| Code Quality Maintenance | Ongoing | Now | Continuous |
-| Support Sprint 3 | As needed | Now | Sprint 3 complete |
-| Sprint 4 Research | 2-3 days | After Sprint 3 | Sprint 4 start |
-| Sprint 4 Implementation | TBD | Sprint 4 start | TBD |
+| TIFF Format | 3-4 days | Day 1 | Day 4 |
+| WebP Format | 2-3 days | Day 5 | Day 7 |
+| SVG Format | 3-4 days | Day 8 | Day 11 |
+| Registry Update | 1 hour | Day 12 | Day 12 |
+| Documentation | 1 hour | Day 13 | Day 13 |
+| Testing & Polish | 1 day | Day 14 | Day 14 |
+
+**Total Estimated Time:** 14 days (2 weeks)
+
+---
+
+## Questions & Support
+
+If you have questions:
+
+1. **Check Existing Implementations:**
+   - Your PNG/JPEG/BMP/GIF code is excellent reference
+   - Follow the same patterns
+
+2. **Check Documentation:**
+   - `docs/ARCHITECTURE.md`
+   - `docs/FORMATS.md`
+   - `Phase3_Architecture.md`
+
+3. **Ask for Help:**
+   - Senior Engineer (Jordan) available
+   - Code review available
+   - Pair programming if needed
+
+---
+
+## Success Metrics
+
+**Sprint 4 Completion:**
+- ✅ TIFF format implemented and tested
+- ✅ WebP format implemented and tested
+- ✅ SVG rasterization implemented and tested
+- ✅ All tests passing (target: 30+ new image tests)
+- ✅ Documentation updated
+- ✅ Code review approved
+
+**Overall:**
+- ✅ Sprint 4 marked complete
+- ✅ Ready for Sprint 6 (Polish & Testing)
+- ✅ Advanced formats foundation solid
 
 ---
 
 ## Final Notes
 
-**Great job on Sprint 2!** Your BMP and GIF implementations are excellent examples of quality code. Keep up the great work!
+**Great work on Sprint 2!** Your implementations are excellent and serve as perfect references for Sprint 4.
 
 **Focus Areas:**
-1. Maintain the high code quality you've established
-2. Support team completion of Sprint 3
-3. Prepare for Sprint 4 advanced formats
+1. Follow the established patterns exactly
+2. Write comprehensive tests
+3. Handle errors properly
+4. Don't skip edge cases
+5. Remember SVG is read-only (rasterization only)
 
-**Remember:** Quality over speed. Take time to do things right, and don't hesitate to ask questions.
+**Remember:** Quality over speed. Take time to do things right. Your Sprint 2 work shows you can do this!
 
 ---
 
 **Assigned by:** Jordan Rivera (Senior Engineer)  
-**Date:** December 27, 2025  
-**Status:** Ready to begin
-
+**Date:** January 27, 2025  
+**Status:** Ready to begin  
+**Priority:** 🔴 HIGH - Sprint 4 Implementation
