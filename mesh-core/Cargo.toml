@@ -16,7 +16,8 @@ thiserror.workspace = true
 stl_io.workspace = true
 nalgebra.workspace = true
 tobj.workspace = true
-ply-rs.workspace = true
+# ply-rs-bw is a security-patched fork of ply-rs (fixes CVE-2020-25573)
+ply-rs-bw = "0.1.3"
 ahash.workspace = true
 gltf = "1.4"
 dxf = "0.6"

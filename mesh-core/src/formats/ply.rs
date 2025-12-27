@@ -1,11 +1,19 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 // Copyright (c) 2025 Simple Image Converter Contributors
 
+//! PLY format handler using ply-rs-bw (security-patched fork of ply-rs).
+//!
+//! Note: We use ply-rs-bw instead of ply-rs to address CVE-2020-25573
+//! (linked-hash-map undefined behavior vulnerability).
+
 use crate::formats::traits::{MeshReader, MeshWriter};
 use crate::mesh::{Face, Mesh, Normal, Vertex};
 use common::error::{ConversionError, Result};
 use common::limits::ResourceLimits;
 use std::io::{Cursor, Write};
+
+// Use ply-rs-bw (security-patched fork) with ply_rs alias for compatibility
+use ply_rs_bw as ply_rs;
 
 /// PLY format handler
 pub struct PlyFormat {

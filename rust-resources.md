@@ -10,22 +10,33 @@
 
 ### Quick Status Summary (as of Dec 27, 2025)
 
-**Current Project Phase:** Early development (Sprint 1-2 complete)
+**Current Project Phase:** Sprint 6 complete (Polish & Testing)
+
+**Technology Audit Completed:** December 27, 2025
+- See `TECHNOLOGY_AUDIT_REPORT.md` for full details
 
 **Active Dependencies:**
-- ✅ `anyhow` v1.0 - Error handling
-- ✅ `thiserror` v1.0 - Error types
-- ✅ `clap` v4.5 - CLI (for future binaries)
-- ✅ `serde` v1.0 - Serialization (in workspace, not yet used)
+- ✅ `anyhow` v1.0 - Error handling (latest: 1.0.100)
+- ✅ `thiserror` v1.0 - Error types (⚠️ v2.0.17 available - defer upgrade)
+- ✅ `clap` v4.5 - CLI (latest: 4.5.53)
+- ✅ `serde` v1.0 - Serialization (latest: 1.0.217+)
 - ✅ `serde_json` v1.0 - JSON support
-- ✅ `log` v0.4 - Logging (optional, for future use)
-- ✅ `image` v0.25 - Image processing (core library)
+- ✅ `log` v0.4 - Logging
+- ✅ `image` v0.25 - Image processing (latest: 0.25.8)
+- ⚠️ `resvg` v0.40 - SVG rendering (latest: **0.45.1** - update recommended)
+- ✅ `tiny-skia` v0.11 - 2D rendering (latest: 0.11.4)
 
-**Planned Dependencies (documented for future phases):**
-- 📋 Image formats: `resvg`, `ravif`, `exr` (Phase 2+)
-- 📋 Mesh formats: `stl_io`, `tobj`, `ply-rs`, `gltf` (Sprint 3+)
-- 📋 Utilities: `nalgebra` (Sprint 3+)
-- 📋 CAD: `truck-*` or `opencascade-sys` (Phase 3)
+**3D/Mesh Dependencies:**
+- ❌ `stl_io` v0.7 - STL format (latest: **0.10.0** - update required)
+- ✅ `nalgebra` v0.33 - Linear algebra
+- ✅ `tobj` v4.0 - OBJ format (latest: 4.0.3)
+- ✅ `ply-rs-bw` v0.1.3 - PLY format (patched fork, CVE-2020-25573 fixed)
+- ✅ `gltf` v1.4 - glTF format (latest: 1.4.1)
+- ✅ `dxf` v0.6 - DXF format (current)
+- ✅ `ahash` v0.8 - HashMap (latest: 0.8.12)
+
+**Optional CAD Dependencies:**
+- ✅ `truck-*` v0.3.0 - STEP support (feature-gated)
 
 ---
 
@@ -35,7 +46,9 @@
 |------|----------|---------|------------|
 | 2025-12-26 | Initial | Document created | Researcher |
 | 2025-12-27 | Project Status | Documented current vs planned dependencies, project early phase status | Researcher |
-| TBD | Rust | (Future updates) | Team |
+| 2025-12-27 | **AUDIT** | Comprehensive technology audit completed - see TECHNOLOGY_AUDIT_REPORT.md | Researcher |
+| 2025-12-27 | **SECURITY** | **FIXED** CVE-2020-25573 - Replaced ply-rs with ply-rs-bw | Researcher |
+| 2025-12-27 | Updates | stl_io 0.7→0.10, resvg 0.40→0.45, thiserror 2.0 available | Researcher |
 
 ---
 
@@ -133,10 +146,20 @@ if image.color() == ColorType::Rgba8 {
 }
 ```
 
-#### resvg (v0.44) - SVG Rasterization
-**License:** MPL-2.0  
-**Status:** ✅ Active development (Planned for future phase)  
-**Current Usage:** Not yet added to workspace
+#### resvg (v0.40) - SVG Rasterization - ⚠️ UPDATE AVAILABLE
+**License:** MPL-2.0
+**Status:** ⚠️ **5 versions behind** - Latest is 0.45.1
+**Current Usage:** Active in img-core
+
+**Update Recommended:**
+```toml
+# In workspace Cargo.toml
+# Update: resvg = "0.40"
+# To:
+resvg = "0.45"
+```
+
+**Note:** Test SVG rendering thoroughly after upgrade - 5 minor versions may include API changes.
 
 **Key APIs:**
 ```rust
@@ -175,10 +198,20 @@ resvg::render(&tree, Transform::default(), &mut pixmap.as_mut());
 
 **Current Status:** mesh-core is in early development. Mesh format dependencies will be added during Sprint 3+.
 
-#### stl_io (v0.7)
-**License:** MIT OR Apache-2.0  
-**Status:** ✅ Stable (Planned for Sprint 3)  
-**Current Usage:** Not yet added to workspace
+#### stl_io (v0.7) - ⚠️ OUTDATED
+**License:** MIT OR Apache-2.0
+**Status:** ⚠️ **OUTDATED** - Current version is 0.10.0
+**Current Usage:** Active in mesh-core
+
+**Update Required:**
+```toml
+# In workspace Cargo.toml
+# Update: stl_io = "0.7"
+# To:
+stl_io = "0.10"
+```
+
+**Note:** Review [stl_io changelog](https://github.com/hmeyer/stl_io) for breaking changes between 0.7 and 0.10.
 
 **Key APIs:**
 ```rust
@@ -219,15 +252,31 @@ let (models, materials) = load_obj("model.obj", &GPU_LOAD_OPTIONS)?;
 - Multiple objects per file possible
 - Texture coordinates may be missing
 
-#### ply-rs (v0.1)
-**License:** MIT  
-**Status:** ⚠️ Low maintenance (Planned for Sprint 3, may need alternative evaluation)  
-**Current Usage:** Not yet added to workspace
+#### ply-rs-bw (v0.1.3) - ✅ SECURITY PATCHED
+**License:** MIT
+**Status:** ✅ **FIXED** - Security-patched fork of ply-rs
+**Current Usage:** Active in mesh-core
 
-**Gotchas:**
-- API is older, less ergonomic
-- Binary/ASCII detection manual
-- Consider alternatives if issues arise
+**Security Fix Applied (Dec 27, 2025):**
+- **CVE:** CVE-2020-25573 (CVSS 9.8 CRITICAL) - **RESOLVED**
+- **Solution:** Migrated from `ply-rs` to `ply-rs-bw` fork
+- **Verification:** All 26 PLY tests passing
+
+**Usage:**
+```toml
+# In mesh-core/Cargo.toml
+ply-rs-bw = "0.1.3"
+```
+
+```rust
+// In code, use alias for compatibility:
+use ply_rs_bw as ply_rs;
+```
+
+**Notes:**
+- API compatible with original ply-rs
+- Fixed linked-hash-map vulnerability
+- Rust 2021 edition compatible
 
 #### gltf (v1.4)
 **License:** MIT OR Apache-2.0  

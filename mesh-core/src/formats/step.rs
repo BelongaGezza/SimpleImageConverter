@@ -38,7 +38,7 @@ impl StepFormat {
     }
 
     /// Convert truck Shell objects to our Mesh format
-    /// 
+    ///
     /// NOTE: This function is a placeholder until the truck API is verified.
     /// The actual API for v0.3.0 needs to be confirmed.
     #[allow(dead_code)] // Will be used once API is verified
@@ -53,9 +53,10 @@ impl StepFormat {
         return Err(ConversionError::ConversionFailed(
             "STEP tessellation implementation requires API verification. \
             The truck-polymesh v0.3.0 API needs to be confirmed. \
-            See TRUCK_API_RESEARCH.md for details.".to_string()
+            See TRUCK_API_RESEARCH.md for details."
+                .to_string(),
         ));
-        
+
         /* Implementation will be uncommented once API is verified:
         let mut mesh = Mesh::new();
         let mut vertex_offset = 0;
@@ -202,7 +203,7 @@ impl StepFormat {
         )));
 
         /* Code below will be uncommented once API is verified:
-        
+
         // Parse STEP file - API verification needed
         let shells: Vec<Shell> = /* truck_stepio API call here */;
 
