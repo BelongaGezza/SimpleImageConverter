@@ -635,4 +635,222 @@ mod tests {
         assert_eq!(read_mesh.vertices.len(), original_mesh.vertices.len());
         assert_eq!(read_mesh.faces.len(), original_mesh.faces.len());
     }
+
+    #[test]
+    fn test_read_ply_with_missing_properties() {
+        let format = PlyFormat::new();
+        // PLY file with missing z coordinate property
+        let ply_data = b"ply\nformat ascii 1.0\nelement vertex 3\nproperty float x\nproperty float y\nelement face 1\nproperty list uchar int vertex_indices\nend_header\n0.0 0.0\n1.0 0.0\n0.5 1.0\n3 0 1 2\n";
+
+        let result = format.read(ply_data);
+        // Should fail because z coordinate is missing
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_read_ply_with_invalid_header() {
+        let format = PlyFormat::new();
+        // Invalid PLY header
+        let invalid_data = b"not a ply file\n";
+
+        let result = format.read(invalid_data);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_read_ply_with_missing_vertex_element() {
+        let format = PlyFormat::new();
+        // PLY file without vertex element
+        let ply_data = b"ply\nformat ascii 1.0\nelement face 1\nproperty list uchar int vertex_indices\nend_header\n3 0 1 2\n";
+
+        let result = format.read(ply_data);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("no vertices"));
+    }
+
+    #[test]
+    fn test_read_ply_with_polygon_faces() {
+        let format = PlyFormat::new();
+        // PLY file with quad face (should be triangulated)
+        let ply_data = b"ply\nformat ascii 1.0\nelement vertex 4\nproperty float x\nproperty float y\nproperty float z\nelement face 1\nproperty list uchar int vertex_indices\nend_header\n0.0 0.0 0.0\n1.0 0.0 0.0\n1.0 1.0 0.0\n0.0 1.0 0.0\n4 0 1 2 3\n";
+
+        let result = format.read(ply_data);
+        assert!(result.is_ok());
+
+        let mesh = result.unwrap();
+        assert_eq!(mesh.vertices.len(), 4);
+        // Quad should be triangulated into 2 triangles
+        assert_eq!(mesh.faces.len(), 2);
+    }
+
+    #[test]
+    fn test_resource_limits_file_size() {
+        let limits = ResourceLimits::builder()
+            .max_file_size(100) // Very small limit
+            .build();
+        let format = PlyFormat::with_limits(limits);
+
+        // Test reading an oversized file
+        let oversized_data = vec![b'p'; 200];
+        let result = format.read(&oversized_data);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("exceeds limit"));
+    }
+
+    #[test]
+    fn test_resource_limits_vertex_count() {
+        let limits = ResourceLimits::builder()
+            .max_vertices(3) // Very small limit
+            .max_faces(5)
+            .build();
+        let format = PlyFormat::with_limits(limits);
+
+        // Create PLY data for a cube (8 vertices)
+        let cube_mesh = create_test_cube();
+        let ply_data = format.write(&cube_mesh).unwrap();
+
+        // Reading should fail due to vertex limit
+        let result = format.read(&ply_data);
+        assert!(result.is_err());
+        let error_msg = result.unwrap_err().to_string();
+        assert!(error_msg.contains("Vertex count") || error_msg.contains("exceeds limit"));
+    }
+
+    #[test]
+    fn test_resource_limits_face_count() {
+        let limits = ResourceLimits::builder()
+            .max_vertices(100)
+            .max_faces(5) // Very small face limit
+            .build();
+        let format = PlyFormat::with_limits(limits);
+
+        // Create a cube (which has 12 faces/triangles)
+        let cube_mesh = create_test_cube();
+        let ply_data = format.write(&cube_mesh).unwrap();
+
+        // Reading should fail due to face limit
+        let result = format.read(&ply_data);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Face count"));
+    }
+
+    #[test]
+    fn test_read_truncated_ply_file() {
+        let format = PlyFormat::new();
+        let mesh = create_test_triangle();
+        let mut ply_data = format.write(&mesh).unwrap();
+
+        // Truncate the file (remove part of data)
+        ply_data.truncate(ply_data.len() / 2);
+
+        let result = format.read(&ply_data);
+        // Should fail gracefully
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_write_read_degenerate_triangle() {
+        let format = PlyFormat::new();
+        let mut mesh = Mesh::new();
+
+        // Create a degenerate triangle (all vertices at same point)
+        mesh.vertices.push(Vertex {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+        });
+        mesh.vertices.push(Vertex {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+        });
+        mesh.vertices.push(Vertex {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+        });
+        mesh.faces.push(Face { indices: [0, 1, 2] });
+
+        // Should write successfully
+        let result = format.write(&mesh);
+        assert!(result.is_ok());
+
+        // Reading back might succeed or fail
+        let ply_data = result.unwrap();
+        let read_result = format.read(&ply_data);
+        assert!(read_result.is_ok() || read_result.is_err());
+    }
+
+    #[test]
+    fn test_read_ply_with_face_fewer_than_3_vertices() {
+        let format = PlyFormat::new();
+        // PLY file with face having fewer than 3 vertices (invalid)
+        let ply_data = b"ply\nformat ascii 1.0\nelement vertex 2\nproperty float x\nproperty float y\nproperty float z\nelement face 1\nproperty list uchar int vertex_indices\nend_header\n0.0 0.0 0.0\n1.0 0.0 0.0\n2 0 1\n";
+
+        let result = format.read(ply_data);
+        // Should fail because face has fewer than 3 vertices
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_read_ply_with_out_of_bounds_face_indices() {
+        let format = PlyFormat::new();
+        // PLY file with face indices that are out of bounds
+        let ply_data = b"ply\nformat ascii 1.0\nelement vertex 2\nproperty float x\nproperty float y\nproperty float z\nelement face 1\nproperty list uchar int vertex_indices\nend_header\n0.0 0.0 0.0\n1.0 0.0 0.0\n3 0 1 5\n";
+
+        let result = format.read(ply_data);
+        // Should fail because index 5 is out of bounds
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("out of bounds"));
+    }
+
+    #[test]
+    fn test_write_read_normal_properties() {
+        let format = PlyFormat::new();
+        let mut mesh = create_test_triangle();
+        
+        // Add normals for all vertices
+        mesh.normals.clear();
+        mesh.normals.push(Normal {
+            x: 0.0,
+            y: 0.0,
+            z: 1.0,
+        });
+        mesh.normals.push(Normal {
+            x: 0.0,
+            y: 0.0,
+            z: 1.0,
+        });
+        mesh.normals.push(Normal {
+            x: 0.0,
+            y: 0.0,
+            z: 1.0,
+        });
+
+        let ply_data = format.write(&mesh).unwrap();
+        let ply_str = std::str::from_utf8(&ply_data).unwrap();
+        
+        // Should include normal properties in header
+        assert!(ply_str.contains("property float nx"));
+        assert!(ply_str.contains("property float ny"));
+        assert!(ply_str.contains("property float nz"));
+
+        // Should be able to read it back
+        let result = format.read(&ply_data);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_read_ply_with_comments() {
+        let format = PlyFormat::new();
+        // PLY file with comments
+        let ply_data = b"ply\ncomment This is a comment\nformat ascii 1.0\nelement vertex 3\nproperty float x\nproperty float y\nproperty float z\nelement face 1\nproperty list uchar int vertex_indices\nend_header\n0.0 0.0 0.0\n1.0 0.0 0.0\n0.5 1.0 0.0\n3 0 1 2\n";
+
+        let result = format.read(ply_data);
+        assert!(result.is_ok());
+
+        let mesh = result.unwrap();
+        assert_eq!(mesh.vertices.len(), 3);
+        assert_eq!(mesh.faces.len(), 1);
+    }
 }

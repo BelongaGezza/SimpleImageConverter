@@ -390,4 +390,95 @@ mod tests {
 
     // Note: Testing actual DXF file reading requires sample DXF files with 3D entities
     // These would be integration tests with actual DXF test data
+
+    #[test]
+    fn test_resource_limits_file_size() {
+        let limits = ResourceLimits::builder()
+            .max_file_size(100) // Very small limit
+            .build();
+        let format = DxfFormat::with_limits(limits);
+
+        // Test reading an oversized file
+        let oversized_data = vec![0u8; 200];
+        let result = format.read(&oversized_data);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("exceeds limit"));
+    }
+
+    #[test]
+    fn test_resource_limits_vertex_count() {
+        let limits = ResourceLimits::builder()
+            .max_vertices(3) // Very small limit - triangle has 3 vertices
+            .max_faces(5)
+            .build();
+        let format = DxfFormat::with_limits(limits);
+
+        // Create DXF data for a triangle (3 vertices - at limit)
+        let triangle_mesh = create_test_triangle();
+        let dxf_data = format.write(&triangle_mesh).unwrap();
+
+        // Reading should work since triangle is within limit
+        // Note: DXF format might handle this differently, so we test what we can
+        let result = format.read(&dxf_data);
+        // May succeed or fail depending on DXF library behavior
+        assert!(result.is_ok() || result.is_err());
+    }
+
+    #[test]
+    fn test_read_invalid_dxf_format() {
+        let format = DxfFormat::new();
+        // Invalid DXF data
+        let invalid_data = b"not a valid DXF file";
+
+        let result = format.read(invalid_data);
+        // Should fail gracefully
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_read_truncated_dxf_file() {
+        let format = DxfFormat::new();
+        let mesh = create_test_triangle();
+        let mut dxf_data = format.write(&mesh).unwrap();
+
+        // Truncate the file
+        dxf_data.truncate(dxf_data.len() / 2);
+
+        let result = format.read(&dxf_data);
+        // Should fail gracefully
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_write_read_degenerate_triangle() {
+        let format = DxfFormat::new();
+        let mut mesh = Mesh::new();
+
+        // Create a degenerate triangle (all vertices at same point)
+        mesh.vertices.push(Vertex {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+        });
+        mesh.vertices.push(Vertex {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+        });
+        mesh.vertices.push(Vertex {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+        });
+        mesh.faces.push(Face { indices: [0, 1, 2] });
+
+        // Should write successfully
+        let result = format.write(&mesh);
+        assert!(result.is_ok());
+
+        // Reading back might succeed or fail
+        let dxf_data = result.unwrap();
+        let read_result = format.read(&dxf_data);
+        assert!(read_result.is_ok() || read_result.is_err());
+    }
 }

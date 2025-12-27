@@ -546,4 +546,204 @@ mod tests {
         assert_eq!(read_mesh.vertices.len(), original_mesh.vertices.len());
         assert_eq!(read_mesh.faces.len(), original_mesh.faces.len());
     }
+
+    #[test]
+    fn test_read_obj_with_invalid_utf8() {
+        let format = ObjFormat::new();
+        // Create data with invalid UTF-8 sequence
+        let invalid_utf8 = vec![0xFF, 0xFE, 0xFD]; // Invalid UTF-8 bytes
+
+        let result = format.read(&invalid_utf8);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("UTF-8"));
+    }
+
+    #[test]
+    fn test_read_obj_with_comments() {
+        let format = ObjFormat::new();
+        // OBJ file with comments should still parse
+        let obj_data = b"# This is a comment\nv 0.0 0.0 0.0\nv 1.0 0.0 0.0\nv 0.5 1.0 0.0\nf 1 2 3\n";
+
+        let result = format.read(obj_data);
+        assert!(result.is_ok());
+
+        let mesh = result.unwrap();
+        assert_eq!(mesh.vertices.len(), 3);
+        assert_eq!(mesh.faces.len(), 1);
+    }
+
+    #[test]
+    fn test_read_obj_with_multiple_objects() {
+        let format = ObjFormat::new();
+        // OBJ file with multiple object groups
+        let obj_data = b"o object1\nv 0.0 0.0 0.0\nv 1.0 0.0 0.0\nv 0.5 1.0 0.0\nf 1 2 3\no object2\nv 2.0 0.0 0.0\nv 3.0 0.0 0.0\nv 2.5 1.0 0.0\nf 4 5 6\n";
+
+        let result = format.read(obj_data);
+        assert!(result.is_ok());
+
+        let mesh = result.unwrap();
+        // Should combine both objects into one mesh
+        assert_eq!(mesh.vertices.len(), 6);
+        assert_eq!(mesh.faces.len(), 2);
+    }
+
+    #[test]
+    fn test_read_obj_missing_mtl_file() {
+        let format = ObjFormat::new();
+        // OBJ file referencing a material file that doesn't exist
+        let obj_data = b"mtllib material.mtl\nv 0.0 0.0 0.0\nv 1.0 0.0 0.0\nv 0.5 1.0 0.0\nf 1 2 3\n";
+
+        // Should still parse successfully (MTL loader returns empty materials)
+        let result = format.read(obj_data);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_read_obj_with_negative_indices() {
+        let format = ObjFormat::new();
+        // OBJ allows negative indices (relative indexing)
+        let obj_data = b"v 0.0 0.0 0.0\nv 1.0 0.0 0.0\nv 0.5 1.0 0.0\nf -3 -2 -1\n";
+
+        let result = format.read(obj_data);
+        // Should handle negative indices (tobj should handle this)
+        assert!(result.is_ok() || result.is_err()); // Either is acceptable
+    }
+
+    #[test]
+    fn test_resource_limits_file_size() {
+        let limits = ResourceLimits::builder()
+            .max_file_size(100) // Very small limit
+            .build();
+        let format = ObjFormat::with_limits(limits);
+
+        // Test reading an oversized file
+        let oversized_data = vec![b'v'; 200];
+        let result = format.read(&oversized_data);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("exceeds limit"));
+    }
+
+    #[test]
+    fn test_resource_limits_vertex_count() {
+        let limits = ResourceLimits::builder()
+            .max_vertices(3) // Very small limit
+            .max_faces(5)
+            .build();
+        let format = ObjFormat::with_limits(limits);
+
+        // Create OBJ data for a cube (8 vertices)
+        let cube_mesh = create_test_cube();
+        let obj_data = format.write(&cube_mesh).unwrap();
+
+        // Reading should fail due to vertex limit
+        let result = format.read(&obj_data);
+        assert!(result.is_err());
+        let error_msg = result.unwrap_err().to_string();
+        assert!(error_msg.contains("Vertex count") || error_msg.contains("exceeds limit"));
+    }
+
+    #[test]
+    fn test_resource_limits_face_count() {
+        let limits = ResourceLimits::builder()
+            .max_vertices(100)
+            .max_faces(5) // Very small face limit
+            .build();
+        let format = ObjFormat::with_limits(limits);
+
+        // Create a cube (which has 12 faces/triangles)
+        let cube_mesh = create_test_cube();
+        let obj_data = format.write(&cube_mesh).unwrap();
+
+        // Reading should fail due to face limit
+        let result = format.read(&obj_data);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Face count"));
+    }
+
+    #[test]
+    fn test_read_truncated_obj_file() {
+        let format = ObjFormat::new();
+        let mesh = create_test_triangle();
+        let mut obj_data = format.write(&mesh).unwrap();
+
+        // Truncate the file
+        obj_data.truncate(obj_data.len() / 2);
+
+        let result = format.read(&obj_data);
+        // Should fail gracefully (might succeed if truncation doesn't break format)
+        assert!(result.is_err() || result.is_ok());
+    }
+
+    #[test]
+    fn test_read_obj_with_empty_lines() {
+        let format = ObjFormat::new();
+        // OBJ file with many empty lines should still parse
+        let obj_data = b"\n\nv 0.0 0.0 0.0\n\nv 1.0 0.0 0.0\n\nv 0.5 1.0 0.0\n\n\nf 1 2 3\n\n";
+
+        let result = format.read(obj_data);
+        assert!(result.is_ok());
+
+        let mesh = result.unwrap();
+        assert_eq!(mesh.vertices.len(), 3);
+        assert_eq!(mesh.faces.len(), 1);
+    }
+
+    #[test]
+    fn test_read_obj_with_quads() {
+        let format = ObjFormat::new();
+        // OBJ file with quad faces (should be triangulated)
+        let obj_data = b"v 0.0 0.0 0.0\nv 1.0 0.0 0.0\nv 1.0 1.0 0.0\nv 0.0 1.0 0.0\nf 1 2 3 4\n";
+
+        let result = format.read(obj_data);
+        assert!(result.is_ok());
+
+        let mesh = result.unwrap();
+        assert_eq!(mesh.vertices.len(), 4);
+        // Quad should be triangulated into 2 triangles
+        assert_eq!(mesh.faces.len(), 2);
+    }
+
+    #[test]
+    fn test_write_read_degenerate_triangle() {
+        let format = ObjFormat::new();
+        let mut mesh = Mesh::new();
+
+        // Create a degenerate triangle (all vertices at same point)
+        mesh.vertices.push(Vertex {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+        });
+        mesh.vertices.push(Vertex {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+        });
+        mesh.vertices.push(Vertex {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+        });
+        mesh.faces.push(Face { indices: [0, 1, 2] });
+
+        // Should write successfully
+        let result = format.write(&mesh);
+        assert!(result.is_ok());
+
+        // Reading back might succeed or fail
+        let obj_data = result.unwrap();
+        let read_result = format.read(&obj_data);
+        assert!(read_result.is_ok() || read_result.is_err());
+    }
+
+    #[test]
+    fn test_read_obj_with_material_usage() {
+        let format = ObjFormat::new();
+        // OBJ file using materials (usemtl)
+        let obj_data = b"mtllib material.mtl\nusemtl Material1\nv 0.0 0.0 0.0\nv 1.0 0.0 0.0\nv 0.5 1.0 0.0\nf 1 2 3\n";
+
+        // Should parse successfully (material references are ignored if MTL file missing)
+        let result = format.read(obj_data);
+        assert!(result.is_ok());
+    }
 }

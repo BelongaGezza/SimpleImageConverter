@@ -299,3 +299,194 @@ fn test_cross_format_conversion_ply_to_stl() {
     assert_eq!(read_mesh.vertices.len(), original_mesh.vertices.len());
     assert_eq!(read_mesh.faces.len(), original_mesh.faces.len());
 }
+
+#[test]
+fn test_cross_format_conversion_stl_to_off() {
+    // Create test mesh
+    let original_mesh = create_test_triangle();
+
+    // Write to STL
+    let stl_writer = FormatRegistry::get_writer(MeshFormat::Stl).unwrap();
+    let stl_data = stl_writer.write(&original_mesh).unwrap();
+
+    // Convert STL to OFF
+    let stl_reader = FormatRegistry::get_reader(MeshFormat::Stl).unwrap();
+    let off_writer = FormatRegistry::get_writer(MeshFormat::Off).unwrap();
+    let converter = MeshConverter::new();
+    let off_data = converter
+        .convert(&stl_data, stl_reader.as_ref(), off_writer.as_ref())
+        .unwrap();
+
+    // Verify OFF data is valid
+    assert!(!off_data.is_empty());
+
+    // Read OFF back
+    let off_reader = FormatRegistry::get_reader(MeshFormat::Off).unwrap();
+    let read_mesh = off_reader.read(&off_data).unwrap();
+
+    // Verify structure
+    assert_eq!(read_mesh.vertices.len(), original_mesh.vertices.len());
+    assert_eq!(read_mesh.faces.len(), original_mesh.faces.len());
+}
+
+#[test]
+fn test_cross_format_conversion_off_to_obj() {
+    // Create test mesh
+    let original_mesh = create_test_triangle();
+
+    // Write to OFF
+    let off_writer = FormatRegistry::get_writer(MeshFormat::Off).unwrap();
+    let off_data = off_writer.write(&original_mesh).unwrap();
+
+    // Convert OFF to OBJ
+    let off_reader = FormatRegistry::get_reader(MeshFormat::Off).unwrap();
+    let obj_writer = FormatRegistry::get_writer(MeshFormat::Obj).unwrap();
+    let converter = MeshConverter::new();
+    let obj_data = converter
+        .convert(&off_data, off_reader.as_ref(), obj_writer.as_ref())
+        .unwrap();
+
+    // Verify OBJ data is valid
+    assert!(!obj_data.is_empty());
+
+    // Read OBJ back
+    let obj_reader = FormatRegistry::get_reader(MeshFormat::Obj).unwrap();
+    let read_mesh = obj_reader.read(&obj_data).unwrap();
+
+    // Verify structure
+    assert_eq!(read_mesh.vertices.len(), original_mesh.vertices.len());
+    assert_eq!(read_mesh.faces.len(), original_mesh.faces.len());
+}
+
+#[test]
+fn test_cross_format_conversion_ply_to_off() {
+    // Create test mesh
+    let original_mesh = create_test_triangle();
+
+    // Write to PLY
+    let ply_writer = FormatRegistry::get_writer(MeshFormat::Ply).unwrap();
+    let ply_data = ply_writer.write(&original_mesh).unwrap();
+
+    // Convert PLY to OFF
+    let ply_reader = FormatRegistry::get_reader(MeshFormat::Ply).unwrap();
+    let off_writer = FormatRegistry::get_writer(MeshFormat::Off).unwrap();
+    let converter = MeshConverter::new();
+    let off_data = converter
+        .convert(&ply_data, ply_reader.as_ref(), off_writer.as_ref())
+        .unwrap();
+
+    // Verify OFF data is valid
+    assert!(!off_data.is_empty());
+
+    // Read OFF back
+    let off_reader = FormatRegistry::get_reader(MeshFormat::Off).unwrap();
+    let read_mesh = off_reader.read(&off_data).unwrap();
+
+    // Verify structure
+    assert_eq!(read_mesh.vertices.len(), original_mesh.vertices.len());
+    assert_eq!(read_mesh.faces.len(), original_mesh.faces.len());
+}
+
+#[test]
+fn test_round_trip_stl_obj_stl() {
+    // Test format chain: STL -> OBJ -> STL
+    let original_mesh = create_test_triangle();
+
+    // Write to STL
+    let stl_writer = FormatRegistry::get_writer(MeshFormat::Stl).unwrap();
+    let stl_data = stl_writer.write(&original_mesh).unwrap();
+
+    // Convert STL to OBJ
+    let stl_reader = FormatRegistry::get_reader(MeshFormat::Stl).unwrap();
+    let obj_writer = FormatRegistry::get_writer(MeshFormat::Obj).unwrap();
+    let converter = MeshConverter::new();
+    let obj_data = converter
+        .convert(&stl_data, stl_reader.as_ref(), obj_writer.as_ref())
+        .unwrap();
+
+    // Convert OBJ back to STL
+    let obj_reader = FormatRegistry::get_reader(MeshFormat::Obj).unwrap();
+    let final_stl_data = converter
+        .convert(&obj_data, obj_reader.as_ref(), stl_writer.as_ref())
+        .unwrap();
+
+    // Read final STL
+    let stl_reader = FormatRegistry::get_reader(MeshFormat::Stl).unwrap();
+    let read_mesh = stl_reader.read(&final_stl_data).unwrap();
+
+    // Verify structure is preserved
+    assert_eq!(read_mesh.vertices.len(), original_mesh.vertices.len());
+    assert_eq!(read_mesh.faces.len(), original_mesh.faces.len());
+}
+
+#[test]
+fn test_round_trip_ply_obj_ply() {
+    // Test format chain: PLY -> OBJ -> PLY
+    let original_mesh = create_test_triangle();
+
+    // Write to PLY
+    let ply_writer = FormatRegistry::get_writer(MeshFormat::Ply).unwrap();
+    let ply_data = ply_writer.write(&original_mesh).unwrap();
+
+    // Convert PLY to OBJ
+    let ply_reader = FormatRegistry::get_reader(MeshFormat::Ply).unwrap();
+    let obj_writer = FormatRegistry::get_writer(MeshFormat::Obj).unwrap();
+    let converter = MeshConverter::new();
+    let obj_data = converter
+        .convert(&ply_data, ply_reader.as_ref(), obj_writer.as_ref())
+        .unwrap();
+
+    // Convert OBJ back to PLY
+    let obj_reader = FormatRegistry::get_reader(MeshFormat::Obj).unwrap();
+    let final_ply_data = converter
+        .convert(&obj_data, obj_reader.as_ref(), ply_writer.as_ref())
+        .unwrap();
+
+    // Read final PLY
+    let ply_reader = FormatRegistry::get_reader(MeshFormat::Ply).unwrap();
+    let read_mesh = ply_reader.read(&final_ply_data).unwrap();
+
+    // Verify structure is preserved
+    assert_eq!(read_mesh.vertices.len(), original_mesh.vertices.len());
+    assert_eq!(read_mesh.faces.len(), original_mesh.faces.len());
+}
+
+#[test]
+fn test_round_trip_stl_ply_off_stl() {
+    // Test format chain: STL -> PLY -> OFF -> STL
+    let original_mesh = create_test_triangle();
+
+    // Write to STL
+    let stl_writer = FormatRegistry::get_writer(MeshFormat::Stl).unwrap();
+    let stl_data = stl_writer.write(&original_mesh).unwrap();
+
+    let converter = MeshConverter::new();
+
+    // Convert STL to PLY
+    let stl_reader = FormatRegistry::get_reader(MeshFormat::Stl).unwrap();
+    let ply_writer = FormatRegistry::get_writer(MeshFormat::Ply).unwrap();
+    let ply_data = converter
+        .convert(&stl_data, stl_reader.as_ref(), ply_writer.as_ref())
+        .unwrap();
+
+    // Convert PLY to OFF
+    let ply_reader = FormatRegistry::get_reader(MeshFormat::Ply).unwrap();
+    let off_writer = FormatRegistry::get_writer(MeshFormat::Off).unwrap();
+    let off_data = converter
+        .convert(&ply_data, ply_reader.as_ref(), off_writer.as_ref())
+        .unwrap();
+
+    // Convert OFF back to STL
+    let off_reader = FormatRegistry::get_reader(MeshFormat::Off).unwrap();
+    let final_stl_data = converter
+        .convert(&off_data, off_reader.as_ref(), stl_writer.as_ref())
+        .unwrap();
+
+    // Read final STL
+    let stl_reader = FormatRegistry::get_reader(MeshFormat::Stl).unwrap();
+    let read_mesh = stl_reader.read(&final_stl_data).unwrap();
+
+    // Verify structure is preserved
+    assert_eq!(read_mesh.vertices.len(), original_mesh.vertices.len());
+    assert_eq!(read_mesh.faces.len(), original_mesh.faces.len());
+}

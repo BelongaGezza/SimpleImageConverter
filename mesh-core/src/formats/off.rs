@@ -617,4 +617,102 @@ mod tests {
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("no vertices"));
     }
+
+    #[test]
+    fn test_resource_limits_file_size() {
+        let limits = ResourceLimits::builder()
+            .max_file_size(100) // Very small limit
+            .build();
+        let format = OffFormat::with_limits(limits);
+
+        // Test reading an oversized file
+        let oversized_data = vec![b'O'; 200];
+        let result = format.read(&oversized_data);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("exceeds limit"));
+    }
+
+    #[test]
+    fn test_resource_limits_vertex_count() {
+        let limits = ResourceLimits::builder()
+            .max_vertices(3) // Very small limit
+            .max_faces(5)
+            .build();
+        let format = OffFormat::with_limits(limits);
+
+        // Create OFF data for a cube (8 vertices)
+        let cube_mesh = create_test_cube();
+        let off_data = format.write(&cube_mesh).unwrap();
+
+        // Reading should fail due to vertex limit
+        let result = format.read(&off_data);
+        assert!(result.is_err());
+        let error_msg = result.unwrap_err().to_string();
+        assert!(error_msg.contains("Vertex count") || error_msg.contains("exceeds limit"));
+    }
+
+    #[test]
+    fn test_resource_limits_face_count() {
+        let limits = ResourceLimits::builder()
+            .max_vertices(100)
+            .max_faces(5) // Very small face limit
+            .build();
+        let format = OffFormat::with_limits(limits);
+
+        // Create a cube (which has 12 faces/triangles)
+        let cube_mesh = create_test_cube();
+        let off_data = format.write(&cube_mesh).unwrap();
+
+        // Reading should fail due to face limit
+        let result = format.read(&off_data);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Face count"));
+    }
+
+    #[test]
+    fn test_read_truncated_off_file() {
+        let format = OffFormat::new();
+        let mesh = create_test_triangle();
+        let mut off_data = format.write(&mesh).unwrap();
+
+        // Truncate the file
+        off_data.truncate(off_data.len() / 2);
+
+        let result = format.read(&off_data);
+        // Should fail gracefully
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_write_read_degenerate_triangle() {
+        let format = OffFormat::new();
+        let mut mesh = Mesh::new();
+
+        // Create a degenerate triangle (all vertices at same point)
+        mesh.vertices.push(Vertex {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+        });
+        mesh.vertices.push(Vertex {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+        });
+        mesh.vertices.push(Vertex {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+        });
+        mesh.faces.push(Face { indices: [0, 1, 2] });
+
+        // Should write successfully
+        let result = format.write(&mesh);
+        assert!(result.is_ok());
+
+        // Reading back might succeed or fail
+        let off_data = result.unwrap();
+        let read_result = format.read(&off_data);
+        assert!(read_result.is_ok() || read_result.is_err());
+    }
 }

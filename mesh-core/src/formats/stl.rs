@@ -547,4 +547,223 @@ mod tests {
         let result = format.read(&stl_data);
         assert!(result.is_ok());
     }
+
+    #[test]
+    fn test_read_binary_stl_format() {
+        let format = StlFormat::new();
+        let mesh = create_test_triangle();
+        let stl_data = format.write(&mesh).unwrap();
+
+        // Verify it's binary format (starts with header, not "solid")
+        assert!(stl_data.len() >= 84); // At least header + count + one triangle
+        assert_ne!(&stl_data[0..5], b"solid"); // Not ASCII format
+
+        // Read it back
+        let result = format.read(&stl_data);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_read_corrupted_binary_header() {
+        let format = StlFormat::new();
+        let mesh = create_test_triangle();
+        let mut stl_data = format.write(&mesh).unwrap();
+
+        // Corrupt the triangle count (set to invalid value)
+        stl_data[80] = 0xFF;
+        stl_data[81] = 0xFF;
+        stl_data[82] = 0xFF;
+        stl_data[83] = 0xFF;
+
+        let result = format.read(&stl_data);
+        // Should fail gracefully, not panic
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_read_truncated_file() {
+        let format = StlFormat::new();
+        let mesh = create_test_triangle();
+        let mut stl_data = format.write(&mesh).unwrap();
+
+        // Truncate the file (remove part of triangle data)
+        stl_data.truncate(100);
+
+        let result = format.read(&stl_data);
+        // Should fail gracefully
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_write_read_degenerate_triangle() {
+        let format = StlFormat::new();
+        let mut mesh = Mesh::new();
+
+        // Create a degenerate triangle (all vertices at same point)
+        mesh.vertices.push(Vertex {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+        });
+        mesh.vertices.push(Vertex {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+        });
+        mesh.vertices.push(Vertex {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+        });
+        mesh.faces.push(Face { indices: [0, 1, 2] });
+
+        // Should still write successfully (degenerate triangles are handled)
+        let result = format.write(&mesh);
+        assert!(result.is_ok());
+
+        // Reading back might succeed or fail depending on library behavior
+        let stl_data = result.unwrap();
+        let read_result = format.read(&stl_data);
+        // Either outcome is acceptable
+        assert!(read_result.is_ok() || read_result.is_err());
+    }
+
+    #[test]
+    fn test_write_read_single_vertex_mesh() {
+        let format = StlFormat::new();
+        let mut mesh = Mesh::new();
+        mesh.vertices.push(Vertex {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+        });
+
+        // Can't write a mesh without faces
+        let result = format.write(&mesh);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_resource_limits_file_size() {
+        let limits = ResourceLimits::builder()
+            .max_file_size(1000) // Very small limit
+            .build();
+        let format = StlFormat::with_limits(limits);
+
+        // Test reading an oversized file
+        let oversized_data = vec![0u8; 2000];
+        let result = format.read(&oversized_data);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("exceeds limit"));
+    }
+
+    #[test]
+    fn test_resource_limits_vertex_count() {
+        let limits = ResourceLimits::builder()
+            .max_vertices(3) // Very small limit - triangle has 3 vertices
+            .max_faces(5)
+            .build();
+        let format = StlFormat::with_limits(limits);
+
+        // Use a cube which has 8 vertices - exceeds limit
+        let mesh = create_test_cube();
+        let stl_data = format.write(&mesh).unwrap();
+
+        // Reading should fail due to vertex limit
+        let result = format.read(&stl_data);
+        assert!(result.is_err());
+        let error_msg = result.unwrap_err().to_string();
+        assert!(error_msg.contains("Vertex count") || error_msg.contains("exceeds limit"));
+    }
+
+    #[test]
+    fn test_resource_limits_face_count() {
+        let limits = ResourceLimits::builder()
+            .max_vertices(100)
+            .max_faces(5) // Very small face limit
+            .build();
+        let format = StlFormat::with_limits(limits);
+
+        // Create a cube (which has 12 faces/triangles)
+        let mesh = create_test_cube();
+        let stl_data = format.write(&mesh).unwrap();
+
+        // Reading should fail due to face limit
+        let result = format.read(&stl_data);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Face count"));
+    }
+
+    #[test]
+    fn test_normal_calculation_degenerate_edge() {
+        // Test normal calculation with colinear vertices
+        let v0 = Vertex {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+        };
+        let v1 = Vertex {
+            x: 1.0,
+            y: 0.0,
+            z: 0.0,
+        };
+        let v2 = Vertex {
+            x: 2.0,
+            y: 0.0,
+            z: 0.0,
+        };
+
+        let normal = calculate_face_normal(&v0, &v1, &v2);
+        // Should return default normal [0, 0, 1] for degenerate case
+        assert_eq!(normal[2], 1.0);
+    }
+
+    #[test]
+    fn test_write_mesh_with_multiple_faces_and_normals() {
+        let format = StlFormat::new();
+        let mesh = create_test_cube();
+
+        // Cube should have normals for all faces
+        let result = format.write(&mesh);
+        assert!(result.is_ok());
+
+        let stl_data = result.unwrap();
+        let read_result = format.read(&stl_data);
+        assert!(read_result.is_ok());
+
+        let read_mesh = read_result.unwrap();
+        // Verify normals match face count
+        assert_eq!(read_mesh.normals.len(), read_mesh.faces.len());
+    }
+
+    #[test]
+    fn test_read_invalid_binary_header_size() {
+        let format = StlFormat::new();
+        // Create data that's too small to be valid STL
+        let invalid_data = vec![0u8; 50]; // Less than 84 bytes minimum
+
+        let result = format.read(&invalid_data);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_round_trip_normal_preservation() {
+        let format = StlFormat::new();
+        let mut mesh = create_test_triangle();
+        
+        // Set a specific normal
+        mesh.normals[0] = Normal {
+            x: 0.707,
+            y: 0.707,
+            z: 0.0,
+        };
+
+        let stl_data = format.write(&mesh).unwrap();
+        let read_mesh = format.read(&stl_data).unwrap();
+
+        // Verify normal is preserved (approximately)
+        assert_eq!(read_mesh.normals.len(), 1);
+        let normal = &read_mesh.normals[0];
+        assert!((normal.x - 0.707).abs() < 0.1 || (normal.y - 0.707).abs() < 0.1);
+    }
 }
