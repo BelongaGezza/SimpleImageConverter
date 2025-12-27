@@ -2,7 +2,7 @@
 // Copyright (c) 2025 Simple Image Converter Contributors
 
 use crate::formats::traits::{MeshReader, MeshWriter};
-use crate::formats::{ObjFormat, PlyFormat, StlFormat};
+use crate::formats::{DxfFormat, GltfFormat, ObjFormat, OffFormat, PlyFormat, StlFormat};
 use common::error::{ConversionError, Result};
 use common::io::get_extension;
 use common::limits::ResourceLimits;
@@ -63,6 +63,10 @@ impl FormatRegistry {
             "stl" => Ok(MeshFormat::Stl),
             "obj" => Ok(MeshFormat::Obj),
             "ply" => Ok(MeshFormat::Ply),
+            "off" => Ok(MeshFormat::Off),
+            "gltf" => Ok(MeshFormat::Gltf),
+            "glb" => Ok(MeshFormat::Gltf), // Binary glTF
+            "dxf" => Ok(MeshFormat::Dxf),
             _ => Err(ConversionError::UnsupportedFormat(format!(
                 "Unsupported format: {}",
                 extension
@@ -131,6 +135,9 @@ impl FormatRegistry {
             MeshFormat::Stl => Ok(Box::new(StlFormat::new())),
             MeshFormat::Obj => Ok(Box::new(ObjFormat::new())),
             MeshFormat::Ply => Ok(Box::new(PlyFormat::new())),
+            MeshFormat::Off => Ok(Box::new(OffFormat::new())),
+            MeshFormat::Gltf => Ok(Box::new(GltfFormat::new())),
+            MeshFormat::Dxf => Ok(Box::new(DxfFormat::new())),
         }
     }
 
@@ -155,6 +162,9 @@ impl FormatRegistry {
             MeshFormat::Stl => Ok(Box::new(StlFormat::with_limits(limits))),
             MeshFormat::Obj => Ok(Box::new(ObjFormat::with_limits(limits))),
             MeshFormat::Ply => Ok(Box::new(PlyFormat::with_limits(limits))),
+            MeshFormat::Off => Ok(Box::new(OffFormat::with_limits(limits))),
+            MeshFormat::Gltf => Ok(Box::new(GltfFormat::with_limits(limits))),
+            MeshFormat::Dxf => Ok(Box::new(DxfFormat::with_limits(limits))),
         }
     }
 
@@ -191,6 +201,9 @@ impl FormatRegistry {
             MeshFormat::Stl => Ok(Box::new(StlFormat::new())),
             MeshFormat::Obj => Ok(Box::new(ObjFormat::new())),
             MeshFormat::Ply => Ok(Box::new(PlyFormat::new())),
+            MeshFormat::Off => Ok(Box::new(OffFormat::new())),
+            MeshFormat::Gltf => Ok(Box::new(GltfFormat::new())),
+            MeshFormat::Dxf => Ok(Box::new(DxfFormat::new())),
         }
     }
 }
@@ -201,6 +214,9 @@ pub enum MeshFormat {
     Stl,
     Obj,
     Ply,
+    Off,
+    Gltf,
+    Dxf,
 }
 
 #[cfg(test)]
@@ -307,6 +323,78 @@ mod tests {
     #[test]
     fn test_get_writer_ply() {
         let writer = FormatRegistry::get_writer(MeshFormat::Ply);
+        assert!(writer.is_ok());
+    }
+
+    #[test]
+    fn test_detect_format_off() {
+        assert_eq!(
+            FormatRegistry::detect_format("off").unwrap(),
+            MeshFormat::Off
+        );
+        assert_eq!(
+            FormatRegistry::detect_format("OFF").unwrap(),
+            MeshFormat::Off
+        );
+    }
+
+    #[test]
+    fn test_detect_format_gltf() {
+        assert_eq!(
+            FormatRegistry::detect_format("gltf").unwrap(),
+            MeshFormat::Gltf
+        );
+        assert_eq!(
+            FormatRegistry::detect_format("glb").unwrap(),
+            MeshFormat::Gltf
+        );
+    }
+
+    #[test]
+    fn test_detect_format_dxf() {
+        assert_eq!(
+            FormatRegistry::detect_format("dxf").unwrap(),
+            MeshFormat::Dxf
+        );
+        assert_eq!(
+            FormatRegistry::detect_format("DXF").unwrap(),
+            MeshFormat::Dxf
+        );
+    }
+
+    #[test]
+    fn test_get_reader_off() {
+        let reader = FormatRegistry::get_reader(MeshFormat::Off);
+        assert!(reader.is_ok());
+    }
+
+    #[test]
+    fn test_get_reader_gltf() {
+        let reader = FormatRegistry::get_reader(MeshFormat::Gltf);
+        assert!(reader.is_ok());
+    }
+
+    #[test]
+    fn test_get_reader_dxf() {
+        let reader = FormatRegistry::get_reader(MeshFormat::Dxf);
+        assert!(reader.is_ok());
+    }
+
+    #[test]
+    fn test_get_writer_off() {
+        let writer = FormatRegistry::get_writer(MeshFormat::Off);
+        assert!(writer.is_ok());
+    }
+
+    #[test]
+    fn test_get_writer_gltf() {
+        let writer = FormatRegistry::get_writer(MeshFormat::Gltf);
+        assert!(writer.is_ok());
+    }
+
+    #[test]
+    fn test_get_writer_dxf() {
+        let writer = FormatRegistry::get_writer(MeshFormat::Dxf);
         assert!(writer.is_ok());
     }
 }

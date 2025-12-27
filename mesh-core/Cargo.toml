@@ -18,6 +18,8 @@ nalgebra.workspace = true
 tobj.workspace = true
 ply-rs.workspace = true
 ahash.workspace = true
+gltf = "1.4"
+dxf = "0.6"
 
 # Optional format support (feature-gated)
 # STEP support via truck (pure Rust)

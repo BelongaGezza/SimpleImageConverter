@@ -1,7 +1,7 @@
 # Format Support Matrix
 ## Simple Image Converter
 
-**Last Updated:** December 27, 2025 (Sprint 3 Complete)
+**Last Updated:** January 27, 2025 (Sprint 5 Complete)
 
 ---
 
@@ -38,9 +38,9 @@
 | STL | .stl | ✅ | ✅ | Sprint 3 ✅ | Binary/ASCII |
 | OBJ | .obj | ✅ | ✅ | Sprint 3 ✅ | With materials |
 | PLY | .ply | ✅ | ✅ | Sprint 3 ✅ | ASCII format |
-| OFF | .off | 📅 | 📅 | Sprint 5 | Custom parser |
-| glTF | .gltf, .glb | 📅 | 📅 | Sprint 5 | Binary/text |
-| DXF | .dxf | 📅 | 📅 | Sprint 5 | 3D entities |
+| OFF | .off | ✅ | ✅ | Sprint 5 ✅ | Custom parser |
+| glTF | .gltf, .glb | ✅ | ✅ | Sprint 5 ✅ | Binary/text |
+| DXF | .dxf | ✅ | ✅ | Sprint 5 ✅ | 3D entities |
 | STEP | .step, .stp | 📅 | 📅 | Sprint 7-8 | Via truck |
 
 **Legend:**
@@ -119,6 +119,11 @@ Formats are detected by:
 - ✅ OBJ format
 - ✅ PLY format
 - ✅ mesh-convert CLI integrated
+
+### Sprint 5 (Advanced 3D Formats) ✅
+- ✅ OFF format
+- ✅ glTF format (binary & text)
+- ✅ DXF format (3D entities)
 
 ### Sprint 4+ (Advanced) 📅
 - See IMPLEMENTATION_PLAN.md
