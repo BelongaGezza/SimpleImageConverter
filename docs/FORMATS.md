@@ -1,7 +1,7 @@
 # Format Support Matrix
 ## Simple Image Converter
 
-**Last Updated:** January 27, 2025 (Sprint 5 Complete)
+**Last Updated:** January 27, 2025 (Sprint 7-8 In Progress)
 
 ---
 
@@ -41,10 +41,11 @@
 | OFF | .off | ✅ | ✅ | Sprint 5 ✅ | Custom parser |
 | glTF | .gltf, .glb | ✅ | ✅ | Sprint 5 ✅ | Binary/text |
 | DXF | .dxf | ✅ | ✅ | Sprint 5 ✅ | 3D entities |
-| STEP | .step, .stp | 📅 | 📅 | Sprint 7-8 | Via truck |
+| STEP | .step, .stp | 🚧 | ❌ | Sprint 7-8 | Skeleton implemented, tessellation pending |
 
 **Legend:**
 - ✅ Implemented
+- 🚧 In Progress
 - 📅 Planned
 - ❌ Not supported
 
@@ -120,13 +121,21 @@ Formats are detected by:
 - ✅ PLY format
 - ✅ mesh-convert CLI integrated
 
+### Sprint 4 (Advanced 2D Formats) ✅
+- ✅ TIFF format
+- ✅ WebP format
+- ✅ SVG format (rasterization, read-only)
+
 ### Sprint 5 (Advanced 3D Formats) ✅
 - ✅ OFF format
 - ✅ glTF format (binary & text)
 - ✅ DXF format (3D entities)
 
-### Sprint 4+ (Advanced) 📅
-- See IMPLEMENTATION_PLAN.md
+### Sprint 7-8 (STEP Format) 🚧
+- 🚧 STEP format skeleton implemented
+- ⏳ STEP tessellation pending (requires truck API research)
+- ✅ Format registry updated with STEP support
+- ✅ Feature flag system in place
 
 ---
 
@@ -134,7 +143,7 @@ Formats are detected by:
 
 - **SVG**: Read-only (rasterization), no write support
 - **PDF**: Read-only (page extraction), no write support
-- **STEP**: Read-only initially, write support evaluated in Sprint 8
+- **STEP**: Skeleton implemented (Sprint 7-8). Read support in progress - tessellation implementation pending. Write support not planned (requires complex CAD modeling).
 - **FBX**: Not supported (proprietary, no open-source Rust library)
 - **DWG**: Not supported (proprietary)
 

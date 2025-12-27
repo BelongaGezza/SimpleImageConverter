@@ -110,11 +110,7 @@ impl DxfFormat {
                         // Fan triangulation for closed polygon
                         for i in 1..(vertices.len() - 1) {
                             mesh.faces.push(Face {
-                                indices: [
-                                    vertex_start,
-                                    vertex_start + i,
-                                    vertex_start + i + 1,
-                                ],
+                                indices: [vertex_start, vertex_start + i, vertex_start + i + 1],
                             });
                         }
                     }
@@ -171,7 +167,9 @@ impl MeshWriter for DxfFormat {
         }
 
         if mesh.faces.is_empty() {
-            return Err(ConversionError::InvalidInput("Mesh has no faces".to_string()));
+            return Err(ConversionError::InvalidInput(
+                "Mesh has no faces".to_string(),
+            ));
         }
 
         // Validate face indices
@@ -321,7 +319,8 @@ mod tests {
     fn test_read_dxf_2d_only() {
         let format = DxfFormat::new();
         // Minimal DXF with only 2D entities (should handle gracefully)
-        let dxf_data = b"0\nSECTION\n2\nHEADER\n0\nENDSEC\n0\nSECTION\n2\nENTITIES\n0\nENDSEC\n0\nEOF\n";
+        let dxf_data =
+            b"0\nSECTION\n2\nHEADER\n0\nENDSEC\n0\nSECTION\n2\nENTITIES\n0\nENDSEC\n0\nEOF\n";
         let result = format.read(dxf_data);
         // Should fail because no 3D entities
         assert!(result.is_err());
@@ -392,4 +391,3 @@ mod tests {
     // Note: Testing actual DXF file reading requires sample DXF files with 3D entities
     // These would be integration tests with actual DXF test data
 }
-

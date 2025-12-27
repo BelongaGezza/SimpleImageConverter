@@ -167,9 +167,7 @@ mod tests {
 
     // Helper to create a simple test TIFF with grayscale
     fn create_test_tiff_grayscale() -> Vec<u8> {
-        let img = image::ImageBuffer::from_fn(2, 2, |x, y| {
-            image::Luma([((x + y) * 64) as u8])
-        });
+        let img = image::ImageBuffer::from_fn(2, 2, |x, y| image::Luma([((x + y) * 64) as u8]));
         let mut buffer = Vec::new();
         DynamicImage::ImageLuma8(img)
             .write_to(&mut std::io::Cursor::new(&mut buffer), ImageFormat::Tiff)
@@ -364,4 +362,3 @@ mod tests {
         assert!(result.is_err());
     }
 }
-

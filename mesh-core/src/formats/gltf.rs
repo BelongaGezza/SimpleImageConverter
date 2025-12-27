@@ -65,10 +65,9 @@ impl GltfFormat {
         let mut mesh = Mesh::new();
 
         // Get the default scene or first scene
-        let scene = document
-            .scenes()
-            .next()
-            .ok_or_else(|| ConversionError::InvalidInput("glTF file contains no scenes".to_string()))?;
+        let scene = document.scenes().next().ok_or_else(|| {
+            ConversionError::InvalidInput("glTF file contains no scenes".to_string())
+        })?;
 
         // Iterate through nodes in the scene
         for node in scene.nodes() {
@@ -207,7 +206,9 @@ impl MeshWriter for GltfFormat {
         }
 
         if mesh.faces.is_empty() {
-            return Err(ConversionError::InvalidInput("Mesh has no faces".to_string()));
+            return Err(ConversionError::InvalidInput(
+                "Mesh has no faces".to_string(),
+            ));
         }
 
         // Validate face indices
@@ -230,11 +231,8 @@ impl MeshWriter for GltfFormat {
         writeln!(buffer, "{{").map_err(ConversionError::Io)?;
         writeln!(buffer, "  \"asset\": {{").map_err(ConversionError::Io)?;
         writeln!(buffer, "    \"version\": \"2.0\",").map_err(ConversionError::Io)?;
-        writeln!(
-            buffer,
-            "    \"generator\": \"Simple Image Converter\""
-        )
-        .map_err(ConversionError::Io)?;
+        writeln!(buffer, "    \"generator\": \"Simple Image Converter\"")
+            .map_err(ConversionError::Io)?;
         writeln!(buffer, "  }},").map_err(ConversionError::Io)?;
 
         // Write accessors
@@ -242,7 +240,8 @@ impl MeshWriter for GltfFormat {
         writeln!(buffer, "    {{").map_err(ConversionError::Io)?;
         writeln!(buffer, "      \"bufferView\": 0,").map_err(ConversionError::Io)?;
         writeln!(buffer, "      \"componentType\": 5126,").map_err(ConversionError::Io)?;
-        writeln!(buffer, "      \"count\": {},", mesh.vertices.len()).map_err(ConversionError::Io)?;
+        writeln!(buffer, "      \"count\": {},", mesh.vertices.len())
+            .map_err(ConversionError::Io)?;
         writeln!(buffer, "      \"type\": \"VEC3\",").map_err(ConversionError::Io)?;
         writeln!(buffer, "      \"min\": [0.0, 0.0, 0.0],").map_err(ConversionError::Io)?;
         writeln!(buffer, "      \"max\": [1.0, 1.0, 1.0]").map_err(ConversionError::Io)?;
@@ -269,12 +268,8 @@ impl MeshWriter for GltfFormat {
         writeln!(buffer, "    }},").map_err(ConversionError::Io)?;
         writeln!(buffer, "    {{").map_err(ConversionError::Io)?;
         writeln!(buffer, "      \"buffer\": 0,").map_err(ConversionError::Io)?;
-        writeln!(
-            buffer,
-            "      \"byteOffset\": {},",
-            vertices_size
-        )
-        .map_err(ConversionError::Io)?;
+        writeln!(buffer, "      \"byteOffset\": {},", vertices_size)
+            .map_err(ConversionError::Io)?;
         writeln!(buffer, "      \"byteLength\": {}", indices_size).map_err(ConversionError::Io)?;
         writeln!(buffer, "    }}").map_err(ConversionError::Io)?;
         writeln!(buffer, "  ],").map_err(ConversionError::Io)?;
@@ -283,10 +278,15 @@ impl MeshWriter for GltfFormat {
         let total_buffer_size = vertices_size + indices_size;
         writeln!(buffer, "  \"buffers\": [").map_err(ConversionError::Io)?;
         writeln!(buffer, "    {{").map_err(ConversionError::Io)?;
-        writeln!(buffer, "      \"uri\": \"data:application/octet-stream;base64,").map_err(ConversionError::Io)?;
+        writeln!(
+            buffer,
+            "      \"uri\": \"data:application/octet-stream;base64,"
+        )
+        .map_err(ConversionError::Io)?;
         // Note: In a real implementation, we'd base64 encode the binary data here
         // For now, we'll write a placeholder
-        writeln!(buffer, "      \"byteLength\": {}", total_buffer_size).map_err(ConversionError::Io)?;
+        writeln!(buffer, "      \"byteLength\": {}", total_buffer_size)
+            .map_err(ConversionError::Io)?;
         writeln!(buffer, "    }}").map_err(ConversionError::Io)?;
         writeln!(buffer, "  ],").map_err(ConversionError::Io)?;
 
@@ -426,4 +426,3 @@ mod tests {
     // Note: Testing actual glTF file reading requires sample glTF files
     // These would be integration tests with actual glTF test data
 }
-

@@ -43,17 +43,16 @@ impl SvgFormat {
         let opt = Options::default();
         let mut fontdb = Database::new();
         fontdb.load_system_fonts();
-        let tree = Tree::from_data(data, &opt, &fontdb).map_err(|e| {
-            ConversionError::ConversionFailed(format!("SVG parse error: {}", e))
-        })?;
+        let tree = Tree::from_data(data, &opt, &fontdb)
+            .map_err(|e| ConversionError::ConversionFailed(format!("SVG parse error: {}", e)))?;
 
         // Get SVG size
         let size = tree.size();
         let pixmap_size = size.to_int_size();
 
         // Create pixmap for rendering
-        let mut pixmap = Pixmap::new(pixmap_size.width(), pixmap_size.height())
-            .ok_or_else(|| {
+        let mut pixmap =
+            Pixmap::new(pixmap_size.width(), pixmap_size.height()).ok_or_else(|| {
                 ConversionError::ConversionFailed(format!(
                     "Failed to create pixmap ({}x{})",
                     pixmap_size.width(),
@@ -72,8 +71,8 @@ impl SvgFormat {
         let data = pixmap.data();
 
         // Convert from RGBA u8 array to image::RgbaImage
-        let rgba_image = image::RgbaImage::from_raw(width, height, data.to_vec())
-            .ok_or_else(|| {
+        let rgba_image =
+            image::RgbaImage::from_raw(width, height, data.to_vec()).ok_or_else(|| {
                 ConversionError::ConversionFailed("Failed to create image from pixmap".to_string())
             })?;
 
@@ -234,7 +233,9 @@ mod tests {
         // Verify the image data is valid
         assert!(image_data.width > 0);
         assert!(image_data.height > 0);
-        assert_eq!(image_data.data.len(), (image_data.width * image_data.height * 4) as usize);
+        assert_eq!(
+            image_data.data.len(),
+            (image_data.width * image_data.height * 4) as usize
+        );
     }
 }
-

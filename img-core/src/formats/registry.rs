@@ -2,7 +2,9 @@
 // Copyright (c) 2025 Simple Image Converter Contributors
 
 use crate::formats::traits::{ImageReader, ImageWriter};
-use crate::formats::{BmpFormat, GifFormat, JpegFormat, PngFormat, SvgFormat, TiffFormat, WebPFormat};
+use crate::formats::{
+    BmpFormat, GifFormat, JpegFormat, PngFormat, SvgFormat, TiffFormat, WebPFormat,
+};
 use common::error::{ConversionError, Result};
 use common::io::get_extension;
 use std::path::Path;
@@ -252,9 +254,7 @@ impl FormatRegistry {
         // SVG: Check for XML declaration or <svg tag
         if data.len() >= 5 {
             let start = String::from_utf8_lossy(&data[0..data.len().min(100)]);
-            if start.trim_start().starts_with("<?xml")
-                || start.trim_start().starts_with("<svg")
-            {
+            if start.trim_start().starts_with("<?xml") || start.trim_start().starts_with("<svg") {
                 return Some(ImageFormat::Svg);
             }
         }

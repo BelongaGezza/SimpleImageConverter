@@ -24,7 +24,14 @@
       "Bash(git remote set-url:*)",
       "Bash(gh auth:*)",
       "Bash(git checkout:*)",
-      "Bash(git restore:*)"
+      "Bash(git restore:*)",
+      "Bash(./target/release/img-convert:*)",
+      "Bash(./target/release/mesh-convert:*)",
+      "Bash(git reset:*)",
+      "Bash(gh workflow:*)",
+      "Bash(gh run list:*)",
+      "Bash(gh run watch:*)",
+      "Bash(gh run view:*)"
     ]
   }
 }

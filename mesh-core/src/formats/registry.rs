@@ -2,6 +2,8 @@
 // Copyright (c) 2025 Simple Image Converter Contributors
 
 use crate::formats::traits::{MeshReader, MeshWriter};
+#[cfg(feature = "step")]
+use crate::formats::StepFormat;
 use crate::formats::{DxfFormat, GltfFormat, ObjFormat, OffFormat, PlyFormat, StlFormat};
 use common::error::{ConversionError, Result};
 use common::io::get_extension;
@@ -67,6 +69,18 @@ impl FormatRegistry {
             "gltf" => Ok(MeshFormat::Gltf),
             "glb" => Ok(MeshFormat::Gltf), // Binary glTF
             "dxf" => Ok(MeshFormat::Dxf),
+            "step" | "stp" => {
+                #[cfg(feature = "step")]
+                {
+                    Ok(MeshFormat::Step)
+                }
+                #[cfg(not(feature = "step"))]
+                {
+                    Err(ConversionError::UnsupportedFormat(
+                        "STEP format support requires 'step' feature flag. Enable it with: cargo build --features step".to_string()
+                    ))
+                }
+            }
             _ => Err(ConversionError::UnsupportedFormat(format!(
                 "Unsupported format: {}",
                 extension
@@ -138,6 +152,18 @@ impl FormatRegistry {
             MeshFormat::Off => Ok(Box::new(OffFormat::new())),
             MeshFormat::Gltf => Ok(Box::new(GltfFormat::new())),
             MeshFormat::Dxf => Ok(Box::new(DxfFormat::new())),
+            MeshFormat::Step => {
+                #[cfg(feature = "step")]
+                {
+                    Ok(Box::new(StepFormat::new()))
+                }
+                #[cfg(not(feature = "step"))]
+                {
+                    Err(ConversionError::UnsupportedFormat(
+                        "STEP format support requires 'step' feature flag".to_string(),
+                    ))
+                }
+            }
         }
     }
 
@@ -165,6 +191,18 @@ impl FormatRegistry {
             MeshFormat::Off => Ok(Box::new(OffFormat::with_limits(limits))),
             MeshFormat::Gltf => Ok(Box::new(GltfFormat::with_limits(limits))),
             MeshFormat::Dxf => Ok(Box::new(DxfFormat::with_limits(limits))),
+            MeshFormat::Step => {
+                #[cfg(feature = "step")]
+                {
+                    Ok(Box::new(StepFormat::with_limits(limits)))
+                }
+                #[cfg(not(feature = "step"))]
+                {
+                    Err(ConversionError::UnsupportedFormat(
+                        "STEP format support requires 'step' feature flag".to_string(),
+                    ))
+                }
+            }
         }
     }
 
@@ -204,6 +242,18 @@ impl FormatRegistry {
             MeshFormat::Off => Ok(Box::new(OffFormat::new())),
             MeshFormat::Gltf => Ok(Box::new(GltfFormat::new())),
             MeshFormat::Dxf => Ok(Box::new(DxfFormat::new())),
+            MeshFormat::Step => {
+                #[cfg(feature = "step")]
+                {
+                    Ok(Box::new(StepFormat::new()))
+                }
+                #[cfg(not(feature = "step"))]
+                {
+                    Err(ConversionError::UnsupportedFormat(
+                        "STEP format support requires 'step' feature flag".to_string(),
+                    ))
+                }
+            }
         }
     }
 }
@@ -217,6 +267,7 @@ pub enum MeshFormat {
     Off,
     Gltf,
     Dxf,
+    Step,
 }
 
 #[cfg(test)]
@@ -396,5 +447,44 @@ mod tests {
     fn test_get_writer_dxf() {
         let writer = FormatRegistry::get_writer(MeshFormat::Dxf);
         assert!(writer.is_ok());
+    }
+
+    #[test]
+    #[cfg(feature = "step")]
+    fn test_detect_format_step() {
+        assert_eq!(
+            FormatRegistry::detect_format("step").unwrap(),
+            MeshFormat::Step
+        );
+        assert_eq!(
+            FormatRegistry::detect_format("stp").unwrap(),
+            MeshFormat::Step
+        );
+        assert_eq!(
+            FormatRegistry::detect_format("STEP").unwrap(),
+            MeshFormat::Step
+        );
+    }
+
+    #[test]
+    #[cfg(feature = "step")]
+    fn test_get_reader_step() {
+        let reader = FormatRegistry::get_reader(MeshFormat::Step);
+        assert!(reader.is_ok());
+    }
+
+    #[test]
+    #[cfg(feature = "step")]
+    fn test_get_writer_step() {
+        let writer = FormatRegistry::get_writer(MeshFormat::Step);
+        assert!(writer.is_ok());
+    }
+
+    #[test]
+    #[cfg(not(feature = "step"))]
+    fn test_detect_format_step_without_feature() {
+        // Without the feature flag, STEP should return an error
+        assert!(FormatRegistry::detect_format("step").is_err());
+        assert!(FormatRegistry::detect_format("stp").is_err());
     }
 }
