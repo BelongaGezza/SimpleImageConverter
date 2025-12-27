@@ -2,11 +2,30 @@
 ## Living Knowledge Base for Simple Image Converter
 
 **Maintained By:** Researcher (Dr. Taylor Kim)  
-**Last Updated:** December 26, 2025  
+**Last Updated:** December 27, 2025  
 **Update Frequency:** Weekly + as needed  
 **Purpose:** Track Rust ecosystem changes, library updates, and project learnings
 
 **⚠️ IMPORTANT:** All team members must consult this document before implementing features or making decisions.
+
+### Quick Status Summary (as of Dec 27, 2025)
+
+**Current Project Phase:** Early development (Sprint 1-2 complete)
+
+**Active Dependencies:**
+- ✅ `anyhow` v1.0 - Error handling
+- ✅ `thiserror` v1.0 - Error types
+- ✅ `clap` v4.5 - CLI (for future binaries)
+- ✅ `serde` v1.0 - Serialization (in workspace, not yet used)
+- ✅ `serde_json` v1.0 - JSON support
+- ✅ `log` v0.4 - Logging (optional, for future use)
+- ✅ `image` v0.25 - Image processing (core library)
+
+**Planned Dependencies (documented for future phases):**
+- 📋 Image formats: `resvg`, `ravif`, `exr` (Phase 2+)
+- 📋 Mesh formats: `stl_io`, `tobj`, `ply-rs`, `gltf` (Sprint 3+)
+- 📋 Utilities: `nalgebra` (Sprint 3+)
+- 📋 CAD: `truck-*` or `opencascade-sys` (Phase 3)
 
 ---
 
@@ -15,6 +34,7 @@
 | Date | Category | Summary | Updated By |
 |------|----------|---------|------------|
 | 2025-12-26 | Initial | Document created | Researcher |
+| 2025-12-27 | Project Status | Documented current vs planned dependencies, project early phase status | Researcher |
 | TBD | Rust | (Future updates) | Team |
 
 ---
@@ -35,9 +55,10 @@
 ## Rust Language Updates
 
 ### Current Rust Version
-**Project MSRV:** 1.70.0  
-**Latest Stable:** 1.92.0 (as of knowledge cutoff)  
-**Latest Edition:** 2021
+**Project MSRV:** 1.70.0 (confirmed in workspace Cargo.toml)  
+**Latest Stable:** Check `rustc --version` locally or [rust-lang.org](https://www.rust-lang.org/)  
+**Latest Edition:** 2021  
+**Workspace Edition:** 2021 (confirmed)
 
 ### Relevant Features Since Our MSRV (1.70+)
 
@@ -71,12 +92,17 @@
 
 ## Core Dependencies
 
+**Project Status Note:** As of December 27, 2025, the project is in early development phase (Sprint 1-2 complete). Currently, only minimal core dependencies are in use. The sections below document both:
+- ✅ **Currently in use** - Dependencies actively in Cargo.toml
+- 📋 **Planned** - Dependencies documented for future implementation phases
+
 ### Image Processing (img-core)
 
 #### image (v0.25)
 **License:** MIT OR Apache-2.0  
-**Status:** ✅ Stable  
-**Last Checked:** 2025-12-26
+**Status:** ✅ Stable (Currently in use)  
+**Last Checked:** 2025-12-27  
+**Current Usage:** Active in workspace.dependencies
 
 **Key APIs:**
 ```rust
@@ -93,7 +119,7 @@ let rgb_img = img.to_rgb8();
 ```
 
 **Changes Since Training Cutoff:**
-- (No updates yet - will track)
+- (No breaking changes identified as of 2025-12-27 - will monitor for updates)
 
 **Gotchas:**
 - RGBA → JPG requires manual conversion
@@ -111,7 +137,8 @@ if image.color() == ColorType::Rgba8 {
 
 #### resvg (v0.44) - SVG Rasterization
 **License:** MPL-2.0  
-**Status:** ✅ Active development
+**Status:** ✅ Active development (Planned for future phase)  
+**Current Usage:** Not yet added to workspace
 
 **Key APIs:**
 ```rust
@@ -132,13 +159,15 @@ resvg::render(&tree, Transform::default(), &mut pixmap.as_mut());
 
 #### ravif (v0.11) - AVIF Encoding
 **License:** BSD-3-Clause  
-**Status:** ✅ Stable
+**Status:** ✅ Stable (Planned for future phase)  
+**Current Usage:** Not yet added to workspace
 
 **Performance:** Slower than JPEG but better compression
 
 #### exr (v1.72) - OpenEXR
 **License:** BSD-3-Clause  
-**Status:** ✅ Stable
+**Status:** ✅ Stable (Planned for future phase)  
+**Current Usage:** Not yet added to workspace
 
 **Gotchas:**
 - HDR data requires special handling
@@ -146,9 +175,12 @@ resvg::render(&tree, Transform::default(), &mut pixmap.as_mut());
 
 ### 3D Mesh Processing (mesh-core)
 
+**Current Status:** mesh-core is in early development. Mesh format dependencies will be added during Sprint 3+.
+
 #### stl_io (v0.7)
 **License:** MIT OR Apache-2.0  
-**Status:** ✅ Stable
+**Status:** ✅ Stable (Planned for Sprint 3)  
+**Current Usage:** Not yet added to workspace
 
 **Key APIs:**
 ```rust
@@ -174,7 +206,8 @@ stl_io::write_stl_binary(&mut file, &triangles)?;
 
 #### tobj (v4.0) - OBJ Format
 **License:** MIT OR Apache-2.0  
-**Status:** ✅ Stable
+**Status:** ✅ Stable (Planned for Sprint 3)  
+**Current Usage:** Not yet added to workspace
 
 **Key APIs:**
 ```rust
@@ -190,7 +223,8 @@ let (models, materials) = load_obj("model.obj", &GPU_LOAD_OPTIONS)?;
 
 #### ply-rs (v0.1)
 **License:** MIT  
-**Status:** ⚠️ Low maintenance
+**Status:** ⚠️ Low maintenance (Planned for Sprint 3, may need alternative evaluation)  
+**Current Usage:** Not yet added to workspace
 
 **Gotchas:**
 - API is older, less ergonomic
@@ -199,7 +233,8 @@ let (models, materials) = load_obj("model.obj", &GPU_LOAD_OPTIONS)?;
 
 #### gltf (v1.4)
 **License:** MIT OR Apache-2.0  
-**Status:** ✅ Active
+**Status:** ✅ Active (Planned for Phase 2)  
+**Current Usage:** Not yet added to workspace
 
 **Key APIs:**
 ```rust
@@ -218,7 +253,8 @@ for mesh in gltf.meshes() {
 
 #### truck (v0.4) - STEP Support
 **License:** MIT OR Apache-2.0  
-**Status:** ✅ Active development
+**Status:** ✅ Active development (Planned for Phase 3/Sprint 7)  
+**Current Usage:** Not yet added to workspace
 
 **Components:**
 - truck-modeling: CAD kernel
@@ -238,13 +274,34 @@ let shells = read(step_string)?;
 - Tessellation quality affects output
 - May not handle all STEP AP variants
 
-**Status:** To be tested in Sprint 7
+**Decision Note:** Alternative approach using opencascade-sys also being evaluated (see Phase2.1_Decisions.md)
+
+### Serialization
+
+#### serde (v1.0) & serde_json (v1.0)
+**License:** MIT OR Apache-2.0  
+**Status:** ✅ Stable (Currently in workspace)  
+**Current Usage:** Active in workspace.dependencies  
+**Purpose:** Future use for configuration, metadata, and format-specific data structures
+
+**Key APIs:**
+```rust
+use serde::{Deserialize, Serialize};
+
+#[derive(Serialize, Deserialize)]
+struct Config {
+    // Configuration structs
+}
+```
+
+**Note:** Currently in workspace but not yet actively used in code. Will be useful for format metadata and configuration.
 
 ### Utilities
 
 #### nalgebra (v0.33)
 **License:** Apache-2.0  
-**Status:** ✅ Stable
+**Status:** ✅ Stable (Planned for Sprint 3 - mesh processing)  
+**Current Usage:** Not yet added to workspace
 
 **Use Cases:**
 - Coordinate transforms
@@ -271,7 +328,8 @@ let dir = Vector3::new(dx, dy, dz);
 
 #### anyhow (v1.0) & thiserror (v1.0)
 **License:** MIT OR Apache-2.0  
-**Status:** ✅ Stable
+**Status:** ✅ Stable (Currently in use)  
+**Current Usage:** Active in workspace.dependencies
 
 **Usage Pattern:**
 ```rust
@@ -290,7 +348,8 @@ fn main() -> anyhow::Result<()> {
 
 #### clap (v4.5)
 **License:** MIT OR Apache-2.0  
-**Status:** ✅ Stable
+**Status:** ✅ Stable (Currently in workspace, for future CLI binaries)  
+**Current Usage:** Active in workspace.dependencies
 
 **Derive API:**
 ```rust
@@ -837,7 +896,7 @@ cargo tree
 
 **Status:** 🟢 Active Document  
 **Review Frequency:** Weekly  
-**Next Review:** TBD (first week of Sprint 1)
+**Next Review:** Week of January 2, 2026 (or before Sprint 3 begins)
 
 ---
 
