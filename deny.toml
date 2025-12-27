@@ -2,37 +2,46 @@
 # Security-focused dependency checking for SimpleImageConverter
 
 [advisories]
+# The database of advisories to check
+db-path = "~/.cargo/advisory-db"
+db-urls = ["https://github.com/rustsec/advisory-db"]
 # Check for security advisories from RustSec
 vulnerability = "deny"
-# Warn about unmaintained crates (but don't fail)
-unmaintained = "warn"
 # Warn about yanked crates
 yanked = "warn"
 # Ignore advisories for specific crates (add as needed)
 ignore = []
 
 [licenses]
-# Allow MIT OR Apache-2.0 (per workspace license)
-default = "deny"
+# Allow permissive licenses
 allow = [
     "MIT",
     "Apache-2.0",
-    "MIT OR Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "Zlib",
+    "Unicode-3.0",
+    "Unicode-DFS-2016",
+    "BSL-1.0",
+    "CC0-1.0",
+    "MPL-2.0",
 ]
-# Copyleft licenses are denied by default
-copyleft = "deny"
+# Confidence threshold for license detection
+confidence-threshold = 0.8
 
 [bans]
-# Check for duplicate dependencies
-duplicates = "warn"
-# Check for multiple versions
+# Check for multiple versions of the same crate
 multiple-versions = "warn"
+# Wildcards in version requirements
+wildcards = "allow"
+# Highlight which crates are causing duplicates
+highlight = "all"
 
 [sources]
 # Only allow crates from crates.io
 unknown-registry = "deny"
-# Allow git dependencies (but warn)
-git = "warn"
-# Allow path dependencies (for workspace)
-path = "allow"
-
+unknown-git = "warn"
+# Allow specific organizations (if needed)
+allow-org = { github = [] }
