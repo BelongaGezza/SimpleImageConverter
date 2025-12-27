@@ -1,0 +1,22 @@
+[package]
+name = "img-core"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+common = { path = "../common" }
+anyhow.workspace = true
+thiserror.workspace = true
+image.workspace = true
+
+[dev-dependencies]
+criterion.workspace = true
+
+[[bench]]
+name = "conversion_bench"
+harness = false
+

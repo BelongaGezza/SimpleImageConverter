@@ -1,0 +1,17 @@
+[package]
+name = "mesh-core"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+common = { path = "../common" }
+anyhow.workspace = true
+thiserror.workspace = true
+
+# Mesh processing (will be added in Sprint 3)
+# nalgebra = "0.33"
+

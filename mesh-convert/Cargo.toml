@@ -1,0 +1,19 @@
+[package]
+name = "mesh-convert"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "mesh-convert"
+path = "src/main.rs"
+
+[dependencies]
+common = { path = "../common" }
+mesh-core = { path = "../mesh-core" }
+clap.workspace = true
+anyhow.workspace = true
+

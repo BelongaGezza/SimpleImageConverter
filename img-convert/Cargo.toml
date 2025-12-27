@@ -1,0 +1,19 @@
+[package]
+name = "img-convert"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "img-convert"
+path = "src/main.rs"
+
+[dependencies]
+common = { path = "../common" }
+img-core = { path = "../img-core" }
+clap.workspace = true
+anyhow.workspace = true
+
