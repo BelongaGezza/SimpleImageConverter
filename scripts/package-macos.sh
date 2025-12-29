@@ -42,11 +42,21 @@ if ! echo "$TARGET" | grep -qE '^[a-zA-Z0-9_-]+$'; then
     exit 1
 fi
 
-echo "Packaging SimpleImageConverter for macOS..."
+# Determine architecture from target
+if echo "$TARGET" | grep -q "aarch64"; then
+    ARCH="arm64"
+elif echo "$TARGET" | grep -q "x86_64"; then
+    ARCH="x64"
+else
+    # Fallback: extract architecture from target string
+    ARCH=$(echo "$TARGET" | sed 's/.*-\([^-]*\)-.*/\1/' | sed 's/aarch64/arm64/' | sed 's/x86_64/x64/')
+fi
+
+echo "Packaging SimpleImageConverter for macOS ($ARCH)..."
 
 # Set paths
-RELEASE_DIR="release/macos-x64-v${VERSION}"
-TAR_NAME="simpleimageconverter-${VERSION}-macos-x64.tar.gz"
+RELEASE_DIR="release/macos-${ARCH}-v${VERSION}"
+TAR_NAME="simpleimageconverter-${VERSION}-macos-${ARCH}.tar.gz"
 BIN_DIR="target/${TARGET}/release"
 NATIVE_BIN_DIR="target/release"
 
@@ -127,7 +137,7 @@ EOF
 
 # Create TAR.GZ archive
 echo "Creating TAR.GZ archive..."
-tar -czf "$TAR_NAME" -C release "macos-x64-v${VERSION}"
+tar -czf "$TAR_NAME" -C release "macos-${ARCH}-v${VERSION}"
 
 # Display results
 TAR_SIZE=$(du -h "$TAR_NAME" | cut -f1)

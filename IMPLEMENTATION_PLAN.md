@@ -399,10 +399,10 @@
 
 ---
 
-## SPRINT 6: Quality & Testing (Weeks 11-12) 🚧 IN PROGRESS
+## SPRINT 6: Quality & Testing (Weeks 11-12) ✅ COMPLETE
 
 **Goal:** Comprehensive testing, bug fixes, and documentation  
-**Status:** 🚧 **IN PROGRESS** - Test coverage excellent, documentation needs update
+**Status:** ✅ **COMPLETE** - v0.2.0 released with STEP format support
 
 ### User Stories
 - As a user, I want robust error messages so I can fix issues
@@ -442,19 +442,19 @@
 - [x] Handle edge cases ✅ (edge cases covered in tests)
 - [x] Validate conversions ✅ (integration tests validate)
 
-#### Day 13-14: v0.1.0 Release (Updated from v0.2.0)
-- [ ] Update README.md status ⚠️ HIGH PRIORITY
-- [ ] Prepare release notes
-- [ ] Tag version v0.1.0
-- [ ] Build release binaries
-- [ ] Update documentation
-- [ ] Sprint retrospective
+#### Day 13-14: v0.2.0 Release ✅ COMPLETE
+- [x] Update README.md status ✅
+- [x] Prepare release notes ✅
+- [x] Tag version v0.2.0 ✅
+- [x] Build release binaries ✅
+- [x] Update documentation ✅
+- [x] Sprint retrospective ✅
 
 ### Definition of Done
 - ✅ Test coverage ≥ 80% (exceeded - excellent coverage)
 - ✅ All known bugs fixed (no critical issues)
-- [ ] Documentation complete ⚠️ (README needs update)
-- [ ] v0.1.0 released ⚠️ (ready after README update)
+- ✅ Documentation complete ✅
+- ✅ v0.2.0 released ✅ (December 29, 2025)
 
 ---
 

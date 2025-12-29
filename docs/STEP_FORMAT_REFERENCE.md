@@ -1319,7 +1319,7 @@ fn handle_entity_conversion(
 
 1. **Current Implementation**
    - **File:** `mesh-core/src/formats/step.rs`
-   - **Status:** Framework complete, entity conversion in progress
+   - **Status:** ✅ v0.2.0 COMPLETE - FACETED_BREP extraction implemented and tested
 
 2. **Research Documents**
    - `RESEARCH_STEP_STRUCTURE.md` - STEP file structure research

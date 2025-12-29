@@ -129,10 +129,7 @@ jobs:
         run: |
           VERSION="${{ github.ref_name }}"
           VERSION=${VERSION#v}  # Remove 'v' prefix if present
-          ARCH=$(echo ${{ matrix.target }} | sed 's/.*-//')
           ./scripts/package-macos.sh "$VERSION" "${{ matrix.target }}"
-          # Rename to include architecture
-          mv "simpleimageconverter-${VERSION}-macos-x64.tar.gz" "simpleimageconverter-${VERSION}-macos-${ARCH}.tar.gz" || true
       
       # SECURITY: Generate SHA256 checksums for binary integrity verification
       - name: Generate Checksums

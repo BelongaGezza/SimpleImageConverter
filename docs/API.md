@@ -1,7 +1,7 @@
 # API Documentation
 ## SimpleImageConverter Libraries
 
-**Last Updated:** December 27, 2025  
+**Last Updated:** December 29, 2025  
 **Generate Command:** `cargo doc --workspace --open`
 
 ---
@@ -241,7 +241,7 @@ mesh-core = { path = "../mesh-core", features = ["step"] }
 cargo build --features step
 ```
 
-**Note:** STEP format support is currently partial (read-only, tessellation in progress) and blocked by truck-stepio library limitation (input API not available in v0.3.0).
+**Note:** STEP format support (v0.2.0) is read-only and feature-gated (`--features step`). Currently supports FACETED_BREP entities only (pre-tessellated geometry). Full B-Rep support with curved surfaces planned for v0.3.0 (opencascade-rs integration). See `docs/CAD_EXPORT_GUIDE.md` for export instructions.
 
 ---
 
