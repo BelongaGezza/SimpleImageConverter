@@ -8,6 +8,6 @@ pub mod mesh;
 pub use convert::{ConversionOptions, MeshConverter};
 pub use formats::{FormatRegistry, MeshFormat, StlFormat};
 pub use mesh::{
-    transform_coordinates, parse_coordinate_system, recalculate_normals, validate_mesh,
+    parse_coordinate_system, recalculate_normals, transform_coordinates, validate_mesh,
     CoordinateSystem, Face, Mesh, Normal, Vertex,
 };

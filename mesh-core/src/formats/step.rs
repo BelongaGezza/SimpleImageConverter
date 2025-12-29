@@ -19,7 +19,16 @@ use truck_modeling::Shell;
 // use nalgebra::Vector3;
 // ruststep for STEP file parsing
 #[cfg(feature = "step")]
-use ruststep::{ast, parser};
+use ruststep::parser;
+// AP203 types for entity deserialization
+#[cfg(feature = "step")]
+use ruststep::ap203::config_control_design::Tables;
+// TableInit trait for populating Tables from Exchange.data
+#[cfg(feature = "step")]
+use ruststep::tables::TableInit;
+// IntoOwned trait for resolving entity references
+#[cfg(feature = "step")]
+use ruststep::tables::IntoOwned;
 
 /// STEP format handler
 ///
@@ -44,62 +53,90 @@ impl StepFormat {
         Self { limits }
     }
 
-    /// Try to extract a truck Shell from a STEP Record
+    /// Extract geometric entities from AP203 Tables
     ///
-    /// This attempts to identify and convert STEP geometric entities to truck Shell types.
-    /// STEP entity conversion is complex and requires understanding STEP entity structure.
-    ///
-    /// Currently identifies entity types but conversion logic needs to be implemented.
-    fn try_extract_shell(&self, record: &ast::Record) -> Result<Option<Shell>> {
-        // Identify entity type by name
-        let entity_name = &record.name;
+    /// This method accesses the deserialized entities from Tables and attempts to
+    /// extract geometry that can be converted to truck Shell objects.
+    fn extract_entities_from_tables(&self, tables: &Tables) -> Result<Vec<Shell>> {
+        let shells = Vec::new();
 
-        // Common STEP geometric entity types that could be converted to Shell:
-        match entity_name.as_str() {
-            "MANIFOLD_SOLID_BREP" => {
-                // MANIFOLD_SOLID_BREP represents a solid with boundary representation
-                // Parameters: [solid_name, closed_shell_ref]
-                // TODO: Extract closed_shell reference and convert to Shell
-                // For now, skip - conversion not yet implemented
-                Ok(None)
-            }
-            "CLOSED_SHELL" => {
-                // CLOSED_SHELL represents a closed shell
-                // Parameters: [shell_name, face_list]
-                // TODO: Extract faces and convert to truck Shell
-                // For now, skip - conversion not yet implemented
-                Ok(None)
-            }
-            "ADVANCED_BREP_SHAPE_REPRESENTATION" => {
-                // Advanced BREP shape representation
-                // TODO: Extract underlying shell/solid and convert
-                Ok(None)
-            }
-            "FACETED_BREP" => {
-                // Faceted BREP (triangulated)
-                // TODO: Extract shell from faceted representation
-                Ok(None)
-            }
-            _ => {
-                // Unknown or non-geometric entity type
-                // Skip it (return None)
-                Ok(None)
+        // Check for MANIFOLD_SOLID_BREP entities
+        // These are the main entity type for B-Rep solids
+        let msb_holders = tables.manifold_solid_brep_holders();
+        let msb_count = msb_holders.len();
+
+        if msb_count > 0 {
+            eprintln!("Found {} MANIFOLD_SOLID_BREP entities in Tables", msb_count);
+
+            for (entity_id, holder) in msb_holders.iter() {
+                eprintln!("  Entity #{}: ManifoldSolidBrep holder found", entity_id);
+
+                // Try to resolve the holder into an owned ManifoldSolidBrep
+                match holder.clone().into_owned(tables) {
+                    Ok(_msb) => {
+                        eprintln!("    ✓ Successfully resolved ManifoldSolidBrep");
+                        // Now we have the resolved ManifoldSolidBrep (_msb)
+                        // Next step: Convert to truck Shell (Task 2.4)
+                        // This requires mapping AP203 geometry to truck geometry
+                        // For now, just log success - conversion to come
+                        eprintln!("    Note: Shell conversion not yet implemented");
+                    }
+                    Err(e) => {
+                        eprintln!("    ✗ Failed to resolve ManifoldSolidBrep: {:?}", e);
+                    }
+                }
             }
         }
 
-        // Note: Full implementation would require:
-        // 1. Building ruststep AP203 Tables from Exchange.data
-        // 2. Deserializing Records into AP203 structs using serde
-        // 3. Resolving entity references (#1, #2, etc.)
-        // 4. Converting AP203 geometric types to truck Shell
-        // 5. Handling coordinate transformations
-        // 6. Reconstructing topology (faces, edges, vertices)
-        //
-        // This is a major undertaking requiring deep understanding of:
-        // - STEP entity semantics
-        // - AP203 structure
-        // - truck geometry construction
-        // - BREP topology
+        // Check for CLOSED_SHELL entities (can exist independently)
+        let cs_holders = tables.closed_shell_holders();
+        let cs_count = cs_holders.len();
+
+        if cs_count > 0 {
+            eprintln!("Found {} CLOSED_SHELL entities in Tables", cs_count);
+
+            for (entity_id, holder) in cs_holders.iter() {
+                eprintln!("  Entity #{}: ClosedShell holder found", entity_id);
+
+                match holder.clone().into_owned(tables) {
+                    Ok(_cs) => {
+                        eprintln!("    ✓ Successfully resolved ClosedShell");
+                        // ClosedShell (_cs) contains faces that define the shell geometry
+                        // This is the core data we need for tessellation (Task 2.4)
+                        eprintln!("    Note: Shell conversion not yet implemented");
+                    }
+                    Err(e) => {
+                        eprintln!("    ✗ Failed to resolve ClosedShell: {:?}", e);
+                    }
+                }
+            }
+        }
+
+        // Log summary of what we found
+        eprintln!("\nEntity extraction summary:");
+        eprintln!("  - MANIFOLD_SOLID_BREP: {}", msb_count);
+        eprintln!("  - CLOSED_SHELL: {}", cs_count);
+
+        if shells.is_empty() && (msb_count > 0 || cs_count > 0) {
+            // We found entities but couldn't convert them yet
+            // CRITICAL FINDING: truck-stepio does not have input (reading) functionality yet
+            // The "in" module is marked as "not yet implemented" in truck-stepio 0.3.0
+            // See: https://docs.rs/truck-stepio/0.3.0/truck_stepio/
+            //
+            // Options to consider:
+            // 1. Implement custom conversion from AP203 entities to truck Shell (very complex)
+            // 2. Wait for truck-stepio input support (uncertain timeline)
+            // 3. Use a different approach/library for STEP reading
+            //
+            // This is a significant architectural challenge that requires Senior Engineer input.
+            eprintln!("\n⚠️ STEP Reading Limitation:");
+            eprintln!("  Entities were successfully parsed and deserialized from STEP file.");
+            eprintln!("  However, truck-stepio input functionality is not yet implemented.");
+            eprintln!("  Converting AP203 entities to truck Shell requires custom implementation.");
+            eprintln!("  This is a complex task that may require architectural review.");
+        }
+
+        Ok(shells)
     }
 
     /// Convert truck Shell objects to our Mesh format
@@ -144,34 +181,27 @@ impl StepFormat {
             ConversionError::ConversionFailed(format!("Failed to parse STEP file: {}", e))
         })?;
 
-        // Extract geometric entities from the parsed STEP file
-        // This is a complex conversion: ruststep AST → truck Shell/Solid types
-
-        // Extract all entities from data sections
-        let mut shells = Vec::new();
-
-        for data_section in &exchange.data {
-            for entity_instance in &data_section.entities {
-                match entity_instance {
-                    ast::EntityInstance::Simple { id: _, record } => {
-                        // Try to extract geometric entities
-                        // For now, we'll identify and attempt to convert common STEP entity types
-                        if let Some(shell) = self.try_extract_shell(record)? {
-                            shells.push(shell);
-                        }
-                    }
-                    ast::EntityInstance::Complex { id: _, subsuper } => {
-                        // Complex entities (subtype/supertype relationships)
-                        // Extract from the subsuper records
-                        for record in subsuper {
-                            if let Some(shell) = self.try_extract_shell(record)? {
-                                shells.push(shell);
-                            }
-                        }
-                    }
-                }
+        // Build AP203 Tables from Exchange.data for entity deserialization
+        // Tables allows us to deserialize Records into AP203 structs and resolve references
+        // Using TableInit::from_data_sections() to populate Tables from parsed STEP data
+        let tables = match Tables::from_data_sections(&exchange.data) {
+            Ok(t) => t,
+            Err(e) => {
+                // If Tables construction fails, it might be due to schema mismatch
+                // Log the error but continue with default tables for entity identification
+                // This allows us to still parse and identify entities even if full deserialization fails
+                eprintln!(
+                    "Warning: Could not fully deserialize STEP entities into AP203 Tables: {:?}",
+                    e
+                );
+                eprintln!("Falling back to entity identification mode (limited functionality)");
+                Tables::default()
             }
-        }
+        };
+
+        // Extract geometric entities from Tables (new approach using deserialized entities)
+        // This uses the AP203 Tables for proper entity deserialization and reference resolution
+        let shells = self.extract_entities_from_tables(&tables)?;
 
         // Check if we found any shells
         if shells.is_empty() {

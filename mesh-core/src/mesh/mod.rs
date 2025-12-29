@@ -6,7 +6,7 @@ pub mod transform;
 pub mod validate;
 
 pub use normal::recalculate_normals;
-pub use transform::{transform_coordinates, parse_coordinate_system, CoordinateSystem};
+pub use transform::{parse_coordinate_system, transform_coordinates, CoordinateSystem};
 pub use validate::validate_mesh;
 
 /// 3D mesh data structure

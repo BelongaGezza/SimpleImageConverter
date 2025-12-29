@@ -2,7 +2,7 @@
 // Copyright (c) 2025 Simple Image Converter Contributors
 
 use crate::formats::traits::{MeshReader, MeshWriter};
-use crate::mesh::{transform_coordinates, recalculate_normals, validate_mesh, CoordinateSystem};
+use crate::mesh::{recalculate_normals, transform_coordinates, validate_mesh, CoordinateSystem};
 use common::error::Result;
 use common::progress::{NoOpProgressReporter, ProgressReporter};
 

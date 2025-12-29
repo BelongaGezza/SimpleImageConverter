@@ -88,7 +88,7 @@ fn main() -> Result<()> {
 
     // Build conversion options
     let mut conversion_options = ConversionOptions::default();
-    
+
     // Parse transform option
     if let Some(transform_str) = args.transform {
         // Parse transform string (e.g., "z-up:y-up" or just "y-up" for auto-detect)
@@ -114,7 +114,7 @@ fn main() -> Result<()> {
         };
         conversion_options.transform = Some(transform);
     }
-    
+
     // Set recalculation and validation flags
     conversion_options.recalculate_normals = args.recalculate_normals;
     conversion_options.validate = args.validate;

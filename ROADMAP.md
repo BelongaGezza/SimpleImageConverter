@@ -1,8 +1,8 @@
 # Project Roadmap
 ## Simple Image Converter
 
-**Last Updated:** January 27, 2025  
-**Current Version:** v0.1.1  
+**Last Updated:** January 29, 2025
+**Current Version:** v0.1.1
 **Next Release:** v0.2.0 (STEP/CAD Support)
 
 ---
@@ -11,7 +11,7 @@
 
 ### Status Overview
 
-**Current Status:** 🚧 **Framework Complete, Entity Conversion In Progress**
+**Current Status:** ⚠️ **ARCHITECTURE DECISION REQUIRED**
 
 **Completed:**
 - ✅ STEP file parsing (ruststep 0.4.0 with AP203 feature)
@@ -19,97 +19,220 @@
 - ✅ Entity type identification (MANIFOLD_SOLID_BREP, CLOSED_SHELL, etc.)
 - ✅ Code structure and error handling
 - ✅ Dependencies integrated (ruststep, truck-meshalgo)
+- ✅ Research documentation (Sam - comprehensive)
+- ✅ **Tables population via `TableInit::from_data_sections()`** (Riley - COMPLETE)
+- ✅ **Entity deserialization via `_holders()` methods** (Riley - COMPLETE)
+- ✅ **Reference resolution via `IntoOwned` trait** (Riley - COMPLETE)
 
-**In Progress:**
-- 🚧 STEP entity → truck Shell conversion logic
-- ⏳ Tessellation implementation (pending entity conversion)
+**Blocked:**
+- ❌ **CRITICAL:** truck-stepio input functionality **does not exist** (v0.3.0)
+- ❌ AP203 → truck Shell conversion requires custom implementation or alternative approach
 
-**Pending:**
+**Architecture Decision Required:**
+- See "STEP Implementation Options" section below for detailed analysis
+
+**Pending (after architecture decision):**
+- ⏳ Implement chosen approach (FACETED_BREP or opencascade-rs)
 - ⏳ Testing with real STEP files
-- ⏳ Documentation updates
+- ⏳ Complete documentation updates
+
+---
+
+## 🔴 CRITICAL: STEP Implementation Options
+
+### The Problem
+
+We have successfully parsed STEP files and deserialized AP203 entities using ruststep. However, **truck-stepio does not have input (reading) functionality** - only output is implemented. This blocks conversion from AP203 entities to truck Shell for tessellation.
+
+### Research Finding: STEPToMesh Approach
+
+Analysis of [STEPToMesh](https://github.com/aleutgeb/STEPToMesh) (C++ project) revealed the standard approach:
+
+1. **OpenCASCADE** handles both STEP reading AND tessellation
+2. `STEPCAFControl_Reader` reads STEP files
+3. `BRepMesh_IncrementalMesh` tessellates curved surfaces (NURBS, cylinders, etc.)
+4. No separate "bridge" library needed - OCCT does everything
+
+### Available Options
+
+| Option | Curved Surfaces | Effort | New Dependencies | Recommendation |
+|--------|----------------|--------|------------------|----------------|
+| **A: FACETED_BREP only** | ❌ No | 1-2 weeks | None | **v0.2.0** |
+| **B: opencascade-rs** | ✅ Yes | 2-4 weeks | OCCT C++ library | **v0.3.0** |
+| **C: Custom AP203→truck** | ✅ Yes | Months | None | Not recommended |
+| **D: Wait for truck-stepio** | ✅ Yes | Unknown | None | Uncertain timeline |
+
+### Option A: FACETED_BREP Only (Recommended for v0.2.0)
+
+**What it does:**
+- Supports STEP files with pre-tessellated geometry (FACETED_BREP entities)
+- Extracts vertices/faces directly from AP203 structs
+- Skips truck Shell entirely - builds our Mesh directly
+
+**Limitations:**
+- Only works with STEP files exported with tessellation option
+- No support for curved surfaces (NURBS, cylinders, spheres)
+- Many CAD tools can export FACETED_BREP format
+
+**Implementation path:**
+```
+STEP File → ruststep → Tables → FACETED_BREP entities → Extract vertices → Mesh
+```
+
+### Option B: opencascade-rs (Recommended for v0.3.0)
+
+**What it does:**
+- Uses [opencascade-rs](https://github.com/bschwind/opencascade-rs) Rust bindings
+- Full OpenCASCADE kernel for STEP reading AND tessellation
+- `BRepMesh_IncrementalMesh` handles all curved surface types
+
+**Available APIs (verified in source):**
+```rust
+// STEP Reading (from opencascade-sys)
+type STEPControl_Reader;
+fn read_step(reader: &mut STEPControl_Reader, filename: String) -> IFSelect_ReturnStatus;
+fn one_shape_step(reader: &STEPControl_Reader) -> UniquePtr<TopoDS_Shape>;
+
+// Tessellation (from opencascade/src/mesh.rs)
+pub struct Mesh {
+    pub vertices: Vec<DVec3>,
+    pub normals: Vec<DVec3>,
+    pub indices: Vec<usize>,
+}
+pub struct Mesher; // Wraps BRepMesh_IncrementalMesh
+```
+
+**Trade-offs:**
+- ✅ Full curved surface support
+- ✅ Industry-standard OCCT kernel
+- ❌ Adds C++ dependency (OpenCASCADE ~100MB)
+- ❌ opencascade-rs is "work in progress" (but functional)
+
+**Implementation path:**
+```
+STEP File → STEPControl_Reader → TopoDS_Shape → BRepMesh → Mesh
+```
+
+### Decision Matrix
+
+| Criteria | FACETED_BREP | opencascade-rs |
+|----------|--------------|----------------|
+| Ships v0.2.0 on time | ✅ Yes | ❌ Delays release |
+| Curved surface support | ❌ No | ✅ Yes |
+| Pure Rust | ✅ Yes | ❌ No (C++ dep) |
+| Implementation risk | Low | Medium |
+| Future maintenance | Simple | More complex |
+
+### Recommended Strategy
+
+1. **v0.2.0:** Implement FACETED_BREP extraction (Option A)
+   - Ships working STEP support quickly
+   - Document limitation clearly
+   - Useful for many CAD exports
+
+2. **v0.3.0:** Add opencascade-rs backend (Option B)
+   - Full curved surface support
+   - Can coexist with FACETED_BREP path
+   - Feature-gated to keep pure-Rust option available
+
+### Team Assignments
+
+**Riley Thompson (Junior Engineer, 3D Formats):**
+- **Status:** ✅ Completed Tasks 2.1-2.3 (Tables, Deserialization, References)
+- **Current:** Awaiting architecture decision on STEP approach
+- **Next Task:** Implement FACETED_BREP extraction (if Option A approved)
+- **Progress Document:** `RILEY_IMPLEMENTATION_PROGRESS.md`
+- **Grade:** B+ (Excellent work discovering correct APIs)
+
+**Sam Parker (Junior Engineer, 2D Formats):**
+- **Status:** Research support complete
+- **Current:** Documentation updates
+- **Collaboration:** Sam's Tables API research was foundational; Riley discovered correct API
+
+**Senior Engineer (Jordan Rivera):**
+- **Current:** Architecture decision required
+- **Review Document:** `SENIOR_ENGINEER_CRITICAL_REVIEW_STEP_IMPLEMENTATION.md`
+
+**Coordination:**
+- See `TASK_ASSIGNMENTS_V0.2.0.md` for team coordination details
+- See `SENIOR_ENGINEER_CRITICAL_REVIEW_STEP_IMPLEMENTATION.md` for latest review
 
 ---
 
 ## 🔥 High Priority - Immediate Next Steps
 
-### 1. Research ruststep Tables API (Critical Path)
+### 1. Architecture Decision (BLOCKING)
 
-**Objective:** Understand how to build AP203 `Tables` from `Exchange.data` and deserialize entities.
+**Status:** ⏳ Awaiting decision
 
-**Tasks:**
-- [ ] Explore ruststep's Tables API structure
-- [ ] Understand AP203 type deserialization patterns
-- [ ] Learn reference resolution mechanisms (#1, #2, etc.)
-- [ ] Write experimental code to test API usage
+**Options:**
+- **Option A:** FACETED_BREP only (v0.2.0) - Recommended
+- **Option B:** opencascade-rs (v0.3.0) - For curved surfaces
 
-**Resources:**
-- `ruststep` v0.4.0 documentation (with `ap203` feature)
-- ruststep GitHub repository for examples
-- STEP_IMPLEMENTATION_CURRENT_STATE.md (current implementation details)
+**Decision Required By:** Project Owner / System Architect
 
-**Estimated Effort:** 1-2 days
+### 2. Implement FACETED_BREP Extraction (After Decision)
 
-### 2. Research truck Shell Construction APIs
-
-**Objective:** Learn how to build `Shell` objects from geometric primitives in truck.
+**Objective:** Extract pre-tessellated geometry from STEP files.
 
 **Tasks:**
-- [ ] Review truck Shell/Solid construction APIs
-- [ ] Understand face/edge/vertex construction patterns
-- [ ] Learn coordinate system handling in truck
-- [ ] Explore curve and surface types in truck
+- [ ] Check if `tables.faceted_brep_holders()` exists
+- [ ] Traverse entity tree: FACETED_BREP → CLOSED_SHELL → FACE → EDGE_LOOP → VERTEX_POINT → CARTESIAN_POINT
+- [ ] Extract vertex coordinates from CARTESIAN_POINT entities
+- [ ] Build Face indices from EDGE_LOOP structure
+- [ ] Calculate normals from face vertices
+- [ ] Convert to our Mesh format
 
-**Resources:**
-- `truck-modeling` v0.3.0 documentation
-- `truck-topology` documentation
-- truck GitHub repository
-
-**Estimated Effort:** 1-2 days
-
-### 3. Implement STEP Entity → truck Shell Conversion
-
-**Objective:** Convert AP203 entities (MANIFOLD_SOLID_BREP, CLOSED_SHELL, etc.) to truck Shell objects.
-
-**Approach:**
-1. Build AP203 `Tables` from `Exchange.data`
-2. Deserialize STEP `Record`s into AP203 structs using serde
-3. Resolve entity references using Tables
-4. Convert AP203 geometric types to truck Shell
-5. Handle coordinate transformations
-6. Reconstruct BREP topology (faces, edges, vertices)
-
-**Strategy:**
-- Start with simpler entity types (e.g., `FACETED_BREP` - already triangulated)
-- Progress to complex BREP entities
-- Incremental implementation with testing
+**Implementation Path:**
+```
+FACETED_BREP
+  └── outer: CLOSED_SHELL
+      └── cfs_faces: [FACE, ...]
+          └── bounds: [FACE_BOUND]
+              └── bound: EDGE_LOOP
+                  └── edge_list: [ORIENTED_EDGE, ...]
+                      └── edge_element: EDGE
+                          └── edge_start/end: VERTEX_POINT
+                              └── vertex_geometry: CARTESIAN_POINT (x, y, z)
+```
 
 **Estimated Effort:** 1-2 weeks
 
-### 4. Implement Tessellation
+### 3. Document STEP Limitations
 
-**Objective:** Convert truck Shell objects to polygonal meshes using truck-meshalgo.
-
-**Tasks:**
-- [ ] Implement `convert_truck_to_mesh()` function
-- [ ] Use `truck-meshalgo::MeshableShape::triangulation()` method
-- [ ] Extract `PolygonMesh` from tessellated Shell faces
-- [ ] Convert to our `Mesh` format with vertices, faces, normals
-- [ ] Handle multiple shells (merge into single mesh)
-
-**Estimated Effort:** 2-3 days
-
-### 5. Testing & Validation
-
-**Objective:** Validate STEP conversion with real-world files.
+**Objective:** Clear user documentation about STEP support scope.
 
 **Tasks:**
-- [ ] Collect test STEP files (various complexities)
-- [ ] Create comprehensive test suite
+- [ ] Update `docs/FORMATS.md` with STEP limitations
+- [ ] Add examples of CAD export settings for FACETED_BREP
+- [ ] Document which CAD tools support tessellated STEP export
+- [ ] Add troubleshooting guide for unsupported STEP files
+
+**Estimated Effort:** 1-2 days
+
+### 4. Testing & Validation
+
+**Objective:** Validate FACETED_BREP conversion with real-world files.
+
+**Tasks:**
+- [ ] Collect test STEP files with FACETED_BREP entities
+- [ ] Create test suite for vertex/face extraction
 - [ ] Validate conversion correctness
-- [ ] Performance testing
-- [ ] Error handling validation
+- [ ] Test error handling for non-FACETED_BREP files
 
-**Estimated Effort:** 1 week
+**Estimated Effort:** 3-5 days
+
+### 5. (v0.3.0) Prototype opencascade-rs Integration
+
+**Objective:** Proof-of-concept for full curved surface support.
+
+**Tasks:**
+- [ ] Add opencascade-rs as optional dependency
+- [ ] Create minimal STEP → Mesh test
+- [ ] Evaluate build complexity (OCCT dependency)
+- [ ] Document integration approach
+
+**Estimated Effort:** 1 week (research/prototype)
 
 ---
 
@@ -164,11 +287,15 @@
 
 - ✅ Can parse STEP files successfully
 - ✅ Can extract geometric data from STEP files
-- ✅ Can convert STEP entities to truck Shell types
-- ✅ Can tessellate Shell objects to meshes
-- ✅ Can convert to target mesh formats (STL, OBJ, PLY)
-- ✅ Comprehensive test coverage
-- ✅ Documentation updated
+- 🚧 **IN PROGRESS:** Can convert STEP entities to truck Shell types (Riley - 20% complete, Tables population blocking)
+- ⏳ Can tessellate Shell objects to meshes (pending entity conversion)
+- ⏳ Can convert to target mesh formats (STL, OBJ, PLY) (pending conversion)
+- ⏳ Comprehensive test coverage (pending implementation)
+- 🚧 Documentation updated (Sam - partial, in progress)
+
+**Critical Path:** Tables population → Entity deserialization → Shell conversion → Tessellation
+
+**Current Blocker:** Tables population API needs research (Riley + Sam collaboration needed)
 
 ---
 
@@ -187,4 +314,5 @@
 ---
 
 *This roadmap is a living document and will be updated as progress is made.*
+
 

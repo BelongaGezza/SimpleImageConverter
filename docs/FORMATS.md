@@ -42,7 +42,7 @@
 | OFF | .off | ✅ | ✅ | Sprint 5 ✅ | Custom parser |
 | glTF | .gltf, .glb | ✅ | ✅ | Sprint 5 ✅ | Binary/text |
 | DXF | .dxf | ✅ | ✅ | Sprint 5 ✅ | 3D entities |
-| STEP | .step, .stp | 🚧 | ❌ | Sprint 7-8 🚧 | **FUTURE:** Read-only, feature-gated (`--features step`), tessellation in progress. Currently blocked by truck-stepio library limitation (input API not available in v0.3.0) |
+| STEP | .step, .stp | 🚧 | ❌ | Sprint 7-8 🚧 | **v0.2.0 IN PROGRESS:** Read-only, feature-gated (`--features step`). STEP file parsing working (ruststep 0.4.0). Entity extraction framework complete. Entity conversion to truck Shell in progress. Tessellation pending. See `STEP_IMPLEMENTATION_CURRENT_STATE.md` and `docs/STEP_FORMAT_REFERENCE.md` for details. |
 
 **Legend:**
 - ✅ Implemented
@@ -133,10 +133,14 @@ Formats are detected by:
 - ✅ DXF format (3D entities)
 
 ### Sprint 7-8 (STEP Format) 🚧
-- 🚧 STEP format skeleton implemented
-- ⏳ STEP tessellation pending (requires truck API research)
+- ✅ STEP format skeleton implemented
+- ✅ STEP file parsing working (ruststep 0.4.0 with AP203 feature)
+- ✅ Entity extraction framework complete
+- 🚧 STEP entity → truck Shell conversion in progress
+- ⏳ Tessellation pending (requires Shell conversion first)
 - ✅ Format registry updated with STEP support
 - ✅ Feature flag system in place
+- 📋 Research documentation complete (see `RESEARCH_*.md` files)
 
 ---
 
@@ -144,7 +148,7 @@ Formats are detected by:
 
 - **SVG**: Read-only (rasterization), no write support
 - **PDF**: Read-only (page extraction), no write support
-- **STEP**: **FUTURE** - Skeleton implemented (Sprint 7-8). Read support in progress - tessellation implementation pending (blocked by truck-stepio v0.3.0 library limitation - input API not available). Write support not planned (requires complex CAD modeling). Feature-gated (`--features step`).
+- **STEP**: **v0.2.0 IN PROGRESS** - Skeleton implemented (Sprint 7-8). STEP file parsing working (ruststep 0.4.0). Entity extraction framework complete. Entity conversion to truck Shell in progress. Tessellation pending. Write support not planned (requires complex CAD modeling). Feature-gated (`--features step`). See `STEP_IMPLEMENTATION_CURRENT_STATE.md`, `docs/STEP_FORMAT_REFERENCE.md` (comprehensive specification reference), and `RESEARCH_*.md` files for details.
 - **FBX**: Not supported (proprietary, no open-source Rust library)
 - **DWG**: Not supported (proprietary)
 

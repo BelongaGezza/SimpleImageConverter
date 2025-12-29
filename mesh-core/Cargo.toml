@@ -40,4 +40,17 @@ common = { path = "../common" }
 [features]
 default = []
 # Enable STEP format support (requires truck crates and ruststep)
-step = ["truck-modeling", "truck-polymesh", "truck-stepio", "truck-meshalgo", "ruststep"]
+step = [
+    "truck-modeling",
+    "truck-polymesh",
+    "truck-stepio",
+    "truck-meshalgo",
+    "ruststep",
+]
+
+# Configure check-cfg to recognize ap203 as valid (it's enabled on ruststep dependency when step is enabled)
+# Note: ap203 is a feature on the ruststep dependency, not our crate, but we need to tell the compiler it's valid
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = [
+    'cfg(feature, values("ap203"))',
+] }

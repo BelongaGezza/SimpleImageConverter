@@ -34,7 +34,11 @@
       "Bash(gh run view:*)",
       "Bash(cargo doc:*)",
       "WebSearch",
-      "WebFetch(domain:crates.io)"
+      "WebFetch(domain:crates.io)",
+      "WebFetch(domain:docs.rs)",
+      "WebFetch(domain:ricosjp.github.io)",
+      "Bash(cargo run:*)",
+      "WebFetch(domain:raw.githubusercontent.com)"
     ]
   }
 }

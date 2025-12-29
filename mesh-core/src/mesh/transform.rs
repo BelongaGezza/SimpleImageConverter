@@ -65,7 +65,7 @@ pub fn transform_coordinates(
         normal.x = new_x;
         normal.y = new_y;
         normal.z = new_z;
-        
+
         // Normalize the transformed normal
         let length = (normal.x * normal.x + normal.y * normal.y + normal.z * normal.z).sqrt();
         if length > EPSILON {
@@ -137,11 +137,15 @@ mod tests {
     #[test]
     fn test_transform_zup_to_yup() {
         let mut mesh = Mesh::new();
-        mesh.vertices.push(Vertex { x: 1.0, y: 2.0, z: 3.0 });
-        
-        let transformed = transform_coordinates(mesh, CoordinateSystem::ZUp, CoordinateSystem::YUp)
-            .unwrap();
-        
+        mesh.vertices.push(Vertex {
+            x: 1.0,
+            y: 2.0,
+            z: 3.0,
+        });
+
+        let transformed =
+            transform_coordinates(mesh, CoordinateSystem::ZUp, CoordinateSystem::YUp).unwrap();
+
         assert_eq!(transformed.vertices[0].x, 1.0);
         assert_eq!(transformed.vertices[0].y, 3.0);
         assert_eq!(transformed.vertices[0].z, -2.0);
@@ -150,11 +154,15 @@ mod tests {
     #[test]
     fn test_transform_yup_to_zup() {
         let mut mesh = Mesh::new();
-        mesh.vertices.push(Vertex { x: 1.0, y: 2.0, z: 3.0 });
-        
-        let transformed = transform_coordinates(mesh, CoordinateSystem::YUp, CoordinateSystem::ZUp)
-            .unwrap();
-        
+        mesh.vertices.push(Vertex {
+            x: 1.0,
+            y: 2.0,
+            z: 3.0,
+        });
+
+        let transformed =
+            transform_coordinates(mesh, CoordinateSystem::YUp, CoordinateSystem::ZUp).unwrap();
+
         assert_eq!(transformed.vertices[0].x, 1.0);
         assert_eq!(transformed.vertices[0].y, -3.0);
         assert_eq!(transformed.vertices[0].z, 2.0);
@@ -163,11 +171,16 @@ mod tests {
     #[test]
     fn test_transform_no_op() {
         let mut mesh = Mesh::new();
-        mesh.vertices.push(Vertex { x: 1.0, y: 2.0, z: 3.0 });
-        
-        let transformed = transform_coordinates(mesh.clone(), CoordinateSystem::ZUp, CoordinateSystem::ZUp)
-            .unwrap();
-        
+        mesh.vertices.push(Vertex {
+            x: 1.0,
+            y: 2.0,
+            z: 3.0,
+        });
+
+        let transformed =
+            transform_coordinates(mesh.clone(), CoordinateSystem::ZUp, CoordinateSystem::ZUp)
+                .unwrap();
+
         assert_eq!(transformed.vertices[0].x, mesh.vertices[0].x);
         assert_eq!(transformed.vertices[0].y, mesh.vertices[0].y);
         assert_eq!(transformed.vertices[0].z, mesh.vertices[0].z);
@@ -175,14 +188,31 @@ mod tests {
 
     #[test]
     fn test_parse_coordinate_system() {
-        assert_eq!(parse_coordinate_system("y-up").unwrap(), CoordinateSystem::YUp);
-        assert_eq!(parse_coordinate_system("Y-Up").unwrap(), CoordinateSystem::YUp);
-        assert_eq!(parse_coordinate_system("y_up").unwrap(), CoordinateSystem::YUp);
-        assert_eq!(parse_coordinate_system("z-up").unwrap(), CoordinateSystem::ZUp);
-        assert_eq!(parse_coordinate_system("Z-Up").unwrap(), CoordinateSystem::ZUp);
-        assert_eq!(parse_coordinate_system("z_up").unwrap(), CoordinateSystem::ZUp);
-        
+        assert_eq!(
+            parse_coordinate_system("y-up").unwrap(),
+            CoordinateSystem::YUp
+        );
+        assert_eq!(
+            parse_coordinate_system("Y-Up").unwrap(),
+            CoordinateSystem::YUp
+        );
+        assert_eq!(
+            parse_coordinate_system("y_up").unwrap(),
+            CoordinateSystem::YUp
+        );
+        assert_eq!(
+            parse_coordinate_system("z-up").unwrap(),
+            CoordinateSystem::ZUp
+        );
+        assert_eq!(
+            parse_coordinate_system("Z-Up").unwrap(),
+            CoordinateSystem::ZUp
+        );
+        assert_eq!(
+            parse_coordinate_system("z_up").unwrap(),
+            CoordinateSystem::ZUp
+        );
+
         assert!(parse_coordinate_system("invalid").is_err());
     }
 }
-

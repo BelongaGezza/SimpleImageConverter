@@ -101,10 +101,7 @@ pub fn validate_file_path_secure(
     // If allowed_dir is specified, ensure path is within it
     if let Some(allowed) = allowed_dir {
         let allowed_canonical = allowed.canonicalize().map_err(|e| {
-            ConversionError::ValidationFailed(format!(
-                "Cannot resolve allowed directory: {}",
-                e
-            ))
+            ConversionError::ValidationFailed(format!("Cannot resolve allowed directory: {}", e))
         })?;
 
         if !canonical.starts_with(&allowed_canonical) {

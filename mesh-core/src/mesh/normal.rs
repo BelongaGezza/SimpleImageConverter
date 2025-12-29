@@ -45,7 +45,7 @@ pub fn recalculate_normals(mut mesh: Mesh) -> Result<Mesh> {
     // Calculate face normals and accumulate to vertex normals
     for face in &mesh.faces {
         let indices = face.indices;
-        
+
         // Validate indices
         if indices[0] >= mesh.vertices.len()
             || indices[1] >= mesh.vertices.len()
@@ -69,10 +69,10 @@ pub fn recalculate_normals(mut mesh: Mesh) -> Result<Mesh> {
 
         // Calculate face normal using cross product
         let face_normal = edge1.cross(&edge2);
-        
+
         // Calculate face area (half the magnitude of the cross product)
         let face_area = face_normal.norm() * 0.5;
-        
+
         // If face area is too small, skip this face
         if face_area < 1e-10 {
             continue;
@@ -80,7 +80,7 @@ pub fn recalculate_normals(mut mesh: Mesh) -> Result<Mesh> {
 
         // Weight normal by face area and accumulate to each vertex
         let weighted_normal = face_normal * face_area;
-        
+
         vertex_normals[indices[0]] += weighted_normal;
         vertex_normals[indices[1]] += weighted_normal;
         vertex_normals[indices[2]] += weighted_normal;
@@ -99,13 +99,21 @@ pub fn recalculate_normals(mut mesh: Mesh) -> Result<Mesh> {
             });
         } else {
             // If normal is zero (degenerate), use default up vector
-            mesh.normals.push(Normal { x: 0.0, y: 0.0, z: 1.0 });
+            mesh.normals.push(Normal {
+                x: 0.0,
+                y: 0.0,
+                z: 1.0,
+            });
         }
     }
 
     // Ensure we have the same number of normals as vertices
     while mesh.normals.len() < mesh.vertices.len() {
-        mesh.normals.push(Normal { x: 0.0, y: 0.0, z: 1.0 });
+        mesh.normals.push(Normal {
+            x: 0.0,
+            y: 0.0,
+            z: 1.0,
+        });
     }
 
     Ok(mesh)
@@ -114,29 +122,43 @@ pub fn recalculate_normals(mut mesh: Mesh) -> Result<Mesh> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::mesh::{Vertex, Face};
+    use crate::mesh::{Face, Vertex};
 
     #[test]
     fn test_recalculate_normals_simple_triangle() {
         let mut mesh = Mesh::new();
-        
+
         // Create a simple triangle in the XY plane
-        mesh.vertices.push(Vertex { x: 0.0, y: 0.0, z: 0.0 });
-        mesh.vertices.push(Vertex { x: 1.0, y: 0.0, z: 0.0 });
-        mesh.vertices.push(Vertex { x: 0.5, y: 1.0, z: 0.0 });
-        
-        mesh.faces.push(Face {
-            indices: [0, 1, 2],
+        mesh.vertices.push(Vertex {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+        });
+        mesh.vertices.push(Vertex {
+            x: 1.0,
+            y: 0.0,
+            z: 0.0,
+        });
+        mesh.vertices.push(Vertex {
+            x: 0.5,
+            y: 1.0,
+            z: 0.0,
         });
 
+        mesh.faces.push(Face { indices: [0, 1, 2] });
+
         let result = recalculate_normals(mesh).unwrap();
-        
+
         // Should have normals for all vertices
         assert_eq!(result.normals.len(), 3);
-        
+
         // All normals should point in +Z direction (upward from XY plane)
         for normal in &result.normals {
-            assert!((normal.z - 1.0).abs() < 0.01, "Normal Z should be ~1.0, got {}", normal.z);
+            assert!(
+                (normal.z - 1.0).abs() < 0.01,
+                "Normal Z should be ~1.0, got {}",
+                normal.z
+            );
         }
     }
 
@@ -150,8 +172,12 @@ mod tests {
     #[test]
     fn test_recalculate_normals_no_faces() {
         let mut mesh = Mesh::new();
-        mesh.vertices.push(Vertex { x: 0.0, y: 0.0, z: 0.0 });
-        
+        mesh.vertices.push(Vertex {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+        });
+
         let result = recalculate_normals(mesh);
         assert!(result.is_err());
     }
@@ -159,11 +185,15 @@ mod tests {
     #[test]
     fn test_recalculate_normals_invalid_indices() {
         let mut mesh = Mesh::new();
-        mesh.vertices.push(Vertex { x: 0.0, y: 0.0, z: 0.0 });
+        mesh.vertices.push(Vertex {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+        });
         mesh.faces.push(Face {
             indices: [0, 1, 2], // Invalid indices
         });
-        
+
         let result = recalculate_normals(mesh);
         assert!(result.is_err());
     }
@@ -171,33 +201,46 @@ mod tests {
     #[test]
     fn test_recalculate_normals_skips_degenerate_faces() {
         let mut mesh = Mesh::new();
-        
+
         // Create a valid triangle
-        mesh.vertices.push(Vertex { x: 0.0, y: 0.0, z: 0.0 });
-        mesh.vertices.push(Vertex { x: 1.0, y: 0.0, z: 0.0 });
-        mesh.vertices.push(Vertex { x: 0.5, y: 1.0, z: 0.0 });
-        
-        // Add a valid face
-        mesh.faces.push(Face {
-            indices: [0, 1, 2],
+        mesh.vertices.push(Vertex {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
         });
-        
+        mesh.vertices.push(Vertex {
+            x: 1.0,
+            y: 0.0,
+            z: 0.0,
+        });
+        mesh.vertices.push(Vertex {
+            x: 0.5,
+            y: 1.0,
+            z: 0.0,
+        });
+
+        // Add a valid face
+        mesh.faces.push(Face { indices: [0, 1, 2] });
+
         // Add a degenerate face (all vertices same point - area = 0)
         mesh.faces.push(Face {
             indices: [0, 0, 0], // Degenerate: all same vertex
         });
-        
+
         // Should succeed - degenerate face should be skipped
         let result = recalculate_normals(mesh).unwrap();
-        
+
         // Should still have normals for all vertices
         assert_eq!(result.normals.len(), 3);
-        
+
         // Normals should be calculated from the valid face only
         // All normals should point in +Z direction
         for normal in &result.normals {
-            assert!((normal.z - 1.0).abs() < 0.01, "Normal Z should be ~1.0, got {}", normal.z);
+            assert!(
+                (normal.z - 1.0).abs() < 0.01,
+                "Normal Z should be ~1.0, got {}",
+                normal.z
+            );
         }
     }
 }
-

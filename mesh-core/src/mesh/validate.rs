@@ -62,7 +62,9 @@ pub fn validate_mesh(mesh: &Mesh) -> Result<()> {
                 errors.push(ValidationError {
                     message: format!(
                         "Face {} has invalid vertex index {} (vertex count: {})",
-                        face_idx, index, mesh.vertices.len()
+                        face_idx,
+                        index,
+                        mesh.vertices.len()
                     ),
                     severity: ValidationSeverity::Error,
                 });
@@ -103,7 +105,7 @@ pub fn validate_mesh(mesh: &Mesh) -> Result<()> {
             let dx = (v1.x - v2.x).abs();
             let dy = (v1.y - v2.y).abs();
             let dz = (v1.z - v2.z).abs();
-            
+
             if dx < 1e-6 && dy < 1e-6 && dz < 1e-6 {
                 duplicate_count += 1;
             }
@@ -143,7 +145,7 @@ pub fn validate_mesh(mesh: &Mesh) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::mesh::{Vertex, Face};
+    use crate::mesh::{Face, Vertex};
 
     #[test]
     fn test_validate_empty_mesh() {
@@ -155,13 +157,23 @@ mod tests {
     #[test]
     fn test_validate_valid_mesh() {
         let mut mesh = Mesh::new();
-        mesh.vertices.push(Vertex { x: 0.0, y: 0.0, z: 0.0 });
-        mesh.vertices.push(Vertex { x: 1.0, y: 0.0, z: 0.0 });
-        mesh.vertices.push(Vertex { x: 0.5, y: 1.0, z: 0.0 });
-        
-        mesh.faces.push(Face {
-            indices: [0, 1, 2],
+        mesh.vertices.push(Vertex {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
         });
+        mesh.vertices.push(Vertex {
+            x: 1.0,
+            y: 0.0,
+            z: 0.0,
+        });
+        mesh.vertices.push(Vertex {
+            x: 0.5,
+            y: 1.0,
+            z: 0.0,
+        });
+
+        mesh.faces.push(Face { indices: [0, 1, 2] });
 
         let result = validate_mesh(&mesh);
         assert!(result.is_ok());
@@ -170,7 +182,11 @@ mod tests {
     #[test]
     fn test_validate_invalid_face_indices() {
         let mut mesh = Mesh::new();
-        mesh.vertices.push(Vertex { x: 0.0, y: 0.0, z: 0.0 });
+        mesh.vertices.push(Vertex {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+        });
         mesh.faces.push(Face {
             indices: [0, 1, 2], // Invalid indices
         });
@@ -182,8 +198,16 @@ mod tests {
     #[test]
     fn test_validate_degenerate_face() {
         let mut mesh = Mesh::new();
-        mesh.vertices.push(Vertex { x: 0.0, y: 0.0, z: 0.0 });
-        mesh.vertices.push(Vertex { x: 1.0, y: 0.0, z: 0.0 });
+        mesh.vertices.push(Vertex {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+        });
+        mesh.vertices.push(Vertex {
+            x: 1.0,
+            y: 0.0,
+            z: 0.0,
+        });
         mesh.faces.push(Face {
             indices: [0, 0, 1], // Degenerate face
         });
@@ -191,27 +215,50 @@ mod tests {
         // Should pass validation but generate warning
         // Degenerate faces are warnings, not errors, so validation should succeed
         let result = validate_mesh(&mesh);
-        assert!(result.is_ok(), "Degenerate faces should only generate warnings, not errors");
+        assert!(
+            result.is_ok(),
+            "Degenerate faces should only generate warnings, not errors"
+        );
     }
 
     #[test]
     fn test_validate_normal_count_mismatch() {
         let mut mesh = Mesh::new();
-        mesh.vertices.push(Vertex { x: 0.0, y: 0.0, z: 0.0 });
-        mesh.vertices.push(Vertex { x: 1.0, y: 0.0, z: 0.0 });
-        mesh.vertices.push(Vertex { x: 0.5, y: 1.0, z: 0.0 });
-        
-        mesh.faces.push(Face {
-            indices: [0, 1, 2],
+        mesh.vertices.push(Vertex {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
         });
-        
+        mesh.vertices.push(Vertex {
+            x: 1.0,
+            y: 0.0,
+            z: 0.0,
+        });
+        mesh.vertices.push(Vertex {
+            x: 0.5,
+            y: 1.0,
+            z: 0.0,
+        });
+
+        mesh.faces.push(Face { indices: [0, 1, 2] });
+
         // Add only 2 normals when we have 3 vertices (mismatch)
-        mesh.normals.push(crate::mesh::Normal { x: 0.0, y: 0.0, z: 1.0 });
-        mesh.normals.push(crate::mesh::Normal { x: 0.0, y: 0.0, z: 1.0 });
+        mesh.normals.push(crate::mesh::Normal {
+            x: 0.0,
+            y: 0.0,
+            z: 1.0,
+        });
+        mesh.normals.push(crate::mesh::Normal {
+            x: 0.0,
+            y: 0.0,
+            z: 1.0,
+        });
 
         // Should pass validation but generate warning about normal count mismatch
         let result = validate_mesh(&mesh);
-        assert!(result.is_ok(), "Normal count mismatch should only generate warnings, not errors");
+        assert!(
+            result.is_ok(),
+            "Normal count mismatch should only generate warnings, not errors"
+        );
     }
 }
-
