@@ -4,6 +4,11 @@ on:
   release:
     types: [published]
 
+# SECURITY: Restrict workflow permissions to minimum required
+permissions:
+  contents: write  # Only for uploading release assets
+  id-token: write  # For future OIDC token usage (code signing)
+
 env:
   CARGO_TERM_COLOR: always
 
@@ -11,8 +16,23 @@ jobs:
   release-windows:
     name: Build and Package Windows
     runs-on: windows-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for verification
+      
+      # SECURITY: Verify we're on a release tag
+      - name: Verify Release Tag
+        shell: pwsh
+        run: |
+          $ref = "${{ github.ref }}"
+          if ($ref -notmatch '^refs/tags/v?[0-9]+\.[0-9]+\.[0-9]+') {
+            Write-Error "Error: Not a valid release tag ref: $ref"
+            exit 1
+          }
+          Write-Host "Verified release tag: $ref" -ForegroundColor Green
       
       - uses: dtolnay/rust-toolchain@stable
         with:
@@ -40,21 +60,50 @@ jobs:
           $version = "${{ github.ref_name }}" -replace '^v', ''
           .\scripts\package-windows.ps1 -Version $version -Target x86_64-pc-windows-msvc
       
+      # SECURITY: Generate SHA256 checksums for binary integrity verification
+      - name: Generate Checksums
+        shell: pwsh
+        run: |
+          Get-FileHash simpleimageconverter-*-windows-x64.zip -Algorithm SHA256 | Format-Table -AutoSize | Out-File -Encoding UTF8 checksums-windows.txt
+          Write-Host "Checksums generated:" -ForegroundColor Green
+          Get-Content checksums-windows.txt
+      
       - name: Upload Windows Release Asset
         uses: softprops/action-gh-release@v1
         with:
           files: simpleimageconverter-*-windows-x64.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Upload Windows Checksums
+        uses: softprops/action-gh-release@v1
+        with:
+          files: checksums-windows.txt
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   release-macos:
     name: Build and Package macOS
     runs-on: macos-latest
+    permissions:
+      contents: write
     strategy:
       matrix:
         target: [x86_64-apple-darwin, aarch64-apple-darwin]
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for verification
+      
+      # SECURITY: Verify we're on a release tag
+      - name: Verify Release Tag
+        run: |
+          REF="${{ github.ref }}"
+          if [[ ! "$REF" =~ ^refs/tags/v?[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+            echo "Error: Not a valid release tag ref: $REF"
+            exit 1
+          fi
+          echo "Verified release tag: $REF"
       
       - uses: dtolnay/rust-toolchain@stable
         with:
@@ -85,18 +134,46 @@ jobs:
           # Rename to include architecture
           mv "simpleimageconverter-${VERSION}-macos-x64.tar.gz" "simpleimageconverter-${VERSION}-macos-${ARCH}.tar.gz" || true
       
+      # SECURITY: Generate SHA256 checksums for binary integrity verification
+      - name: Generate Checksums
+        run: |
+          sha256sum simpleimageconverter-*-macos-*.tar.gz > checksums-macos.txt
+          echo "Checksums generated:"
+          cat checksums-macos.txt
+      
       - name: Upload macOS Release Asset
         uses: softprops/action-gh-release@v1
         with:
           files: simpleimageconverter-*-macos-*.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Upload macOS Checksums
+        uses: softprops/action-gh-release@v1
+        with:
+          files: checksums-macos.txt
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   release-linux:
     name: Build and Package Linux
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for verification
+      
+      # SECURITY: Verify we're on a release tag
+      - name: Verify Release Tag
+        run: |
+          REF="${{ github.ref }}"
+          if [[ ! "$REF" =~ ^refs/tags/v?[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+            echo "Error: Not a valid release tag ref: $REF"
+            exit 1
+          fi
+          echo "Verified release tag: $REF"
       
       - uses: dtolnay/rust-toolchain@stable
         with:
@@ -124,10 +201,24 @@ jobs:
           VERSION=${VERSION#v}  # Remove 'v' prefix if present
           ./scripts/package-linux.sh "$VERSION" "x86_64-unknown-linux-gnu"
       
+      # SECURITY: Generate SHA256 checksums for binary integrity verification
+      - name: Generate Checksums
+        run: |
+          sha256sum simpleimageconverter-*-linux-x64.tar.gz > checksums-linux.txt
+          echo "Checksums generated:"
+          cat checksums-linux.txt
+      
       - name: Upload Linux Release Asset
         uses: softprops/action-gh-release@v1
         with:
           files: simpleimageconverter-*-linux-x64.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Upload Linux Checksums
+        uses: softprops/action-gh-release@v1
+        with:
+          files: checksums-linux.txt
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

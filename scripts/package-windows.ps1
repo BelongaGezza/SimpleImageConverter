@@ -30,7 +30,27 @@ if ([string]::IsNullOrEmpty($Version)) {
     }
 }
 
-# Set paths
+# SECURITY: Validate version format to prevent injection attacks
+# Allow semantic versioning: X.Y.Z or X.Y.Z-pre (e.g., 0.2.0, 0.2.0-alpha1)
+if ($Version -notmatch '^\d+\.\d+\.\d+(-[a-zA-Z0-9.-]+)?$') {
+    Write-Error "Invalid version format: '$Version'. Expected format: X.Y.Z or X.Y.Z-pre"
+    exit 1
+}
+
+# SECURITY: Sanitize version for path usage (remove any remaining special characters)
+$VersionSanitized = $Version -replace '[^0-9A-Za-z.-]', ''
+if ($VersionSanitized -ne $Version) {
+    Write-Warning "Version sanitized from '$Version' to '$VersionSanitized' for path safety"
+    $Version = $VersionSanitized
+}
+
+# SECURITY: Validate target format to prevent path traversal
+if ($Target -notmatch '^[a-zA-Z0-9_-]+$') {
+    Write-Error "Invalid target format: '$Target'. Only alphanumeric, underscore, and hyphen allowed."
+    exit 1
+}
+
+# Set paths (using sanitized version)
 $ReleaseDir = "release\windows-x64-v$Version"
 $ZipName = "simpleimageconverter-$Version-windows-x64.zip"
 $BinDir = "target\$Target\release"

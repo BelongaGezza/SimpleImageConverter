@@ -20,7 +20,27 @@ else
     VERSION="$1"
 fi
 
+# SECURITY: Validate version format to prevent injection attacks
+# Allow semantic versioning: X.Y.Z or X.Y.Z-pre (e.g., 0.2.0, 0.2.0-alpha1)
+if ! echo "$VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.-]+)?$'; then
+    echo "Error: Invalid version format: '$VERSION'. Expected format: X.Y.Z or X.Y.Z-pre" >&2
+    exit 1
+fi
+
+# SECURITY: Sanitize version for path usage (remove any remaining special characters)
+VERSION_SANITIZED=$(echo "$VERSION" | tr -cd '0-9A-Za-z.-')
+if [ "$VERSION_SANITIZED" != "$VERSION" ]; then
+    echo "Warning: Version sanitized from '$VERSION' to '$VERSION_SANITIZED' for path safety" >&2
+    VERSION="$VERSION_SANITIZED"
+fi
+
 TARGET="${2:-x86_64-apple-darwin}"
+
+# SECURITY: Validate target format to prevent path traversal
+if ! echo "$TARGET" | grep -qE '^[a-zA-Z0-9_-]+$'; then
+    echo "Error: Invalid target format: '$TARGET'. Only alphanumeric, underscore, and hyphen allowed." >&2
+    exit 1
+fi
 
 echo "Packaging SimpleImageConverter for macOS..."
 
