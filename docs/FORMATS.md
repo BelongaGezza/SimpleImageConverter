@@ -42,7 +42,7 @@
 | OFF | .off | ✅ | ✅ | Sprint 5 ✅ | Custom parser |
 | glTF | .gltf, .glb | ✅ | ✅ | Sprint 5 ✅ | Binary/text |
 | DXF | .dxf | ✅ | ✅ | Sprint 5 ✅ | 3D entities |
-| STEP | .step, .stp | 🚧 | ❌ | Sprint 7-8 🚧 | **v0.2.0 IN PROGRESS:** Read-only, feature-gated (`--features step`). STEP file parsing working (ruststep 0.4.0). Entity extraction framework complete. Entity conversion to truck Shell in progress. Tessellation pending. See `STEP_IMPLEMENTATION_CURRENT_STATE.md` and `docs/STEP_FORMAT_REFERENCE.md` for details. |
+| STEP | .step, .stp | 🚧 | ❌ | Sprint 7-8 🚧 | **v0.2.0 IN PROGRESS:** Read-only, feature-gated (`--features step`). **FACETED_BREP support only** (pre-tessellated geometry). STEP file parsing working (ruststep 0.4.0). Entity extraction framework complete. FACETED_BREP API research complete. Entity traversal implementation in progress. **Limitations:** Only supports FACETED_BREP entities (pre-tessellated). Full B-Rep with NURBS surfaces, cylinders, etc. planned for v0.3.0. See `FACETED_BREP_API_FINDINGS.md`, `docs/CAD_EXPORT_GUIDE.md`, and `docs/STEP_FORMAT_REFERENCE.md` for details. |
 
 **Legend:**
 - ✅ Implemented
@@ -148,7 +148,7 @@ Formats are detected by:
 
 - **SVG**: Read-only (rasterization), no write support
 - **PDF**: Read-only (page extraction), no write support
-- **STEP**: **v0.2.0 IN PROGRESS** - Skeleton implemented (Sprint 7-8). STEP file parsing working (ruststep 0.4.0). Entity extraction framework complete. Entity conversion to truck Shell in progress. Tessellation pending. Write support not planned (requires complex CAD modeling). Feature-gated (`--features step`). See `STEP_IMPLEMENTATION_CURRENT_STATE.md`, `docs/STEP_FORMAT_REFERENCE.md` (comprehensive specification reference), and `RESEARCH_*.md` files for details.
+- **STEP**: **v0.2.0 IN PROGRESS** - Skeleton implemented (Sprint 7-8). STEP file parsing working (ruststep 0.4.0). Entity extraction framework complete. **FACETED_BREP API research complete** (see `FACETED_BREP_API_FINDINGS.md`). Entity traversal implementation in progress. **Limitations:** Only supports FACETED_BREP entities (pre-tessellated geometry). Full B-Rep with NURBS surfaces, cylinders, etc. planned for v0.3.0. Users must export STEP files with tessellation enabled. See `docs/CAD_EXPORT_GUIDE.md` for CAD software-specific instructions. Write support not planned (requires complex CAD modeling). Feature-gated (`--features step`). See `STEP_IMPLEMENTATION_CURRENT_STATE.md`, `docs/STEP_FORMAT_REFERENCE.md` (comprehensive specification reference), and `RESEARCH_*.md` files for details.
 - **FBX**: Not supported (proprietary, no open-source Rust library)
 - **DWG**: Not supported (proprietary)
 

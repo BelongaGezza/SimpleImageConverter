@@ -25,8 +25,9 @@ Two separate CLI tools written in Rust:
 
 ### 3D Mesh Converter (mesh-convert)
 - **✅ Implemented Formats:** STL (binary/ASCII), OBJ, PLY, OFF, glTF/GLB, DXF
-- **🚧 Partial Support:** STEP (feature-gated, read-only, tessellation in progress)
+- **🚧 Partial Support:** STEP (feature-gated, read-only, **FACETED_BREP only** - pre-tessellated geometry)
 - **📅 Planned Features:** Coordinate system transforms, normal recalculation, mesh validation
+- **⚠️ STEP Limitations:** Only supports FACETED_BREP entities. Full B-Rep support (NURBS, cylinders, etc.) planned for v0.3.0. See `docs/CAD_EXPORT_GUIDE.md` for export instructions.
 - Material preservation (where supported)
 - Resource limits and security validation
 - Binary and ASCII format variants

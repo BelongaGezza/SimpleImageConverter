@@ -1,8 +1,8 @@
 # Architecture Overview
 ## Simple Image Converter
 
-**Version:** 0.1.0  
-**Last Updated:** January 27, 2025
+**Version:** 0.2.0  
+**Last Updated:** January 29, 2025
 
 ---
 
@@ -216,6 +216,38 @@ Input File
 Output File
 ```
 
+### STEP Conversion Flow (v0.2.0 - FACETED_BREP)
+
+```
+STEP File (ASCII)
+    ↓
+[File Size Validation] ← ResourceLimits
+    ↓
+[Format Detection] → STEP format
+    ↓
+[ruststep::parser::parse()] → Exchange
+    ↓
+[Tables::from_data_sections()] → Tables (AP203 entities)
+    ↓
+[Entity Extraction] → FACETED_BREP entities
+    ↓
+[Entity Traversal] → Extract vertices/faces from pre-tessellated geometry
+    ↓
+[Calculate Normals] → Face normals from vertex positions
+    ↓
+[Mesh { vertices, faces, normals }]
+    ↓
+[Resource Validation] ← ResourceLimits (vertices, faces)
+    ↓
+[MeshConverter.convert()] (if needed)
+    ↓
+[MeshWriter.write()] → Vec<u8>
+    ↓
+Output File
+```
+
+**Note:** For STEP files with curved surfaces, see v0.3.0 opencascade-rs integration plan.
+
 ---
 
 ## Error Handling
@@ -291,16 +323,56 @@ Performance benchmarks for:
 
 ---
 
+## STEP Format Implementation
+
+### Current Status (v0.2.0)
+
+**Implementation Approach:** Hybrid phased strategy
+
+**v0.2.0: FACETED_BREP Extraction (Pure Rust)**
+- ✅ STEP file parsing (ruststep 0.4.0 with AP203 feature)
+- ✅ Entity extraction framework (Tables, IntoOwned)
+- ✅ Entity type identification (MANIFOLD_SOLID_BREP, CLOSED_SHELL, FACETED_BREP)
+- 🚧 FACETED_BREP entity traversal and mesh extraction (in progress)
+- ⏳ Direct mesh construction from pre-tessellated geometry
+
+**Architecture:**
+```
+STEP File → ruststep::parser → Exchange → Tables::from_data_sections()
+  → FACETED_BREP entities → Entity traversal → Extract vertices/faces
+  → Mesh { vertices, faces, normals }
+```
+
+**Limitations:**
+- Only supports STEP files with pre-tessellated geometry (FACETED_BREP)
+- No support for curved surfaces (NURBS, cylinders, spheres)
+- Many CAD tools can export FACETED_BREP format
+
+**v0.3.0: opencascade-rs Integration (Planned)**
+- Full curved surface support via OpenCASCADE kernel
+- Feature-gated optional dependency
+- Can coexist with FACETED_BREP path
+- See `ARCHITECT_REVIEW_STEP_IMPLEMENTATION.md` for details
+
+**Feature Flags:**
+- `step`: Pure Rust STEP support (FACETED_BREP) - v0.2.0
+- `step-opencascade`: Full STEP support with OCCT - v0.3.0 (planned)
+
+**Architectural Decision:**
+See `ARCHITECT_REVIEW_STEP_IMPLEMENTATION.md` for complete architecture decision record.
+
+---
+
 ## Future Enhancements
 
 ### ✅ Completed (Phase 2-3)
 - Advanced formats (SVG, WebP, glTF, DXF, OFF) - ✅ Implemented
 - Quality control - ✅ Implemented
-- STEP format skeleton - ✅ Implemented (partial, feature-gated)
+- STEP format parsing and entity extraction - ✅ Implemented (feature-gated)
 
 ### 📅 Future Enhancements (Phase 4+)
-- **v0.1.1:** mesh-convert transform, recalculate-normals, validate features
-- **v0.2.0:** Complete STEP format support (when library API available)
+- **v0.2.0:** FACETED_BREP extraction and mesh conversion (in progress)
+- **v0.3.0:** opencascade-rs integration for full STEP support
 - **v1.0.0:** GUI application (egui framework)
 - **Future:** Batch processing improvements, plugin system
 
@@ -311,8 +383,11 @@ Performance benchmarks for:
 - [Phase3_Architecture.md](../Phase3_Architecture.md) - Detailed technical design
 - [IMPLEMENTATION_PLAN.md](../IMPLEMENTATION_PLAN.md) - Sprint-by-sprint plan
 - [rust-resources.md](../rust-resources.md) - Living knowledge base
+- [ARCHITECT_REVIEW_STEP_IMPLEMENTATION.md](../ARCHITECT_REVIEW_STEP_IMPLEMENTATION.md) - STEP implementation architecture decision record
+- [ROADMAP.md](../ROADMAP.md) - Current project roadmap and status
 
 ---
 
-_For detailed implementation details, see Phase3_Architecture.md_
+_For detailed implementation details, see Phase3_Architecture.md_  
+_For STEP implementation architecture decisions, see ARCHITECT_REVIEW_STEP_IMPLEMENTATION.md_
 

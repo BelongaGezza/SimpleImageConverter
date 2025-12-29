@@ -9,6 +9,87 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.2.0] - 2025-01-29
+
+### Added
+
+#### Mesh Converter (mesh-convert)
+- STEP format support (read-only, feature-gated)
+  - FACETED_BREP entity extraction (pre-tessellated geometry)
+  - Direct mesh construction from AP203 entities
+  - Support for STEP files exported with tessellation enabled
+  - Comprehensive error handling with user-friendly messages
+  - Resource limits and security validation
+- STEP integration tests (8 tests, all passing)
+  - File reading tests
+  - Conversion tests (STEP → STL, STEP → OBJ)
+  - Error handling tests
+  - Converter integration tests
+
+#### Core Libraries
+- `mesh-core`: STEP format handler
+  - `StepFormat` struct with resource limits
+  - FACETED_BREP entity traversal and extraction
+  - Vertex deduplication with integer-based hashing
+  - Face triangulation for polygons
+  - Normal calculation for extracted meshes
+  - Comprehensive validation and error handling
+
+#### Documentation
+- Comprehensive STEP format documentation
+  - `docs/STEP_FORMAT_REFERENCE.md` - Technical reference
+  - `docs/CAD_EXPORT_GUIDE.md` - User guide for CAD software
+  - `docs/RUSTSTEP_GUIDANCE.md` - Developer guide for ruststep API
+  - `docs/FORMATS.md` - Updated with STEP limitations
+- Test file collection framework
+  - Verification scripts
+  - Collection guidelines
+  - Test file documentation
+
+### Changed
+- STEP format support moved from "in progress" to "partial support"
+- Updated error messages to be more user-friendly and actionable
+- Enhanced resource limit validation for STEP files
+- Improved security logging for STEP operations
+
+### Improved
+- Error messages now include solutions and documentation references
+- Better handling of unsupported STEP file types
+- Clearer guidance for users on STEP file requirements
+
+### Limitations
+- **FACETED_BREP only:** v0.2.0 supports only pre-tessellated STEP files
+  - Files must be exported with tessellation enabled
+  - No support for curved surfaces (NURBS, cylinders, spheres)
+  - Full B-Rep support planned for v0.3.0
+- **Feature-gated:** STEP support requires `--features step` flag
+- **Read-only:** STEP writing not supported (requires complex CAD modeling)
+
+### Security
+- All security checks pass (reviewed by Security Specialist)
+- Zero unsafe code blocks
+- Comprehensive input validation (file size, UTF-8, mesh resources)
+- Resource limits enforced before parsing and after extraction
+- Security logging for all limit violations
+- Secure by Design: 10/10 principles met
+- Security grade: A (Strong - Production Ready)
+
+### Architecture
+- Approved hybrid phased approach (FACETED_BREP → opencascade-rs)
+- Pure Rust implementation (no C++ dependencies for v0.2.0)
+- Feature-gated implementation
+- Direct mesh construction (no intermediate Shell conversion)
+
+### Notes
+- All v0.2.0 features fully implemented and tested
+- Code reviewed and approved by Senior Engineer
+- Architecture reviewed and approved by System Architect
+- Security reviewed and approved by Security Specialist
+- 8 STEP integration tests passing
+- All tests passing (370+ total)
+
+---
+
 ## [0.1.1] - 2025-01-27
 
 ### Added

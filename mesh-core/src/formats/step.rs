@@ -9,14 +9,8 @@ use crate::mesh::Mesh;
 use common::error::{ConversionError, Result};
 #[cfg(feature = "step")]
 use common::limits::ResourceLimits;
-// Truck types for geometry and tessellation
-#[cfg(feature = "step")]
-use truck_modeling::Shell;
-// Tessellation imports (for future use when implementing convert_truck_to_mesh)
-// use truck_meshalgo::prelude::*;
-// use truck_polymesh::PolygonMesh;
-// use crate::mesh::{Face, Normal, Vertex};
-// use nalgebra::Vector3;
+// Note: We're implementing FACETED_BREP extraction directly (no truck Shell conversion)
+// Truck dependencies are kept for potential future use (v0.3.0 opencascade-rs integration)
 // ruststep for STEP file parsing
 #[cfg(feature = "step")]
 use ruststep::parser;
@@ -26,7 +20,7 @@ use ruststep::ap203::config_control_design::Tables;
 // TableInit trait for populating Tables from Exchange.data
 #[cfg(feature = "step")]
 use ruststep::tables::TableInit;
-// IntoOwned trait for resolving entity references
+// IntoOwned trait for resolving entity references (used in FACETED_BREP extraction)
 #[cfg(feature = "step")]
 use ruststep::tables::IntoOwned;
 
@@ -53,110 +47,116 @@ impl StepFormat {
         Self { limits }
     }
 
-    /// Extract geometric entities from AP203 Tables
+    /// Extract FACETED_BREP entities from AP203 Tables and convert to Mesh
     ///
-    /// This method accesses the deserialized entities from Tables and attempts to
-    /// extract geometry that can be converted to truck Shell objects.
-    fn extract_entities_from_tables(&self, tables: &Tables) -> Result<Vec<Shell>> {
-        let shells = Vec::new();
-
-        // Check for MANIFOLD_SOLID_BREP entities
-        // These are the main entity type for B-Rep solids
+    /// This method implements the architect-approved approach for v0.2.0:
+    /// Direct extraction of FACETED_BREP entities (pre-tessellated geometry)
+    /// without requiring truck Shell conversion.
+    ///
+    /// Entity traversal path:
+    /// FACETED_BREP → CLOSED_SHELL → FACE → FACE_BOUND → EDGE_LOOP →
+    /// ORIENTED_EDGE → EDGE → VERTEX_POINT → CARTESIAN_POINT
+    fn extract_faceted_brep(&self, tables: &Tables) -> Result<Mesh> {
+        // Check for FACETED_BREP entities first (v0.2.0 supported format)
+        // Also check for other entity types to provide better error messages
         let msb_holders = tables.manifold_solid_brep_holders();
-        let msb_count = msb_holders.len();
-
-        if msb_count > 0 {
-            eprintln!("Found {} MANIFOLD_SOLID_BREP entities in Tables", msb_count);
-
-            for (entity_id, holder) in msb_holders.iter() {
-                eprintln!("  Entity #{}: ManifoldSolidBrep holder found", entity_id);
-
-                // Try to resolve the holder into an owned ManifoldSolidBrep
-                match holder.clone().into_owned(tables) {
-                    Ok(_msb) => {
-                        eprintln!("    ✓ Successfully resolved ManifoldSolidBrep");
-                        // Now we have the resolved ManifoldSolidBrep (_msb)
-                        // Next step: Convert to truck Shell (Task 2.4)
-                        // This requires mapping AP203 geometry to truck geometry
-                        // For now, just log success - conversion to come
-                        eprintln!("    Note: Shell conversion not yet implemented");
-                    }
-                    Err(e) => {
-                        eprintln!("    ✗ Failed to resolve ManifoldSolidBrep: {:?}", e);
-                    }
-                }
-            }
-        }
-
-        // Check for CLOSED_SHELL entities (can exist independently)
         let cs_holders = tables.closed_shell_holders();
-        let cs_count = cs_holders.len();
+        let fb_holders = tables.faceted_brep_holders();
 
-        if cs_count > 0 {
-            eprintln!("Found {} CLOSED_SHELL entities in Tables", cs_count);
-
-            for (entity_id, holder) in cs_holders.iter() {
-                eprintln!("  Entity #{}: ClosedShell holder found", entity_id);
-
-                match holder.clone().into_owned(tables) {
-                    Ok(_cs) => {
-                        eprintln!("    ✓ Successfully resolved ClosedShell");
-                        // ClosedShell (_cs) contains faces that define the shell geometry
-                        // This is the core data we need for tessellation (Task 2.4)
-                        eprintln!("    Note: Shell conversion not yet implemented");
-                    }
-                    Err(e) => {
-                        eprintln!("    ✗ Failed to resolve ClosedShell: {:?}", e);
-                    }
-                }
+        if fb_holders.is_empty() {
+            // Check if file has other entity types that aren't supported
+            if !msb_holders.is_empty() || !cs_holders.is_empty() {
+                return Err(ConversionError::ConversionFailed(
+                    "STEP file contains MANIFOLD_SOLID_BREP or CLOSED_SHELL entities, but no FACETED_BREP entities. \
+                     For v0.2.0, only FACETED_BREP (pre-tessellated) geometry is supported. \
+                     \
+                     Your file likely contains curved surfaces (NURBS, cylinders, spheres, etc.) which require \
+                     full B-Rep support (planned for v0.3.0). \
+                     \
+                     SOLUTION: Please export your STEP file with tessellation enabled to create FACETED_BREP entities. \
+                     See docs/CAD_EXPORT_GUIDE.md for CAD software-specific instructions."
+                        .to_string(),
+                ));
+            } else {
+                return Err(ConversionError::ConversionFailed(
+                    "STEP file contains no supported geometric entities. \
+                     For v0.2.0, only FACETED_BREP (pre-tessellated) geometry is supported. \
+                     \
+                     SOLUTION: Please export your STEP file with tessellation enabled. \
+                     See docs/CAD_EXPORT_GUIDE.md for CAD software-specific instructions."
+                        .to_string(),
+                ));
             }
         }
 
-        // Log summary of what we found
-        eprintln!("\nEntity extraction summary:");
-        eprintln!("  - MANIFOLD_SOLID_BREP: {}", msb_count);
-        eprintln!("  - CLOSED_SHELL: {}", cs_count);
+        // Extract geometry from FACETED_BREP entities
+        // Entity traversal path:
+        // FACETED_BREP → CLOSED_SHELL → FACE → FACE_BOUND → EDGE_LOOP →
+        // ORIENTED_EDGE → EDGE → VERTEX_POINT → CARTESIAN_POINT
 
-        if shells.is_empty() && (msb_count > 0 || cs_count > 0) {
-            // We found entities but couldn't convert them yet
-            // CRITICAL FINDING: truck-stepio does not have input (reading) functionality yet
-            // The "in" module is marked as "not yet implemented" in truck-stepio 0.3.0
-            // See: https://docs.rs/truck-stepio/0.3.0/truck_stepio/
-            //
-            // Options to consider:
-            // 1. Implement custom conversion from AP203 entities to truck Shell (very complex)
-            // 2. Wait for truck-stepio input support (uncertain timeline)
-            // 3. Use a different approach/library for STEP reading
-            //
-            // This is a significant architectural challenge that requires Senior Engineer input.
-            eprintln!("\n⚠️ STEP Reading Limitation:");
-            eprintln!("  Entities were successfully parsed and deserialized from STEP file.");
-            eprintln!("  However, truck-stepio input functionality is not yet implemented.");
-            eprintln!("  Converting AP203 entities to truck Shell requires custom implementation.");
-            eprintln!("  This is a complex task that may require architectural review.");
+        let mut all_vertices = Vec::new();
+        let mut all_faces = Vec::new();
+        // Use ordered floats for deduplication (wrap in a newtype for hashing)
+        let mut vertex_map = std::collections::HashMap::<[i64; 3], usize>::new();
+
+        // Iterate through all FACETED_BREP entities
+        for (id, holder) in fb_holders.iter() {
+            // Resolve FACETED_BREP entity (fully resolve all references)
+            // into_owned() returns the entity with all nested references resolved
+            let faceted_brep = holder.clone().into_owned(tables).map_err(|e| {
+                ConversionError::ConversionFailed(format!(
+                    "Failed to resolve FACETED_BREP entity #{}: {:?}. \
+                     This may indicate a corrupted or incomplete STEP file.",
+                    id, e
+                ))
+            })?;
+
+            // Get the outer CLOSED_SHELL directly from the resolved entity
+            // into_owned() already resolved all nested references, so we can traverse directly
+            let closed_shell = self.get_closed_shell_from_faceted_brep(&faceted_brep);
+
+            // Extract faces from CLOSED_SHELL
+            self.extract_faces_from_shell(
+                closed_shell,
+                &mut all_vertices,
+                &mut all_faces,
+                &mut vertex_map,
+            )?;
         }
 
-        Ok(shells)
-    }
+        // Validate that we extracted geometry
+        if all_vertices.is_empty() {
+            return Err(ConversionError::ConversionFailed(
+                "No vertices extracted from FACETED_BREP entities. \
+                 The STEP file may contain FACETED_BREP entities but no extractable geometry. \
+                 This may indicate a corrupted or unsupported STEP file structure."
+                    .to_string(),
+            ));
+        }
 
-    /// Convert truck Shell objects to our Mesh format
-    fn convert_truck_to_mesh(&self, _shells: Vec<Shell>) -> Result<Mesh> {
-        // TODO: Implement tessellation using truck-meshalgo
-        // The triangulation() method returns Shell<Point3, PolylineCurve, Option<PolygonMesh>>
-        // We need to extract PolygonMesh from each face's surface Option<PolygonMesh>
-        // This requires iterating through the shell's faces and collecting all PolygonMeshes
+        if all_faces.is_empty() {
+            return Err(ConversionError::ConversionFailed(
+                "No faces extracted from FACETED_BREP entities. \
+                 The STEP file may contain FACETED_BREP entities but no extractable faces. \
+                 This may indicate a corrupted or unsupported STEP file structure."
+                    .to_string(),
+            ));
+        }
 
-        Err(ConversionError::ConversionFailed(
-            "Tessellation implementation in progress. \
-            Shell tessellation requires extracting PolygonMesh from each face of the tessellated shell. \
-            Entity conversion framework is in place, tessellation to be completed next.".to_string()
-        ))
+        // Calculate normals for all faces
+        let normals = self.calculate_normals(&all_vertices, &all_faces);
 
-        // Implementation outline:
-        // 1. For each shell: shell.triangulation(tolerance) -> Shell<Point3, PolylineCurve, Option<PolygonMesh>>
-        // 2. Iterate through shell faces, extract Option<PolygonMesh> from each surface
-        // 3. Collect all PolygonMeshes and merge them into a single mesh
-        // 4. Convert to our Mesh format with vertices, faces, and normals
+        // Build final mesh
+        let mesh = Mesh {
+            vertices: all_vertices,
+            faces: all_faces,
+            normals,
+        };
+
+        // Validate mesh using existing validation function
+        crate::mesh::validate::validate_mesh(&mesh)?;
+
+        Ok(mesh)
     }
 
     /// Parse STEP file and convert to mesh
@@ -170,7 +170,11 @@ impl StepFormat {
         // Convert bytes to string (STEP files are ASCII)
         let step_text = std::str::from_utf8(data).map_err(|e| {
             ConversionError::ConversionFailed(format!(
-                "STEP file is not valid UTF-8 ({} bytes): {}",
+                "STEP file is not valid UTF-8 (file size: {} bytes). \
+                 STEP files must be ASCII text format (ISO 10303-21). \
+                 Error: {} \
+                 \
+                 The file may be corrupted or in a different format.",
                 data.len(),
                 e
             ))
@@ -178,65 +182,419 @@ impl StepFormat {
 
         // Parse STEP file using ruststep
         let exchange = parser::parse(step_text).map_err(|e| {
-            ConversionError::ConversionFailed(format!("Failed to parse STEP file: {}", e))
+            ConversionError::ConversionFailed(format!(
+                "Failed to parse STEP file: {} \
+                 \
+                 The file may be corrupted, incomplete, or not a valid STEP file (ISO 10303-21 format). \
+                 Please verify the file is a valid STEP file and try again.",
+                e
+            ))
         })?;
 
         // Build AP203 Tables from Exchange.data for entity deserialization
         // Tables allows us to deserialize Records into AP203 structs and resolve references
         // Using TableInit::from_data_sections() to populate Tables from parsed STEP data
-        let tables = match Tables::from_data_sections(&exchange.data) {
-            Ok(t) => t,
-            Err(e) => {
-                // If Tables construction fails, it might be due to schema mismatch
-                // Log the error but continue with default tables for entity identification
-                // This allows us to still parse and identify entities even if full deserialization fails
-                eprintln!(
-                    "Warning: Could not fully deserialize STEP entities into AP203 Tables: {:?}",
-                    e
-                );
-                eprintln!("Falling back to entity identification mode (limited functionality)");
-                Tables::default()
-            }
-        };
+        let tables = Tables::from_data_sections(&exchange.data).map_err(|e| {
+            ConversionError::ConversionFailed(format!(
+                "Failed to deserialize STEP entities into AP203 Tables: {:?} \
+                 \
+                 This may indicate: \
+                 - The file uses an unsupported Application Protocol (AP203 is supported, AP214/AP242 may have limited support) \
+                 - Schema mismatch or incompatible STEP variant \
+                 - Corrupted or malformed entity data \
+                 \
+                 Please verify the file is a valid AP203 STEP file and try again.",
+                e
+            ))
+        })?;
 
-        // Extract geometric entities from Tables (new approach using deserialized entities)
-        // This uses the AP203 Tables for proper entity deserialization and reference resolution
-        let shells = self.extract_entities_from_tables(&tables)?;
+        // Extract FACETED_BREP entities and convert directly to Mesh (v0.2.0 approach)
+        // This bypasses truck Shell conversion as approved by the architect
+        let mesh = self.extract_faceted_brep(&tables)?;
 
-        // Check if we found any shells
-        if shells.is_empty() {
-            return Err(ConversionError::ConversionFailed(format!(
-                "STEP file parsed successfully ({} bytes), but no geometric entities could be converted to shells.\n\
-                \n\
-                This indicates that:\n\
-                - Either the STEP file doesn't contain supported geometric entity types, or\n\
-                - Entity conversion from STEP entities to truck Shell types is not yet fully implemented.\n\
-                \n\
-                Current status:\n\
-                - ✅ STEP file parsing working\n\
-                - ✅ Entity extraction framework in place\n\
-                - 🚧 STEP entity → truck Shell conversion - in progress\n\
-                - ⏳ Tessellation - pending\n\
-                \n\
-                The entity conversion requires mapping STEP entity structures (MANIFOLD_SOLID_BREP, CLOSED_SHELL, etc.) \
-                to truck Shell objects, which is a complex task requiring STEP entity semantics knowledge.",
-                data.len()
-            )));
-        }
-
-        // Security: Estimate resource usage before tessellation
-        let estimated_vertices = shells.len() * 1000; // Conservative estimate
-        let estimated_faces = shells.len() * 2000; // Conservative estimate
+        // Security: Validate resource usage
         if let Err(e) = self
             .limits
-            .check_mesh_resources(estimated_vertices, estimated_faces)
+            .check_mesh_resources(mesh.vertices.len(), mesh.faces.len())
         {
             common::security::log_security_error(&e, None);
             return Err(e);
         }
 
-        // Convert truck shells to our mesh format
-        self.convert_truck_to_mesh(shells)
+        Ok(mesh)
+    }
+
+    /// Get CLOSED_SHELL from FACETED_BREP
+    ///
+    /// This is a helper method to extract the `outer` field from FacetedBrep.
+    /// ruststep API: FacetedBrep -> ManifoldSolidBrep -> ClosedShellAny -> ClosedShell
+    #[cfg(feature = "step")]
+    fn get_closed_shell_from_faceted_brep<'a>(
+        &self,
+        faceted_brep: &'a ruststep::ap203::config_control_design::FacetedBrep,
+    ) -> &'a ruststep::ap203::config_control_design::ClosedShell {
+        use ruststep::ap203::config_control_design::ClosedShellAny;
+
+        // FacetedBrep has: manifold_solid_brep: ManifoldSolidBrep
+        // ManifoldSolidBrep has: outer: ClosedShellAny
+        let closed_shell_any = &faceted_brep.manifold_solid_brep.outer;
+
+        // ClosedShellAny is an enum with variants:
+        // - ClosedShell(Box<ClosedShell>)
+        // - OrientedClosedShell(Box<OrientedClosedShell>)
+        match closed_shell_any {
+            ClosedShellAny::ClosedShell(cs) => cs.as_ref(),
+            ClosedShellAny::OrientedClosedShell(ocs) => {
+                // OrientedClosedShell implements Deref<Target = ClosedShell>
+                // It also has a closed_shell field we can access directly
+                &ocs.closed_shell
+            }
+        }
+    }
+
+    /// Extract faces from CLOSED_SHELL and build mesh data
+    ///
+    /// Traverses the CLOSED_SHELL → FACE → FACE_BOUND → EDGE_LOOP → vertices
+    /// and builds the mesh vertex/face data.
+    #[cfg(feature = "step")]
+    fn extract_faces_from_shell(
+        &self,
+        closed_shell: &ruststep::ap203::config_control_design::ClosedShell,
+        vertices: &mut Vec<crate::mesh::Vertex>,
+        faces: &mut Vec<crate::mesh::Face>,
+        vertex_map: &mut std::collections::HashMap<[i64; 3], usize>,
+    ) -> Result<()> {
+        use ruststep::ap203::config_control_design::FaceBoundAny;
+
+        // Access cfs_faces from CLOSED_SHELL
+        // ClosedShell has: connected_face_set: ConnectedFaceSet
+        // ConnectedFaceSet has: cfs_faces: Vec<FaceAny>
+        let face_list = &closed_shell.connected_face_set.cfs_faces;
+
+        // Iterate through FACE entities
+        for face_any in face_list {
+            // Get the Face from FaceAny (may be Face, FaceSurface, or OrientedFace)
+            // FaceAny implements AsRef<Face>, so we can just use as_ref()
+            let face: &ruststep::ap203::config_control_design::Face = face_any.as_ref();
+
+            // For each FACE, access `bounds` (Vec<FaceBoundAny>)
+            // In STEP files, a FACE has:
+            // - One outer bound (FaceOuterBound) - defines the face perimeter
+            // - Zero or more inner bounds (FaceBound) - defines holes in the face
+            // For v0.2.0, we only process the outer bound. Hole handling is planned for v0.3.0.
+            let mut outer_bound_found = false;
+            for face_bound_any in &face.bounds {
+                match face_bound_any {
+                    FaceBoundAny::FaceOuterBound(fob) => {
+                        // Process outer bound only
+                        if outer_bound_found {
+                            return Err(ConversionError::ConversionFailed(
+                                "Face has multiple outer bounds - invalid STEP file structure. \
+                                 Each face should have exactly one outer bound."
+                                    .to_string(),
+                            ));
+                        }
+                        outer_bound_found = true;
+
+                        // Get the bound (LoopAny) from FaceBound
+                        let loop_any = &fob.face_bound.bound;
+
+                        // Extract vertices from the loop
+                        let face_vertex_indices =
+                            self.extract_vertices_from_loop(loop_any, vertices, vertex_map)?;
+
+                        // Build face indices (triangulate if needed)
+                        // FACETED_BREP should have triangular faces, but we handle polygons too
+                        if face_vertex_indices.len() >= 3 {
+                            // Fan triangulation for polygons
+                            for i in 1..(face_vertex_indices.len() - 1) {
+                                faces.push(crate::mesh::Face {
+                                    indices: [
+                                        face_vertex_indices[0],
+                                        face_vertex_indices[i],
+                                        face_vertex_indices[i + 1],
+                                    ],
+                                });
+                            }
+                        }
+                    }
+                    FaceBoundAny::FaceBound(_) => {
+                        // Skip inner bounds (holes) for v0.2.0
+                        // Inner bounds define holes in faces, which require more complex handling
+                        // This is planned for v0.3.0
+                        continue;
+                    }
+                }
+            }
+
+            // Validate that we found an outer bound
+            if !outer_bound_found {
+                return Err(ConversionError::ConversionFailed(
+                    "Face has no outer bound - invalid STEP file structure. \
+                     Each face must have exactly one outer bound."
+                        .to_string(),
+                ));
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Extract vertices from a loop (EdgeLoop, PolyLoop, etc.)
+    #[cfg(feature = "step")]
+    fn extract_vertices_from_loop(
+        &self,
+        loop_any: &ruststep::ap203::config_control_design::LoopAny,
+        vertices: &mut Vec<crate::mesh::Vertex>,
+        vertex_map: &mut std::collections::HashMap<[i64; 3], usize>,
+    ) -> Result<Vec<usize>> {
+        use ruststep::ap203::config_control_design::LoopAny;
+
+        match loop_any {
+            LoopAny::EdgeLoop(el) => {
+                // EdgeLoop has: path: Path, which has: edge_list: Vec<OrientedEdge>
+                self.extract_vertices_from_edge_loop(el.as_ref(), vertices, vertex_map)
+            }
+            LoopAny::PolyLoop(pl) => {
+                // PolyLoop has direct polygon points
+                self.extract_vertices_from_poly_loop(pl.as_ref(), vertices, vertex_map)
+            }
+            LoopAny::VertexLoop(_vl) => {
+                // VertexLoop represents a single vertex, not a face boundary
+                // This cannot form a valid face - return error
+                Err(ConversionError::ConversionFailed(
+                    "Face bound uses VertexLoop which cannot form a face boundary. \
+                     VertexLoop represents a single vertex, not a closed loop. \
+                     This may indicate an invalid or unsupported STEP file structure."
+                        .to_string(),
+                ))
+            }
+            LoopAny::Loop(_) => {
+                // Base Loop type - not enough info to extract vertices
+                Ok(vec![])
+            }
+        }
+    }
+
+    /// Extract vertices from an EdgeLoop
+    #[cfg(feature = "step")]
+    fn extract_vertices_from_edge_loop(
+        &self,
+        edge_loop: &ruststep::ap203::config_control_design::EdgeLoop,
+        vertices: &mut Vec<crate::mesh::Vertex>,
+        vertex_map: &mut std::collections::HashMap<[i64; 3], usize>,
+    ) -> Result<Vec<usize>> {
+        let mut face_vertex_indices = Vec::new();
+
+        // EdgeLoop has: path: Path
+        // Path has: edge_list: Vec<OrientedEdge>
+        for oriented_edge in &edge_loop.path.edge_list {
+            // OrientedEdge has: edge: Edge, edge_element: EdgeAny, orientation: bool
+            // Use the edge field which has edge_start and edge_end
+            let edge = &oriented_edge.edge;
+
+            // Extract start vertex (we only need one vertex per edge to avoid duplicates)
+            // The vertices will connect to form the loop
+            let start_vertex = if oriented_edge.orientation {
+                &edge.edge_start
+            } else {
+                &edge.edge_end
+            };
+
+            let coords = self.extract_vertex_coords(start_vertex)?;
+            let idx = self.add_vertex_with_dedup(coords, vertex_map, vertices);
+            face_vertex_indices.push(idx);
+        }
+
+        Ok(face_vertex_indices)
+    }
+
+    /// Extract vertices from a PolyLoop (polygon with direct point list)
+    #[cfg(feature = "step")]
+    fn extract_vertices_from_poly_loop(
+        &self,
+        poly_loop: &ruststep::ap203::config_control_design::PolyLoop,
+        vertices: &mut Vec<crate::mesh::Vertex>,
+        vertex_map: &mut std::collections::HashMap<[i64; 3], usize>,
+    ) -> Result<Vec<usize>> {
+        let mut face_vertex_indices = Vec::new();
+
+        // PolyLoop has: polygon: Vec<CartesianPoint>
+        for cartesian_point in &poly_loop.polygon {
+            let coords = self.extract_cartesian_point_coords(cartesian_point)?;
+            let idx = self.add_vertex_with_dedup(coords, vertex_map, vertices);
+            face_vertex_indices.push(idx);
+        }
+
+        Ok(face_vertex_indices)
+    }
+
+    /// Extract coordinates from a VertexAny
+    #[cfg(feature = "step")]
+    fn extract_vertex_coords(
+        &self,
+        vertex_any: &ruststep::ap203::config_control_design::VertexAny,
+    ) -> Result<(f64, f64, f64)> {
+        use ruststep::ap203::config_control_design::{PointAny, VertexAny};
+
+        match vertex_any {
+            VertexAny::VertexPoint(vp) => {
+                // VertexPoint has: vertex_geometry: PointAny
+                match &vp.vertex_geometry {
+                    PointAny::CartesianPoint(cp) => {
+                        self.extract_cartesian_point_coords(cp.as_ref())
+                    }
+                    _ => {
+                        // Other point types - try to get coordinates if possible
+                        Err(ConversionError::ConversionFailed(
+                            "Unsupported point type in vertex geometry".to_string(),
+                        ))
+                    }
+                }
+            }
+            VertexAny::Vertex(_) => {
+                // Base Vertex type has no geometry
+                Err(ConversionError::ConversionFailed(
+                    "Vertex has no geometry information".to_string(),
+                ))
+            }
+        }
+    }
+
+    /// Extract coordinates from a CartesianPoint
+    #[cfg(feature = "step")]
+    fn extract_cartesian_point_coords(
+        &self,
+        cp: &ruststep::ap203::config_control_design::CartesianPoint,
+    ) -> Result<(f64, f64, f64)> {
+        // CartesianPoint has: coordinates: Vec<LengthMeasure>
+        // LengthMeasure is a tuple struct wrapping f64
+        // STEP spec requires 2-3 coordinates (2D or 3D point)
+        let coords = &cp.coordinates;
+
+        if coords.is_empty() {
+            return Err(ConversionError::ConversionFailed(
+                "CartesianPoint has no coordinates - invalid STEP file structure. \
+                 CartesianPoint must have at least 2 coordinates (X, Y)."
+                    .to_string(),
+            ));
+        }
+
+        if coords.len() < 2 {
+            return Err(ConversionError::ConversionFailed(format!(
+                "CartesianPoint has only {} coordinate(s), expected 2-3. \
+                 Invalid STEP file structure.",
+                coords.len()
+            )));
+        }
+
+        let x = coords[0].0;
+        let y = coords[1].0;
+        // Z defaults to 0.0 for 2D points (STEP allows 2D CartesianPoint)
+        let z = coords.get(2).map(|lm| lm.0).unwrap_or(0.0);
+
+        Ok((x, y, z))
+    }
+
+    /// Add a vertex with deduplication
+    ///
+    /// Uses a hash map to deduplicate vertices with the same coordinates.
+    /// Coordinates are converted to integers (scaled by 1e6) for hashing.
+    #[cfg(feature = "step")]
+    fn add_vertex_with_dedup(
+        &self,
+        coords: (f64, f64, f64),
+        vertex_map: &mut std::collections::HashMap<[i64; 3], usize>,
+        vertices: &mut Vec<crate::mesh::Vertex>,
+    ) -> usize {
+        // Convert to integer key for hashing (scale by 1e6 for precision)
+        // This handles floating point comparison issues
+        const SCALE: f64 = 1_000_000.0;
+        let key = [
+            (coords.0 * SCALE).round() as i64,
+            (coords.1 * SCALE).round() as i64,
+            (coords.2 * SCALE).round() as i64,
+        ];
+
+        *vertex_map.entry(key).or_insert_with(|| {
+            let idx = vertices.len();
+            vertices.push(crate::mesh::Vertex {
+                x: coords.0 as f32,
+                y: coords.1 as f32,
+                z: coords.2 as f32,
+            });
+            idx
+        })
+    }
+
+    /// Calculate normals for all faces
+    #[cfg(feature = "step")]
+    fn calculate_normals(
+        &self,
+        vertices: &[crate::mesh::Vertex],
+        faces: &[crate::mesh::Face],
+    ) -> Vec<crate::mesh::Normal> {
+        // Use existing normal calculation from mesh module
+        let mut normals = vec![
+            crate::mesh::Normal {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0
+            };
+            vertices.len()
+        ];
+
+        for face in faces {
+            let v0 = &vertices[face.indices[0]];
+            let v1 = &vertices[face.indices[1]];
+            let v2 = &vertices[face.indices[2]];
+
+            // Calculate face normal using cross product
+            let dx1 = v1.x - v0.x;
+            let dy1 = v1.y - v0.y;
+            let dz1 = v1.z - v0.z;
+            let dx2 = v2.x - v0.x;
+            let dy2 = v2.y - v0.y;
+            let dz2 = v2.z - v0.z;
+
+            let nx = dy1 * dz2 - dz1 * dy2;
+            let ny = dz1 * dx2 - dx1 * dz2;
+            let nz = dx1 * dy2 - dy1 * dx2;
+
+            let len = (nx * nx + ny * ny + nz * nz).sqrt();
+            if len > 0.0 {
+                let inv_len = 1.0 / len;
+                let normal = crate::mesh::Normal {
+                    x: nx * inv_len,
+                    y: ny * inv_len,
+                    z: nz * inv_len,
+                };
+
+                // Add normal to each vertex (for smooth shading)
+                normals[face.indices[0]].x += normal.x;
+                normals[face.indices[0]].y += normal.y;
+                normals[face.indices[0]].z += normal.z;
+                normals[face.indices[1]].x += normal.x;
+                normals[face.indices[1]].y += normal.y;
+                normals[face.indices[1]].z += normal.z;
+                normals[face.indices[2]].x += normal.x;
+                normals[face.indices[2]].y += normal.y;
+                normals[face.indices[2]].z += normal.z;
+            }
+        }
+
+        // Normalize accumulated normals
+        for normal in &mut normals {
+            let len = (normal.x * normal.x + normal.y * normal.y + normal.z * normal.z).sqrt();
+            if len > 0.0 {
+                let inv_len = 1.0 / len;
+                normal.x *= inv_len;
+                normal.y *= inv_len;
+                normal.z *= inv_len;
+            }
+        }
+
+        normals
     }
 }
 
@@ -260,7 +618,13 @@ impl MeshWriter for StepFormat {
         // STEP writing requires complex CAD modeling capabilities
         // truck library focuses on reading, not writing
         Err(ConversionError::UnsupportedFormat(
-            "STEP writing is not supported. STEP files require complex CAD modeling that is beyond the scope of this converter.".to_string()
+            "STEP writing is not supported. \
+             STEP files require complex CAD modeling capabilities (B-Rep reconstruction, parametric surfaces, etc.) \
+             that are beyond the scope of this converter. \
+             \
+             This converter focuses on reading and converting STEP files to mesh formats (STL, OBJ, PLY, etc.). \
+             To create STEP files, please use CAD software (SolidWorks, FreeCAD, Fusion 360, etc.)."
+                .to_string()
         ))
     }
 }

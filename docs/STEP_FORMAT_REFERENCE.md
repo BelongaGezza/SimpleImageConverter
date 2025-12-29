@@ -773,7 +773,46 @@ END_ENTITY;
 #300 = FACETED_BREP('FacetedSolid', #80);
 ```
 
-**Note:** Similar to MANIFOLD_SOLID_BREP but faces are already triangulated (may be easier to convert)
+**Parameters:**
+1. `name` (STRING) - Optional name
+2. `outer` (CLOSED_SHELL) - Outer shell of solid (same as MANIFOLD_SOLID_BREP)
+
+**Rust Type (ruststep):**
+```rust
+use ruststep::ap203::config_control_design::Tables;
+
+// Access FACETED_BREP entities
+let fb_holders = tables.faceted_brep_holders();
+// Returns: &HashMap<u64, FacetedBrepHolder>
+```
+
+**API Access:**
+- Method: `tables.faceted_brep_holders()` ✅ **CONFIRMED TO EXIST**
+- Pattern: Follows same pattern as other entity accessors
+- Return: `&HashMap<u64, FacetedBrepHolder>`
+
+**Entity Traversal Path:**
+```
+FACETED_BREP
+  └── outer: CLOSED_SHELL
+      └── cfs_faces: SET OF FACE
+          └── bounds: SET OF FACE_BOUND
+              └── bound: EDGE_LOOP
+                  └── edge_list: LIST OF ORIENTED_EDGE
+                      └── edge_element: EDGE
+                          └── edge_start: VERTEX_POINT
+                              └── vertex_geometry: CARTESIAN_POINT
+```
+
+**Implementation Notes:**
+- **v0.2.0 Support:** FACETED_BREP only (pre-tessellated geometry)
+- **v0.3.0 Planned:** Full B-Rep support (NURBS surfaces, cylinders, etc.)
+- **Advantage:** Faces are already triangulated, making conversion to mesh easier
+- **Requirement:** Users must export STEP files with tessellation enabled
+
+**See Also:**
+- `FACETED_BREP_API_FINDINGS.md` - Detailed API research findings
+- `docs/CAD_EXPORT_GUIDE.md` - Instructions for exporting FACETED_BREP from CAD software
 
 ---
 

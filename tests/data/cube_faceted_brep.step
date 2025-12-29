@@ -1,0 +1,101 @@
+ISO-10303-21;
+HEADER;
+FILE_DESCRIPTION(('Simple cube FACETED_BREP test file'), '2;1');
+FILE_NAME('cube_faceted_brep.step', '2025-01-29T00:00:00', ('Test'), ('SimpleImageConverter'), '', '', '');
+FILE_SCHEMA(('CONFIG_CONTROL_DESIGN'));
+ENDSEC;
+
+DATA;
+/* Cube vertices - 8 points */
+#1 = CARTESIAN_POINT('', (0.0, 0.0, 0.0));
+#2 = CARTESIAN_POINT('', (1.0, 0.0, 0.0));
+#3 = CARTESIAN_POINT('', (1.0, 1.0, 0.0));
+#4 = CARTESIAN_POINT('', (0.0, 1.0, 0.0));
+#5 = CARTESIAN_POINT('', (0.0, 0.0, 1.0));
+#6 = CARTESIAN_POINT('', (1.0, 0.0, 1.0));
+#7 = CARTESIAN_POINT('', (1.0, 1.0, 1.0));
+#8 = CARTESIAN_POINT('', (0.0, 1.0, 1.0));
+
+/* Vertex points */
+#10 = VERTEX_POINT('', #1);
+#11 = VERTEX_POINT('', #2);
+#12 = VERTEX_POINT('', #3);
+#13 = VERTEX_POINT('', #4);
+#14 = VERTEX_POINT('', #5);
+#15 = VERTEX_POINT('', #6);
+#16 = VERTEX_POINT('', #7);
+#17 = VERTEX_POINT('', #8);
+
+/* Edges - bottom face */
+#20 = EDGE('', #10, #11, $);
+#21 = EDGE('', #11, #12, $);
+#22 = EDGE('', #12, #13, $);
+#23 = EDGE('', #13, #10, $);
+
+/* Edges - top face */
+#24 = EDGE('', #14, #15, $);
+#25 = EDGE('', #15, #16, $);
+#26 = EDGE('', #16, #17, $);
+#27 = EDGE('', #17, #14, $);
+
+/* Edges - vertical */
+#28 = EDGE('', #10, #14, $);
+#29 = EDGE('', #11, #15, $);
+#30 = EDGE('', #12, #16, $);
+#31 = EDGE('', #13, #17, $);
+
+/* Oriented edges - bottom face */
+#40 = ORIENTED_EDGE('', *, *, #20, .T.);
+#41 = ORIENTED_EDGE('', *, *, #21, .T.);
+#42 = ORIENTED_EDGE('', *, *, #22, .T.);
+#43 = ORIENTED_EDGE('', *, *, #23, .T.);
+
+/* Oriented edges - top face */
+#44 = ORIENTED_EDGE('', *, *, #24, .T.);
+#45 = ORIENTED_EDGE('', *, *, #25, .T.);
+#46 = ORIENTED_EDGE('', *, *, #26, .T.);
+#47 = ORIENTED_EDGE('', *, *, #27, .T.);
+
+/* Oriented edges - vertical */
+#48 = ORIENTED_EDGE('', *, *, #28, .T.);
+#49 = ORIENTED_EDGE('', *, *, #29, .T.);
+#50 = ORIENTED_EDGE('', *, *, #30, .T.);
+#51 = ORIENTED_EDGE('', *, *, #31, .T.);
+
+/* Edge loops - bottom face */
+#60 = EDGE_LOOP('', (#40, #41, #42, #43));
+
+/* Edge loops - top face */
+#61 = EDGE_LOOP('', (#44, #45, #46, #47));
+
+/* Edge loops - side faces */
+#62 = EDGE_LOOP('', (#40, #48, #44, #49));
+#63 = EDGE_LOOP('', (#41, #49, #45, #50));
+#64 = EDGE_LOOP('', (#42, #50, #46, #51));
+#65 = EDGE_LOOP('', (#43, #51, #47, #48));
+
+/* Face bounds */
+#70 = FACE_BOUND('', #60, .T.);
+#71 = FACE_BOUND('', #61, .T.);
+#72 = FACE_BOUND('', #62, .T.);
+#73 = FACE_BOUND('', #63, .T.);
+#74 = FACE_BOUND('', #64, .T.);
+#75 = FACE_BOUND('', #65, .T.);
+
+/* Faces */
+#80 = ADVANCED_FACE('', (#70), $, .T.);
+#81 = ADVANCED_FACE('', (#71), $, .T.);
+#82 = ADVANCED_FACE('', (#72), $, .T.);
+#83 = ADVANCED_FACE('', (#73), $, .T.);
+#84 = ADVANCED_FACE('', (#74), $, .T.);
+#85 = ADVANCED_FACE('', (#75), $, .T.);
+
+/* Closed shell */
+#90 = CLOSED_SHELL('', (#80, #81, #82, #83, #84, #85));
+
+/* Faceted BREP */
+#100 = FACETED_BREP('cube', #90);
+
+ENDSEC;
+END-ISO-10303-21;
+

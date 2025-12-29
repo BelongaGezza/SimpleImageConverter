@@ -1,0 +1,45 @@
+ISO-10303-21;
+HEADER;
+FILE_DESCRIPTION(('Simple FACETED_BREP test file'), '2;1');
+FILE_NAME('simple_faceted_brep.step', '2025-01-29T00:00:00', ('Test'), ('SimpleImageConverter'), '', '', '');
+FILE_SCHEMA(('CONFIG_CONTROL_DESIGN'));
+ENDSEC;
+
+DATA;
+/* Simple triangle geometry */
+#1 = CARTESIAN_POINT('vertex1', (0.0, 0.0, 0.0));
+#2 = CARTESIAN_POINT('vertex2', (1.0, 0.0, 0.0));
+#3 = CARTESIAN_POINT('vertex3', (0.5, 1.0, 0.0));
+
+/* Vertex points */
+#10 = VERTEX_POINT('vp1', #1);
+#11 = VERTEX_POINT('vp2', #2);
+#12 = VERTEX_POINT('vp3', #3);
+
+/* Edges */
+#20 = EDGE('edge1', #10, #11, $);
+#21 = EDGE('edge2', #11, #12, $);
+#22 = EDGE('edge3', #12, #10, $);
+
+/* Oriented edges */
+#30 = ORIENTED_EDGE('oe1', *, *, #20, .T.);
+#31 = ORIENTED_EDGE('oe2', *, *, #21, .T.);
+#32 = ORIENTED_EDGE('oe3', *, *, #22, .T.);
+
+/* Edge loop */
+#40 = EDGE_LOOP('el1', (#30, #31, #32));
+
+/* Face bound */
+#50 = FACE_BOUND('fb1', #40, .T.);
+
+/* Face */
+#60 = ADVANCED_FACE('face1', (#50), $, .T.);
+
+/* Closed shell */
+#70 = CLOSED_SHELL('shell1', (#60));
+
+/* Faceted BREP */
+#80 = FACETED_BREP('triangle', #70);
+
+ENDSEC;
+END-ISO-10303-21;

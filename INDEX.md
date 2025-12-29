@@ -23,6 +23,7 @@
 8. **Phase2.1_Decisions.md** - Key decisions made
 9. **Language_Comparison.md** - Why Rust was chosen
 10. **POC_2D_Results.md** - Proof of concept validation
+11. **docs/RUSTSTEP_GUIDANCE.md** - Comprehensive ruststep library guide
 
 ### Repository Management
 11. **LICENSE** - MIT License
@@ -112,8 +113,10 @@ Claude AI, Claude Code, and Cursor 2.2 in coordination
 → README.md (Features section)
 
 ### STEP Integration
+→ docs/RUSTSTEP_GUIDANCE.md ⭐ **Comprehensive ruststep API guide**  
 → Phase3_Architecture.md (§8)  
-→ Phase2.1_Decisions.md (Risk Mitigation)
+→ Phase2.1_Decisions.md (Risk Mitigation)  
+→ ARCHITECT_REVIEW_STEP_IMPLEMENTATION.md (Architecture decision)
 
 ### CLI Usage
 → README.md (Usage Examples)  

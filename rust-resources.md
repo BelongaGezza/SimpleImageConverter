@@ -36,7 +36,8 @@
 - ✅ `ahash` v0.8 - HashMap (latest: 0.8.12)
 
 **Optional CAD Dependencies:**
-- ✅ `truck-*` v0.3.0 - STEP support (feature-gated)
+- ✅ `ruststep` v0.4.0 - STEP file parsing (feature-gated, ap203 feature)
+- ✅ `truck-*` v0.3.0-0.4.0 - STEP geometry processing (feature-gated)
 
 ---
 
@@ -49,6 +50,7 @@
 | 2025-12-27 | **AUDIT** | Comprehensive technology audit completed - see TECHNOLOGY_AUDIT_REPORT.md | Researcher |
 | 2025-12-27 | **SECURITY** | **FIXED** CVE-2020-25573 - Replaced ply-rs with ply-rs-bw | Researcher |
 | 2025-12-27 | Updates | stl_io 0.7→0.10, resvg 0.40→0.45, thiserror 2.0 available | Researcher |
+| 2025-01-29 | ruststep | Added comprehensive ruststep guidance (docs/RUSTSTEP_GUIDANCE.md) | System Architect |
 
 ---
 
@@ -298,30 +300,102 @@ for mesh in gltf.meshes() {
 - glTF is scene-oriented, not just mesh
 - Animation data ignored in conversion
 
-#### truck (v0.4) - STEP Support
-**License:** MIT OR Apache-2.0  
-**Status:** ✅ Active development (Planned for Phase 3/Sprint 7)  
-**Current Usage:** Not yet added to workspace
+#### ruststep (v0.4) - STEP File Parsing ✅ ACTIVE
+**License:** Apache-2.0  
+**Status:** ✅ Active (Currently in use for STEP parsing)  
+**Current Usage:** Active in mesh-core with `step` feature  
+**Documentation:** See `docs/RUSTSTEP_GUIDANCE.md` for comprehensive guide
 
-**Components:**
-- truck-modeling: CAD kernel
-- truck-polymesh: Mesh operations
-- truck-stepio: STEP I/O
+**Key Features:**
+- STEP file parsing (ISO 10303-21)
+- AP203 schema support (Configuration Controlled Design)
+- Entity deserialization into Rust structs
+- Reference resolution via Tables structure
 
 **Key APIs:**
 ```rust
-use truck_stepio::read;
-use truck_modeling::Shell;
+use ruststep::parser;
+use ruststep::ap203::config_control_design::Tables;
+use ruststep::tables::{TableInit, IntoOwned};
 
-let shells = read(step_string)?;
+// Parse STEP file
+let exchange = parser::parse(step_text)?;
+
+// Build Tables from parsed data
+let tables = Tables::from_data_sections(&exchange.data)?;
+
+// Access entities
+let msb_holders = tables.manifold_solid_brep_holders();
+
+// Resolve references
+let msb = holder.clone().into_owned(tables)?;
 ```
+
+**Critical API Discovery (Riley, Jan 2025):**
+- ✅ **CORRECT:** `Tables::from_data_sections(&exchange.data)` - Proper method to populate tables
+- ✅ **CORRECT:** `tables.[entity_name]_holders()` - Getter methods for entity access
+- ✅ **CORRECT:** `holder.clone().into_owned(tables)` - Reference resolution pattern
+
+**Gotchas:**
+- Must enable `ap203` feature for AP203 schema support
+- Tables construction may fail if entities don't match AP203 schema (use fallback)
+- `into_owned()` consumes holder - clone first
+- Only AP203 schema currently supported (not AP214, AP242)
+
+**Best Practice:**
+```rust
+// Always use TableInit::from_data_sections() - don't manually populate
+let tables = match Tables::from_data_sections(&exchange.data) {
+    Ok(t) => t,
+    Err(e) => {
+        eprintln!("Warning: Partial deserialization: {:?}", e);
+        Tables::default() // Fallback
+    }
+};
+```
+
+**Resources:**
+- Official docs: https://docs.rs/ruststep/latest/ruststep/
+- GitHub: https://github.com/ricosjp/ruststep
+- Project guide: `docs/RUSTSTEP_GUIDANCE.md`
+
+#### truck (v0.3-0.4) - STEP Geometry Processing
+**License:** MIT OR Apache-2.0  
+**Status:** ✅ Active (Planned for Phase 3/Sprint 7)  
+**Current Usage:** Active in mesh-core with `step` feature
+
+**Components:**
+- truck-modeling (v0.3.0): CAD kernel
+- truck-polymesh (v0.3.0): Mesh operations
+- truck-stepio (v0.3.0): STEP I/O (⚠️ **OUTPUT ONLY** - input not implemented)
+- truck-meshalgo (v0.4.0): Tessellation algorithms
+
+**Key APIs:**
+```rust
+use truck_modeling::Shell;
+use truck_meshalgo::prelude::*;
+
+// Tessellation (when Shell is available)
+let tessellated = shell.triangulation(tolerance)?;
+```
+
+**⚠️ CRITICAL LIMITATION:**
+- **truck-stepio input functionality does not exist** (v0.3.0)
+- Only OUTPUT (writing) is supported
+- INPUT (reading) is roadmap item
+- **This blocks direct STEP → truck Shell conversion**
+
+**Current Workaround:**
+- Use ruststep for parsing and entity extraction
+- Extract geometry directly from AP203 entities (FACETED_BREP approach)
+- Skip truck Shell conversion, build Mesh directly
 
 **Gotchas:**
 - STEP is complex, not all features supported
 - Tessellation quality affects output
 - May not handle all STEP AP variants
 
-**Decision Note:** Alternative approach using opencascade-sys also being evaluated (see Phase2.1_Decisions.md)
+**Decision Note:** See `ARCHITECT_REVIEW_STEP_IMPLEMENTATION.md` for architecture decision on FACETED_BREP approach
 
 ### Serialization
 
