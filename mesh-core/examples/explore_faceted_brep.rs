@@ -10,7 +10,7 @@
 #[cfg(feature = "step")]
 use ruststep::ap203::config_control_design;
 #[cfg(feature = "step")]
-use ruststep::tables::{TableInit, IntoOwned};
+use ruststep::tables::{IntoOwned, TableInit};
 
 #[cfg(feature = "step")]
 fn main() {
@@ -49,7 +49,10 @@ fn main() {
     if let Some((id, holder)) = fb_holders.iter().next() {
         // Try to get owned version (fully resolved entity)
         // This requires checking if FacetedBrepHolder implements IntoOwned
-        println!("  Attempting to get owned FacetedBrep for entity #{}...", id);
+        println!(
+            "  Attempting to get owned FacetedBrep for entity #{}...",
+            id
+        );
         // let owned: config_control_design::FacetedBrep = holder.get_owned(&tables)?;
         // This will be tested with actual STEP file data
     }
@@ -66,4 +69,3 @@ fn main() {
 fn main() {
     println!("STEP feature not enabled. Run with: cargo run --example explore_faceted_brep --features step");
 }
-

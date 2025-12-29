@@ -1,13 +1,5 @@
 # Cargo Deny Configuration
 # Security-focused dependency checking for SimpleImageConverter
-# Compatible with cargo-deny v0.16+
-
-version = 2
-
-[graph]
-targets = []
-all-features = false
-no-default-features = false
 
 [advisories]
 # The database of advisories to check

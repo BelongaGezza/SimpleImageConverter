@@ -9,9 +9,9 @@
 #[cfg(feature = "step")]
 fn test_faceted_brep_method() {
     use ruststep::ap203::config_control_design::Tables;
-    
+
     let tables = Tables::default();
-    
+
     // Test if faceted_brep_holders() exists
     // If this compiles, the method exists!
     let _fb_holders = tables.faceted_brep_holders();
@@ -26,4 +26,3 @@ fn main() {
 fn main() {
     println!("STEP feature not enabled");
 }
-
