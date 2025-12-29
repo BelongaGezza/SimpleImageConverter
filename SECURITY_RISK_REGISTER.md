@@ -1,7 +1,7 @@
 # Security Risk Register
 ## SimpleImageConverter Project
 
-**Last Updated:** January 27, 2025  
+**Last Updated:** December 27, 2025  
 **Owner:** Casey Morgan (Security Specialist)  
 **Review Frequency:** Quarterly or on significant changes
 
@@ -49,7 +49,7 @@ Malicious files with extreme sizes or dimensions could cause memory exhaustion, 
 - **Action:** Implement streaming I/O for Phase 4
 
 **Owner:** Casey Morgan  
-**Last Reviewed:** January 27, 2025
+**Last Reviewed:** December 27, 2025
 
 ---
 
@@ -72,7 +72,7 @@ Files with incorrect extensions could bypass format-specific security checks if 
 - **Action:** Enhance magic byte detection for all formats
 
 **Owner:** Casey Morgan  
-**Last Reviewed:** January 27, 2025
+**Last Reviewed:** December 27, 2025
 
 ---
 
@@ -95,7 +95,7 @@ Calculating image/mesh buffer sizes without overflow protection could lead to me
 - **Action:** Add fuzz testing for dimension calculations
 
 **Owner:** Casey Morgan  
-**Last Reviewed:** January 27, 2025
+**Last Reviewed:** December 27, 2025
 
 ---
 
@@ -118,7 +118,7 @@ Dependencies may contain known security vulnerabilities that could be exploited.
 - **Action:** Add PR gate to block merges with vulnerabilities
 
 **Owner:** Casey Morgan  
-**Last Reviewed:** January 27, 2025
+**Last Reviewed:** December 27, 2025
 
 ---
 
@@ -140,7 +140,7 @@ Malicious file paths containing `..` could potentially access files outside inte
 - **Action:** Implement path canonicalization and directory restrictions
 
 **Owner:** Casey Morgan  
-**Last Reviewed:** January 27, 2025
+**Last Reviewed:** December 27, 2025
 
 ---
 
@@ -162,7 +162,7 @@ No security event logging means failed validations and suspicious inputs are not
 - **Action:** Add security logging for failed validations
 
 **Owner:** Casey Morgan  
-**Last Reviewed:** January 27, 2025
+**Last Reviewed:** December 27, 2025
 
 ---
 
@@ -184,7 +184,7 @@ Conversion errors could produce corrupted output files that fail validation in d
 - **Action:** Enhance output validation with format-specific checks
 
 **Owner:** Casey Morgan  
-**Last Reviewed:** January 27, 2025
+**Last Reviewed:** December 27, 2025
 
 ---
 
@@ -193,7 +193,7 @@ Conversion errors could produce corrupted output files that fail validation in d
 ### RISK-001-CLOSED: Missing Input Validation in Format Readers
 **Status:** ✅ CLOSED  
 **Severity:** Critical  
-**Date Closed:** January 27, 2025
+**Date Closed:** December 27, 2025
 
 **Description:**
 Format readers did not validate input size before parsing, allowing memory exhaustion attacks.

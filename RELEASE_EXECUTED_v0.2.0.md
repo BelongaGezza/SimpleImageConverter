@@ -1,7 +1,7 @@
 # Release Executed - v0.2.0
 ## Simple Image Converter - STEP Format Support
 
-**Release Date:** January 29, 2025  
+**Release Date:** December 29, 2025  
 **Version:** 0.2.0  
 **Status:** ✅ **RELEASED**
 
@@ -103,8 +103,8 @@ cargo build --release --features step
 
 ## Version History
 
-**Previous Version:** v0.1.1 (January 27, 2025)  
-**Current Version:** v0.2.0 (January 29, 2025)  
+**Previous Version:** v0.1.1 (December 27, 2025)  
+**Current Version:** v0.2.0 (December 29, 2025)  
 **Next Version:** v0.3.0 (planned - opencascade-rs integration)
 
 ---
@@ -189,14 +189,14 @@ cargo build --release --features step
 
 v0.2.0 has been successfully released with STEP format support. All release tasks are complete.
 
-**Release Date:** January 29, 2025  
+**Release Date:** December 29, 2025  
 **Version:** 0.2.0  
 **Status:** ✅ **RELEASED**
 
 ---
 
 **Released By:** Jordan Rivera (Senior Engineer)  
-**Date:** January 29, 2025  
+**Date:** December 29, 2025  
 **Status:** ✅ **RELEASE COMPLETE**
 
 ---

@@ -26,7 +26,7 @@ fn main() {
     let step_text = r#"ISO-10303-21;
 HEADER;
 FILE_DESCRIPTION(('Test'), '2;1');
-FILE_NAME('test.step', '2025-01-27T00:00:00', ('Riley'), ('SimpleImageConverter'), '', '', '');
+FILE_NAME('test.step', '2025-12-27T00:00:00', ('Riley'), ('SimpleImageConverter'), '', '', '');
 FILE_SCHEMA(('AUTOMOTIVE_DESIGN'));
 ENDSEC;
 

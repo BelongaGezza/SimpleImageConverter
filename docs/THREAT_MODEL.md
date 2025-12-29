@@ -1,7 +1,7 @@
 # Threat Model
 ## SimpleImageConverter Project
 
-**Date:** January 27, 2025  
+**Date:** December 27, 2025  
 **Author:** Casey Morgan (Security Specialist)  
 **Review Frequency:** Quarterly or when architecture changes
 

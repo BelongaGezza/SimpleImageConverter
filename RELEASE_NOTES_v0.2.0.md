@@ -1,7 +1,7 @@
 # Release Notes - v0.2.0
 ## Simple Image Converter
 
-**Release Date:** January 29, 2025  
+**Release Date:** December 29, 2025  
 **Version:** 0.2.0  
 **Status:** ✅ Production Release
 
@@ -319,7 +319,7 @@ See `CHANGELOG.md` for detailed changes.
 ---
 
 **Release Prepared By:** Jordan Rivera (Senior Engineer)  
-**Release Date:** January 29, 2025  
+**Release Date:** December 29, 2025  
 **Status:** ✅ Production Release
 
 ---

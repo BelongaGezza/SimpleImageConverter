@@ -1,7 +1,7 @@
 # Release Complete - v0.2.0
 ## Simple Image Converter - STEP Format Support
 
-**Release Date:** January 29, 2025  
+**Release Date:** December 29, 2025  
 **Version:** 0.2.0  
 **Status:** ✅ **RELEASED**
 
@@ -138,14 +138,14 @@ git push origin v0.2.0
 
 v0.2.0 has been successfully released. All release tasks are complete.
 
-**Release Date:** January 29, 2025  
+**Release Date:** December 29, 2025  
 **Version:** 0.2.0  
 **Status:** ✅ **RELEASED**
 
 ---
 
 **Released By:** Jordan Rivera (Senior Engineer)  
-**Date:** January 29, 2025  
+**Date:** December 29, 2025  
 **Status:** ✅ **RELEASE COMPLETE**
 
 ---

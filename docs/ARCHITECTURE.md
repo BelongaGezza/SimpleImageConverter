@@ -2,7 +2,7 @@
 ## Simple Image Converter
 
 **Version:** 0.2.0  
-**Last Updated:** January 29, 2025
+**Last Updated:** December 29, 2025
 
 ---
 

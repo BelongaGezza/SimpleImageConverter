@@ -1,7 +1,7 @@
 # Release Announcement - v0.2.0
 ## Simple Image Converter - STEP Format Support
 
-**Release Date:** January 29, 2025  
+**Release Date:** December 29, 2025  
 **Version:** 0.2.0  
 **Status:** ✅ **RELEASED**
 
@@ -159,7 +159,7 @@ For issues, questions, or feedback:
 
 ---
 
-**Release Date:** January 29, 2025  
+**Release Date:** December 29, 2025  
 **Version:** 0.2.0  
 **Status:** ✅ **RELEASED**
 

@@ -1,7 +1,7 @@
 # UK Government Secure by Design Principles - Guidance Document
 
 **Author:** Dr. Taylor Kim (Researcher)  
-**Date:** 2025-01-27  
+**Date:** 2025-12-27  
 **Source:** [UK Government Security - Secure by Design Principles](https://www.security.gov.uk/policy-and-guidance/secure-by-design/principles/)  
 **Audience:** System Architect, Senior Engineer, Security Specialist
 

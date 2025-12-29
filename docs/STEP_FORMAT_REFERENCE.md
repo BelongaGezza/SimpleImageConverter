@@ -4,7 +4,7 @@
 **Document Type:** Technical Reference  
 **Target Audience:** System Architect, Senior Engineer, Implementation Team  
 **Purpose:** Provide detailed STEP format specifications and implementation guidance  
-**Date:** January 27, 2025  
+**Date:** December 27, 2025  
 **Status:** Reference Document
 
 ---
@@ -260,7 +260,7 @@ END-ISO-10303-21;
 ```
 HEADER;
 FILE_DESCRIPTION(('STEP file for 3D model'),'2;1');
-FILE_NAME('model.step','2025-01-27T12:00:00',('Author'),('Organization'),'','','');
+FILE_NAME('model.step','2025-12-27T12:00:00',('Author'),('Organization'),'','','');
 FILE_SCHEMA(('AUTOMOTIVE_DESIGN'));
 ENDSEC;
 ```
@@ -1447,7 +1447,7 @@ This reference document provides comprehensive information for implementing STEP
 ---
 
 **Document Status:** Reference Document  
-**Last Updated:** January 27, 2025  
+**Last Updated:** December 27, 2025  
 **Maintained By:** Research Team  
 **For:** System Architect, Senior Engineer, Implementation Team
 

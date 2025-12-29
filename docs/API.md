@@ -1,7 +1,7 @@
 # API Documentation
 ## SimpleImageConverter Libraries
 
-**Last Updated:** January 27, 2025  
+**Last Updated:** December 27, 2025  
 **Generate Command:** `cargo doc --workspace --open`
 
 ---

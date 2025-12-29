@@ -1,7 +1,7 @@
 # Release Notes - v0.1.0
 ## Simple Image Converter
 
-**Release Date:** January 27, 2025  
+**Release Date:** December 27, 2025  
 **Status:** ✅ Production Ready  
 **Version:** 0.1.0
 

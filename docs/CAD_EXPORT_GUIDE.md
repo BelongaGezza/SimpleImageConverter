@@ -1,7 +1,7 @@
 # CAD Export Guide - STEP with FACETED_BREP
 ## How to Export STEP Files Compatible with Simple Image Converter v0.2.0
 
-**Last Updated:** January 29, 2025  
+**Last Updated:** December 29, 2025  
 **Status:** v0.2.0 - FACETED_BREP Support  
 **Target Audience:** CAD Users
 
@@ -291,7 +291,7 @@ Open the STEP file in a text editor and search for:
 
 ---
 
-**Last Updated:** January 29, 2025  
+**Last Updated:** December 29, 2025  
 **Maintained By:** Sam Parker (Junior Engineer, 2D Formats)  
 **For:** CAD Users and Implementation Team
 

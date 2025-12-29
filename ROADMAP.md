@@ -1,7 +1,7 @@
 # Project Roadmap
 ## Simple Image Converter
 
-**Last Updated:** January 29, 2025 (v0.2.0 Released)
+**Last Updated:** December 29, 2025 (v0.2.0 Released)
 **Current Version:** v0.2.0
 **Next Release:** v0.3.0 (Full STEP/CAD Support with opencascade-rs)
 
@@ -210,7 +210,7 @@ STEP File → STEPControl_Reader → TopoDS_Shape → BRepMesh → Mesh
 - **v0.2.0:** FACETED_BREP extraction (Option A) - ✅ Approved
 - **v0.3.0:** opencascade-rs integration (Option B) - ✅ Approved for future
 
-**Approved By:** Alex Chen (System Architect) - January 29, 2025
+**Approved By:** Alex Chen (System Architect) - December 29, 2025
 
 ### 2. Implement FACETED_BREP Extraction ✅ COMPLETE
 

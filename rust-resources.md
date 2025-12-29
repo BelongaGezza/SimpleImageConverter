@@ -50,7 +50,7 @@
 | 2025-12-27 | **AUDIT** | Comprehensive technology audit completed - see TECHNOLOGY_AUDIT_REPORT.md | Researcher |
 | 2025-12-27 | **SECURITY** | **FIXED** CVE-2020-25573 - Replaced ply-rs with ply-rs-bw | Researcher |
 | 2025-12-27 | Updates | stl_io 0.7→0.10, resvg 0.40→0.45, thiserror 2.0 available | Researcher |
-| 2025-01-29 | ruststep | Added comprehensive ruststep guidance (docs/RUSTSTEP_GUIDANCE.md) | System Architect |
+| 2025-12-29 | ruststep | Added comprehensive ruststep guidance (docs/RUSTSTEP_GUIDANCE.md) | System Architect |
 
 ---
 
@@ -331,7 +331,7 @@ let msb_holders = tables.manifold_solid_brep_holders();
 let msb = holder.clone().into_owned(tables)?;
 ```
 
-**Critical API Discovery (Riley, Jan 2025):**
+**Critical API Discovery (Riley, Dec 2025):**
 - ✅ **CORRECT:** `Tables::from_data_sections(&exchange.data)` - Proper method to populate tables
 - ✅ **CORRECT:** `tables.[entity_name]_holders()` - Getter methods for entity access
 - ✅ **CORRECT:** `holder.clone().into_owned(tables)` - Reference resolution pattern
@@ -1017,7 +1017,7 @@ cargo tree
 
 **Status:** 🟢 Active Document  
 **Review Frequency:** Weekly  
-**Next Review:** Week of January 2, 2026 (or before Sprint 3 begins)
+**Next Review:** As needed (or before Sprint 3 begins)
 
 ---
 

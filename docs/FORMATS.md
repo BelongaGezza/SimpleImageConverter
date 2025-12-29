@@ -1,7 +1,7 @@
 # Format Support Matrix
 ## Simple Image Converter
 
-**Last Updated:** January 27, 2025  
+**Last Updated:** December 27, 2025  
 **Status:** v0.1.0 - Core formats complete, STEP partial (feature-gated, blocked by library limitation)
 
 ---
