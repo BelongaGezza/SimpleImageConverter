@@ -301,7 +301,66 @@ FACETED_BREP
 
 **Estimated Effort:** 1-2 weeks (depending on review timelines)
 
-### 6. (v0.3.0) Prototype opencascade-rs Integration
+### 6. Packaging & Distribution Strategy ✅ APPROVED
+
+**Objective:** Implement packaging and distribution for Windows 11, macOS, and Linux Ubuntu 24.04+.
+
+**Status:** ✅ **STRATEGY APPROVED** - See `PACKAGING_STRATEGY.md` and `SENIOR_ENGINEER_REVIEW_PACKAGING_STRATEGY.md`
+
+**Architecture Decision:**
+- ✅ **APPROVED:** Multi-phase packaging approach (Portable → Package Managers → Advanced)
+- ✅ See `PACKAGING_STRATEGY.md` for complete strategy
+- ✅ See `SENIOR_ENGINEER_REVIEW_PACKAGING_STRATEGY.md` for implementation review
+
+**Phase 1: Portable Archives (v0.2.0) - IMMEDIATE**
+- [x] Packaging strategy document created ✅ (System Architect)
+- [x] Packaging scripts created ✅ (System Architect)
+  - [x] `scripts/package-windows.ps1` ✅
+  - [x] `scripts/package-macos.sh` ✅
+  - [x] `scripts/package-linux.sh` ✅
+- [x] Senior Engineer review complete ✅ (APPROVED)
+- [ ] Test packaging scripts on Windows 11
+- [ ] Test packaging scripts on macOS (Intel + Apple Silicon)
+- [ ] Test packaging scripts on Linux Ubuntu 24.04
+- [ ] Create GitHub Actions release workflow (`.github/workflows/release.yml`)
+- [ ] Update release workflow to use modern GitHub Actions (`softprops/action-gh-release`)
+- [ ] Implement version extraction from Git tags in scripts
+- [ ] Add macOS ARM64 build target to CI/CD
+- [ ] Test end-to-end release process with draft release
+- [x] Update README with installation instructions ✅
+
+**Phase 2: Package Managers (v0.3.0) - SHORT-TERM**
+- [ ] Create winget manifest (`.github/winget/simpleimageconverter.yaml`)
+- [ ] Create Homebrew Cask formula (`homebrew-cask/Casks/simpleimageconverter.rb`)
+- [ ] Add `cargo-deb` metadata to `Cargo.toml` for DEB packages
+- [ ] Install and test `cargo-deb` locally
+- [ ] Automate package manager manifest updates in CI/CD
+- [ ] Submit winget manifest to winget-pkgs repository
+- [ ] Create custom Homebrew tap repository
+
+**Phase 3: Advanced Packaging (v0.4.0+) - FUTURE**
+- [ ] Implement MSI installer using `cargo-wix`
+- [ ] Set up Windows code signing (requires certificate)
+- [ ] Set up macOS code signing and notarization (requires Apple Developer account)
+- [ ] Create Snap package (`snap/snapcraft.yaml`)
+- [ ] Submit to Homebrew Cask main repository
+
+**Distribution Channels:**
+- **Windows 11:** GitHub Releases (ZIP) → winget → MSI → Chocolatey
+- **macOS:** GitHub Releases (TAR.GZ) → Homebrew Cask → Code Signing
+- **Linux:** GitHub Releases (TAR.GZ) → DEB → Snap → AppImage
+
+**Estimated Effort:**
+- Phase 1: 1-2 days
+- Phase 2: 1 week
+- Phase 3: 2-3 weeks (budget-dependent)
+
+**Reference Documents:**
+- `PACKAGING_STRATEGY.md` - Complete packaging strategy
+- `SENIOR_ENGINEER_REVIEW_PACKAGING_STRATEGY.md` - Implementation review
+- `PACKAGING_IMPLEMENTATION_SUMMARY.md` - Quick reference guide
+
+### 7. (v0.3.0) Prototype opencascade-rs Integration
 
 **Objective:** Proof-of-concept for full curved surface support.
 
@@ -317,15 +376,22 @@ FACETED_BREP
 
 ## 📋 Medium Priority - v0.2.0 Completion
 
+### Packaging & Distribution (Phase 1)
+- [ ] Test packaging scripts on all platforms
+- [ ] Create GitHub Actions release workflow
+- [ ] Test end-to-end release process
+- [ ] Verify binary compatibility on target platforms
+
 ### CAD Format Improvements
 - [ ] Enhance DXF support with additional entity types
 - [ ] Improve CAD-specific validations
 - [ ] Add CAD metadata preservation (if feasible)
 
 ### Documentation
+- [x] Update README.md with installation instructions ✅
 - [ ] Update README.md with STEP format support status
 - [ ] Add STEP format documentation
-- [ ] Update CHANGELOG.md
+- [x] Update CHANGELOG.md ✅
 
 ---
 
@@ -356,6 +422,11 @@ FACETED_BREP
 - `SENIOR_ENGINEER_COMPREHENSIVE_REVIEW_V0.2.0_RELEASE.md` - Comprehensive release review
 - `TASK_SYSTEM_ARCHITECT_V0.2.0_REVIEW.md` - System Architect review request
 - `TASK_SECURITY_SPECIALIST_V0.2.0_REVIEW.md` - Security Specialist review request
+
+### Packaging & Distribution
+- `PACKAGING_STRATEGY.md` - ✅ Complete packaging strategy (System Architect)
+- `SENIOR_ENGINEER_REVIEW_PACKAGING_STRATEGY.md` - ✅ Implementation review and approval
+- `PACKAGING_IMPLEMENTATION_SUMMARY.md` - Quick reference guide
 
 ### Planning & Research
 - `V0.2.0_PHASE_PLAN.md` - Full v0.2.0 phase plan

@@ -36,6 +36,33 @@ Two separate CLI tools written in Rust:
 
 ### Installation
 
+#### Option 1: Pre-built Binaries (Recommended)
+
+**Windows 11:**
+1. Download `simpleimageconverter-{version}-windows-x64.zip` from [Releases](https://github.com/BelongaGezza/SimpleImageConverter/releases)
+2. Extract to a location of your choice (e.g., `C:\Tools\SimpleImageConverter`)
+3. (Optional) Add the directory to your PATH environment variable
+4. Open Command Prompt or PowerShell and run: `img-convert --help`
+
+**macOS:**
+1. Download `simpleimageconverter-{version}-macos-x64.tar.gz` from [Releases](https://github.com/BelongaGezza/SimpleImageConverter/releases)
+2. Extract: `tar -xzf simpleimageconverter-*.tar.gz`
+3. (Optional) Install system-wide: `sudo cp img-convert mesh-convert /usr/local/bin/`
+4. Run: `img-convert --help`
+
+**Linux (Ubuntu 24.04+):**
+1. Download `simpleimageconverter-{version}-linux-x64.tar.gz` from [Releases](https://github.com/BelongaGezza/SimpleImageConverter/releases)
+2. Extract: `tar -xzf simpleimageconverter-*.tar.gz`
+3. (Optional) Install system-wide: `sudo cp img-convert mesh-convert /usr/local/bin/`
+4. Run: `img-convert --help`
+
+**Or install via package manager:**
+- **Windows:** `winget install BelongaGezza.SimpleImageConverter` (coming soon)
+- **macOS:** `brew install --cask simpleimageconverter` (coming soon)
+- **Linux:** `sudo apt install simpleimageconverter` (coming soon)
+
+#### Option 2: Build from Source
+
 ```bash
 # Clone the repository
 git clone https://github.com/BelongaGezza/SimpleImageConverter.git
