@@ -1,0 +1,32 @@
+THIRD-PARTY SOFTWARE LICENSES
+=============================
+
+SimpleImageConverter includes the following third-party software components.
+Each component is listed with its license information below.
+
+================================================================================
+DEPENDENCY SUMMARY
+================================================================================
+
+{{#each overview}}
+{{name}} ({{count}} crates)
+{{/each}}
+
+================================================================================
+CRATES BY LICENSE
+================================================================================
+
+{{#each licenses}}
+--------------------------------------------------------------------------------
+{{name}}
+--------------------------------------------------------------------------------
+Used by:
+{{#each used_by}}
+  - {{crate.name}} v{{crate.version}}{{#if crate.repository}} ({{crate.repository}}){{/if}}
+{{/each}}
+
+License Text:
+
+{{text}}
+
+{{/each}}
