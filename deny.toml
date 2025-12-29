@@ -27,6 +27,7 @@ allow = [
     "BSL-1.0",
     "CC0-1.0",
     "MPL-2.0",
+    "NCSA",  # University of Illinois/NCSA Open Source License (used by libfuzzer-sys)
 ]
 # Confidence threshold for license detection
 confidence-threshold = 0.8

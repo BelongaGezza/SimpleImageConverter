@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MIT OR Apache-2.0
+// Copyright (c) 2025 Simple Image Converter Contributors
+
 #![no_main]
 use libfuzzer_sys::fuzz_target;
 use img_core::formats::PngFormat;
