@@ -2,7 +2,7 @@
 # Creates a portable ZIP archive for Windows distribution
 
 param(
-    [string]$Version = "0.2.0",
+    [string]$Version = "",
     [string]$Target = "x86_64-pc-windows-msvc"
 )
 
@@ -10,10 +10,31 @@ $ErrorActionPreference = "Stop"
 
 Write-Host "Packaging SimpleImageConverter for Windows..." -ForegroundColor Green
 
+# Extract version from Git tag or Cargo.toml if not provided
+if ([string]::IsNullOrEmpty($Version)) {
+    # Try to get version from Git tag
+    $gitTag = git describe --tags --exact-match 2>$null
+    if ($gitTag) {
+        $Version = $gitTag -replace '^v', ''
+        Write-Host "Using version from Git tag: $Version" -ForegroundColor Yellow
+    } else {
+        # Fall back to Cargo.toml
+        $cargoVersion = Select-String -Path "Cargo.toml" -Pattern '^version = "([^"]+)"' | ForEach-Object { $_.Matches.Groups[1].Value }
+        if ($cargoVersion) {
+            $Version = $cargoVersion
+            Write-Host "Using version from Cargo.toml: $Version" -ForegroundColor Yellow
+        } else {
+            $Version = "0.2.0"
+            Write-Host "Using default version: $Version" -ForegroundColor Yellow
+        }
+    }
+}
+
 # Set paths
 $ReleaseDir = "release\windows-x64-v$Version"
 $ZipName = "simpleimageconverter-$Version-windows-x64.zip"
 $BinDir = "target\$Target\release"
+$NativeBinDir = "target\release"
 
 # Clean previous release
 if (Test-Path $ReleaseDir) {
@@ -26,20 +47,27 @@ if (Test-Path $ZipName) {
 # Create release directory
 New-Item -ItemType Directory -Force -Path $ReleaseDir | Out-Null
 
-# Verify binaries exist
-if (-not (Test-Path "$BinDir\img-convert.exe")) {
-    Write-Error "Binary not found: $BinDir\img-convert.exe. Run 'cargo build --release --target $Target' first."
-    exit 1
-}
-if (-not (Test-Path "$BinDir\mesh-convert.exe")) {
-    Write-Error "Binary not found: $BinDir\mesh-convert.exe. Run 'cargo build --release --target $Target' first."
+# Determine binary location (check cross-compiled first, then native)
+$ImgConvertPath = $null
+$MeshConvertPath = $null
+
+if (Test-Path "$BinDir\img-convert.exe") {
+    $ImgConvertPath = "$BinDir\img-convert.exe"
+    $MeshConvertPath = "$BinDir\mesh-convert.exe"
+    Write-Host "Using cross-compiled binaries from: $BinDir" -ForegroundColor Yellow
+} elseif (Test-Path "$NativeBinDir\img-convert.exe") {
+    $ImgConvertPath = "$NativeBinDir\img-convert.exe"
+    $MeshConvertPath = "$NativeBinDir\mesh-convert.exe"
+    Write-Host "Using native binaries from: $NativeBinDir" -ForegroundColor Yellow
+} else {
+    Write-Error "Binaries not found. Expected locations:`n  - $BinDir\img-convert.exe`n  - $NativeBinDir\img-convert.exe`n`nRun 'cargo build --release' or 'cargo build --release --target $Target' first."
     exit 1
 }
 
 # Copy binaries
 Write-Host "Copying binaries..." -ForegroundColor Yellow
-Copy-Item "$BinDir\img-convert.exe" $ReleaseDir
-Copy-Item "$BinDir\mesh-convert.exe" $ReleaseDir
+Copy-Item $ImgConvertPath $ReleaseDir
+Copy-Item $MeshConvertPath $ReleaseDir
 
 # Copy documentation
 Write-Host "Copying documentation..." -ForegroundColor Yellow

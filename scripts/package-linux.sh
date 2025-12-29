@@ -4,7 +4,22 @@
 
 set -e
 
-VERSION="${1:-0.2.0}"
+# Extract version from Git tag or Cargo.toml if not provided
+if [ -z "$1" ]; then
+    # Try to get version from Git tag
+    VERSION=$(git describe --tags --exact-match 2>/dev/null | sed 's/^v//' || echo "")
+    if [ -z "$VERSION" ]; then
+        # Fall back to Cargo.toml
+        VERSION=$(grep '^version =' Cargo.toml | head -1 | cut -d'"' -f2)
+    fi
+    if [ -z "$VERSION" ]; then
+        VERSION="0.2.0"
+    fi
+    echo "Using version: $VERSION" >&2
+else
+    VERSION="$1"
+fi
+
 TARGET="${2:-x86_64-unknown-linux-gnu}"
 
 echo "Packaging SimpleImageConverter for Linux..."
@@ -13,6 +28,7 @@ echo "Packaging SimpleImageConverter for Linux..."
 RELEASE_DIR="release/linux-x64-v${VERSION}"
 TAR_NAME="simpleimageconverter-${VERSION}-linux-x64.tar.gz"
 BIN_DIR="target/${TARGET}/release"
+NATIVE_BIN_DIR="target/release"
 
 # Clean previous release
 rm -rf "$RELEASE_DIR"
@@ -21,23 +37,30 @@ rm -f "$TAR_NAME"
 # Create release directory
 mkdir -p "$RELEASE_DIR"
 
-# Verify binaries exist
-if [ ! -f "$BIN_DIR/img-convert" ]; then
-    echo "Error: Binary not found: $BIN_DIR/img-convert"
-    echo "Run 'cargo build --release --target $TARGET' first."
-    exit 1
-fi
+# Determine binary location (check cross-compiled first, then native)
+IMG_CONVERT_PATH=""
+MESH_CONVERT_PATH=""
 
-if [ ! -f "$BIN_DIR/mesh-convert" ]; then
-    echo "Error: Binary not found: $BIN_DIR/mesh-convert"
-    echo "Run 'cargo build --release --target $TARGET' first."
+if [ -f "$BIN_DIR/img-convert" ]; then
+    IMG_CONVERT_PATH="$BIN_DIR/img-convert"
+    MESH_CONVERT_PATH="$BIN_DIR/mesh-convert"
+    echo "Using cross-compiled binaries from: $BIN_DIR" >&2
+elif [ -f "$NATIVE_BIN_DIR/img-convert" ]; then
+    IMG_CONVERT_PATH="$NATIVE_BIN_DIR/img-convert"
+    MESH_CONVERT_PATH="$NATIVE_BIN_DIR/mesh-convert"
+    echo "Using native binaries from: $NATIVE_BIN_DIR" >&2
+else
+    echo "Error: Binaries not found. Expected locations:" >&2
+    echo "  - $BIN_DIR/img-convert" >&2
+    echo "  - $NATIVE_BIN_DIR/img-convert" >&2
+    echo "Run 'cargo build --release' or 'cargo build --release --target $TARGET' first." >&2
     exit 1
 fi
 
 # Copy binaries
 echo "Copying binaries..."
-cp "$BIN_DIR/img-convert" "$RELEASE_DIR/"
-cp "$BIN_DIR/mesh-convert" "$RELEASE_DIR/"
+cp "$IMG_CONVERT_PATH" "$RELEASE_DIR/"
+cp "$MESH_CONVERT_PATH" "$RELEASE_DIR/"
 
 # Make binaries executable
 chmod +x "$RELEASE_DIR/img-convert"
