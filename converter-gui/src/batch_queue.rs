@@ -7,8 +7,15 @@
 //! operations, allowing users to queue multiple files for conversion.
 
 use crate::app::{FileType, OutputFormat};
+use std::collections::HashSet;
 use std::path::PathBuf;
 use uuid::Uuid;
+
+/// Maximum number of items allowed in the batch queue
+///
+/// This limit prevents memory exhaustion attacks where a malicious user
+/// could add thousands of items to the queue.
+pub const MAX_QUEUE_SIZE: usize = 1000;
 
 /// A single item in the batch conversion queue
 #[derive(Debug, Clone)]
@@ -115,13 +122,20 @@ impl BatchItem {
 
 /// Batch processing queue
 ///
-/// Manages a collection of batch items for sequential processing.
+/// Manages a collection of batch items for sequential or parallel processing.
 #[derive(Debug, Clone)]
 pub struct BatchQueue {
     /// Queue items
     pub items: Vec<BatchItem>,
     /// Index of currently processing item (None if not processing)
+    /// Used for sequential processing mode
     pub current_index: Option<usize>,
+    /// Set of IDs currently being processed (for parallel processing)
+    pub processing_ids: HashSet<Uuid>,
+    /// Overall progress (0.0 to 1.0)
+    pub overall_progress: f32,
+    /// Total items processed (for progress calculation)
+    pub processed_count: usize,
 }
 
 impl Default for BatchQueue {
@@ -130,6 +144,9 @@ impl Default for BatchQueue {
         Self {
             items: Vec::new(),
             current_index: None,
+            processing_ids: HashSet::new(),
+            overall_progress: 0.0,
+            processed_count: 0,
         }
     }
 }
@@ -141,8 +158,19 @@ impl BatchQueue {
     }
 
     /// Add an item to the queue
-    pub fn add_item(&mut self, item: BatchItem) {
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the queue is full (exceeds MAX_QUEUE_SIZE).
+    pub fn add_item(&mut self, item: BatchItem) -> Result<(), String> {
+        if self.items.len() >= MAX_QUEUE_SIZE {
+            return Err(format!(
+                "Queue is full (max {} items). Please remove some items before adding more.",
+                MAX_QUEUE_SIZE
+            ));
+        }
         self.items.push(item);
+        Ok(())
     }
 
     /// Remove an item from the queue by ID
@@ -158,6 +186,9 @@ impl BatchQueue {
     pub fn clear(&mut self) {
         self.items.clear();
         self.current_index = None;
+        self.processing_ids.clear();
+        self.overall_progress = 0.0;
+        self.processed_count = 0;
     }
 
     /// Get the next pending item to process
@@ -214,6 +245,155 @@ impl BatchQueue {
             .iter()
             .any(|item| item.status == BatchItemStatus::Pending)
     }
+
+    /// Get a mutable reference to an item by ID
+    ///
+    /// Returns `None` if the item is not found or is not in a state that allows editing.
+    pub fn get_item_mut(&mut self, id: Uuid) -> Option<&mut BatchItem> {
+        self.items.iter_mut().find(|item| item.id == id)
+    }
+
+    /// Get a reference to an item by ID
+    pub fn get_item(&self, id: Uuid) -> Option<&BatchItem> {
+        self.items.iter().find(|item| item.id == id)
+    }
+
+    /// Mark item as processing (thread-safe for parallel processing)
+    ///
+    /// Returns `true` if the item was successfully marked as processing.
+    pub fn mark_processing(&mut self, id: Uuid) -> bool {
+        // Check if already processing
+        if self.processing_ids.contains(&id) {
+            return false;
+        }
+
+        // Find item and update status
+        if let Some(item) = self.items.iter_mut().find(|i| i.id == id) {
+            if item.status == BatchItemStatus::Pending {
+                item.status = BatchItemStatus::Processing;
+                self.processing_ids.insert(id);
+                return true;
+            }
+        }
+        false
+    }
+
+    /// Update item status (thread-safe for parallel processing)
+    pub fn update_item_status(&mut self, id: Uuid, status: BatchItemStatus, progress: f32) {
+        if let Some(item) = self.items.iter_mut().find(|i| i.id == id) {
+            item.status = status.clone();
+            item.progress = progress;
+
+            // Remove from processing set if completed/failed
+            match status {
+                BatchItemStatus::Completed { .. } | BatchItemStatus::Failed { .. } => {
+                    self.processing_ids.remove(&id);
+                    self.processed_count += 1;
+                }
+                _ => {}
+            }
+
+            // Update overall progress
+            self.update_overall_progress();
+        }
+    }
+
+    /// Get pending items (for parallel processing)
+    ///
+    /// Returns up to `limit` pending item IDs that are not currently processing.
+    pub fn get_pending_items(&self, limit: usize) -> Vec<Uuid> {
+        self.items
+            .iter()
+            .filter(|item| {
+                item.status == BatchItemStatus::Pending && !self.processing_ids.contains(&item.id)
+            })
+            .take(limit)
+            .map(|item| item.id)
+            .collect()
+    }
+
+    /// Update overall progress based on completed/failed items
+    fn update_overall_progress(&mut self) {
+        let total = self.items.len();
+        if total > 0 {
+            self.overall_progress = self.processed_count as f32 / total as f32;
+        } else {
+            self.overall_progress = 0.0;
+        }
+    }
+
+    /// Update an item's output format and regenerate output path
+    ///
+    /// Returns `true` if the item was found and updated.
+    pub fn update_item_format(
+        &mut self,
+        id: Uuid,
+        output_format: crate::app::OutputFormat,
+    ) -> bool {
+        if let Some(item) = self.get_item_mut(id) {
+            // Only allow editing pending items
+            if !matches!(item.status, BatchItemStatus::Pending) {
+                return false;
+            }
+
+            item.output_format = output_format;
+
+            // Regenerate output path with new extension
+            if let Some(stem) = item.source_path.file_stem().and_then(|s| s.to_str()) {
+                let ext = match output_format {
+                    crate::app::OutputFormat::Image(fmt) => {
+                        crate::format_helpers::get_format_extension(fmt)
+                    }
+                    crate::app::OutputFormat::Mesh(fmt) => {
+                        crate::format_helpers::get_mesh_format_extension(fmt)
+                    }
+                };
+                item.output_path = item
+                    .source_path
+                    .parent()
+                    .unwrap_or_else(|| std::path::Path::new("."))
+                    .join(format!("{}.{}", stem, ext));
+            }
+
+            true
+        } else {
+            false
+        }
+    }
+
+    /// Update an item's output path
+    ///
+    /// Returns `true` if the item was found and updated.
+    pub fn update_item_output_path(&mut self, id: Uuid, output_path: PathBuf) -> bool {
+        if let Some(item) = self.get_item_mut(id) {
+            // Only allow editing pending items
+            if !matches!(item.status, BatchItemStatus::Pending) {
+                return false;
+            }
+
+            item.output_path = output_path;
+            true
+        } else {
+            false
+        }
+    }
+
+    /// Update an item's options (quality, mesh options)
+    ///
+    /// Returns `true` if the item was found and updated.
+    pub fn update_item_options(&mut self, id: Uuid, options: BatchItemOptions) -> bool {
+        if let Some(item) = self.get_item_mut(id) {
+            // Only allow editing pending items
+            if !matches!(item.status, BatchItemStatus::Pending) {
+                return false;
+            }
+
+            item.options = options;
+            true
+        } else {
+            false
+        }
+    }
 }
 
 /// Queue statistics for display in UI
@@ -256,7 +436,7 @@ mod tests {
         let item = create_test_item();
         let id = item.id;
 
-        queue.add_item(item);
+        queue.add_item(item).unwrap();
         assert_eq!(queue.items.len(), 1);
 
         assert!(queue.remove_item(id));
@@ -266,8 +446,8 @@ mod tests {
     #[test]
     fn test_queue_clear() {
         let mut queue = BatchQueue::new();
-        queue.add_item(create_test_item());
-        queue.add_item(create_test_item());
+        queue.add_item(create_test_item()).unwrap();
+        queue.add_item(create_test_item()).unwrap();
         assert_eq!(queue.items.len(), 2);
 
         queue.clear();
@@ -281,16 +461,16 @@ mod tests {
         item1.status = BatchItemStatus::Completed {
             output_path: PathBuf::from("out1.jpg"),
         };
-        queue.add_item(item1);
+        queue.add_item(item1).unwrap();
 
         let mut item2 = create_test_item();
         item2.status = BatchItemStatus::Failed {
             error: "Test error".to_string(),
         };
-        queue.add_item(item2);
+        queue.add_item(item2).unwrap();
 
         let item3 = create_test_item();
-        queue.add_item(item3);
+        queue.add_item(item3).unwrap();
 
         let stats = queue.statistics();
         assert_eq!(stats.total, 3);
@@ -306,11 +486,28 @@ mod tests {
         item1.status = BatchItemStatus::Completed {
             output_path: PathBuf::from("out1.jpg"),
         };
-        queue.add_item(item1);
+        queue.add_item(item1).unwrap();
 
         let item2 = create_test_item();
-        queue.add_item(item2);
+        queue.add_item(item2).unwrap();
 
         assert_eq!(queue.next_pending(), Some(1));
+    }
+
+    #[test]
+    fn test_queue_size_limit() {
+        let mut queue = BatchQueue::new();
+
+        // Fill queue to limit
+        for _ in 0..MAX_QUEUE_SIZE {
+            queue.add_item(create_test_item()).unwrap();
+        }
+        assert_eq!(queue.items.len(), MAX_QUEUE_SIZE);
+
+        // Attempting to add one more should fail
+        let result = queue.add_item(create_test_item());
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("Queue is full"));
+        assert_eq!(queue.items.len(), MAX_QUEUE_SIZE); // Size unchanged
     }
 }

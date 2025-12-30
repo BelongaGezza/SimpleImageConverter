@@ -1,7 +1,7 @@
 # Settings Guide
 ## Simple Image Converter - Configuration and Preferences
 
-**Version:** 0.2.2  
+**Version:** 0.3.0  
 **Last Updated:** December 30, 2025
 
 ---
@@ -170,9 +170,32 @@ Settings are validated when you save:
 - **Invalid paths** - Rejected, must select valid directory
 - **Corrupted data** - Defaults used, settings file recreated
 
-### Auto-Save
+### Auto-Save (v0.3.0)
 
-**Note:** Auto-save on change is planned for a future version. Currently, you must click "Save" to persist changes.
+**Settings automatically save when changed** - No need to click "Save" button!
+
+**How It Works:**
+- Settings are automatically saved 500ms after you make a change
+- Visual indicator shows auto-save status:
+  - **Idle** - No changes pending
+  - **Pending** - Changes detected, waiting to save
+  - **Saving** - Currently saving to disk
+  - **Saved** - Successfully saved (brief confirmation)
+  - **Error** - Save failed (error message shown)
+
+**Benefits:**
+- More convenient - settings persist automatically
+- No risk of losing settings if application closes unexpectedly
+- Seamless user experience
+
+**Manual Save:**
+- You can still click "Save" to save immediately (bypasses debounce)
+- Manual save is useful if you want to ensure settings are saved right away
+
+**Error Handling:**
+- If auto-save fails, an error message is shown
+- Settings remain in memory (not lost)
+- You can try saving manually or fix the issue (e.g., permissions)
 
 ### Reset to Defaults
 

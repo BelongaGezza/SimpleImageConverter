@@ -5,15 +5,53 @@
 //!
 //! This module provides the UI for viewing and editing application settings.
 
-use crate::app::ConverterApp;
+use crate::app::{AutoSaveStatus, ConverterApp};
 use crate::settings::AppSettings;
-use egui::{RichText, Ui};
+use egui::{Color32, RichText, Ui};
 
 /// Render the settings UI panel
 ///
 /// Displays current settings with options to edit and save.
 pub fn render_settings_panel(ui: &mut Ui, app: &mut ConverterApp) {
     ui.heading("Settings");
+
+    // Auto-save status indicator
+    ui.horizontal(|ui| {
+        match app.settings_auto_save.status {
+            AutoSaveStatus::Idle => {
+                // No indicator when idle
+            }
+            AutoSaveStatus::Pending => {
+                ui.label(
+                    RichText::new("Saving...")
+                        .small()
+                        .color(Color32::GRAY)
+                        .italics(),
+                );
+            }
+            AutoSaveStatus::Saving => {
+                ui.label(
+                    RichText::new("Saving...")
+                        .small()
+                        .color(Color32::from_rgb(100, 150, 255)),
+                );
+            }
+            AutoSaveStatus::Saved => {
+                ui.label(
+                    RichText::new("✓ Saved")
+                        .small()
+                        .color(Color32::from_rgb(50, 200, 50)),
+                );
+            }
+            AutoSaveStatus::Error => {
+                ui.label(
+                    RichText::new("✗ Save failed")
+                        .small()
+                        .color(Color32::from_rgb(200, 50, 50)),
+                );
+            }
+        }
+    });
 
     ui.add_space(10.0);
 
@@ -45,14 +83,24 @@ pub fn render_settings_panel(ui: &mut Ui, app: &mut ConverterApp) {
             // Default quality
             ui.horizontal(|ui| {
                 ui.label("Default Quality:");
-                ui.add(egui::Slider::new(&mut settings.default_quality, 1..=100));
-                ui.label(format!("{}", settings.default_quality));
+                let mut quality = settings.default_quality;
+                let response = ui.add(egui::Slider::new(&mut quality, 1..=100));
+                ui.label(format!("{}", quality));
+                if response.changed() {
+                    settings.default_quality = quality;
+                    app.settings_auto_save.mark_changed();
+                }
             });
 
             ui.add_space(10.0);
 
             // Show advanced options
-            ui.checkbox(&mut settings.show_advanced_options, "Show Advanced Options by Default");
+            let mut show_advanced = settings.show_advanced_options;
+            let response = ui.checkbox(&mut show_advanced, "Show Advanced Options by Default");
+            if response.changed() {
+                settings.show_advanced_options = show_advanced;
+                app.settings_auto_save.mark_changed();
+            }
         });
 
         ui.add_space(10.0);
@@ -62,17 +110,24 @@ pub fn render_settings_panel(ui: &mut Ui, app: &mut ConverterApp) {
             ui.add_space(5.0);
 
             // Conversion history
-            ui.checkbox(
-                &mut settings.conversion_history_enabled,
-                "Enable Conversion History",
-            );
+            let mut history_enabled = settings.conversion_history_enabled;
+            let response = ui.checkbox(&mut history_enabled, "Enable Conversion History");
+            if response.changed() {
+                settings.conversion_history_enabled = history_enabled;
+                app.settings_auto_save.mark_changed();
+            }
 
             ui.add_space(5.0);
 
             ui.horizontal(|ui| {
                 ui.label("Max History Entries:");
-                ui.add(egui::Slider::new(&mut settings.max_history_entries, 10..=1000));
-                ui.label(format!("{}", settings.max_history_entries));
+                let mut max_entries = settings.max_history_entries;
+                let response = ui.add(egui::Slider::new(&mut max_entries, 10..=1000));
+                ui.label(format!("{}", max_entries));
+                if response.changed() {
+                    settings.max_history_entries = max_entries;
+                    app.settings_auto_save.mark_changed();
+                }
             });
         });
 
@@ -95,14 +150,18 @@ pub fn render_settings_panel(ui: &mut Ui, app: &mut ConverterApp) {
 
         // Action buttons
         ui.horizontal(|ui| {
+            // Manual save button (still available as backup)
             if ui.button("Save").clicked() {
                 if let Some(ref settings) = app.settings {
+                    app.settings_auto_save.set_saving();
                     if let Err(e) = settings.save() {
+                        app.settings_auto_save.set_error();
                         app.add_message(
                             format!("Failed to save settings: {}", e),
                             crate::app::MessageType::Error,
                         );
                     } else {
+                        app.settings_auto_save.set_saved();
                         app.add_message(
                             "Settings saved successfully".to_string(),
                             crate::app::MessageType::Success,
@@ -113,6 +172,7 @@ pub fn render_settings_panel(ui: &mut Ui, app: &mut ConverterApp) {
 
             if ui.button("Reset to Defaults").clicked() {
                 app.settings = Some(AppSettings::default());
+                app.settings_auto_save.mark_changed();
                 app.add_message(
                     "Settings reset to defaults".to_string(),
                     crate::app::MessageType::Info,

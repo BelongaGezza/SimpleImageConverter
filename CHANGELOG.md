@@ -7,12 +7,93 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Planned for v0.3.0 (Future)
-- Full STEP B-Rep support (NURBS, cylinders, spheres)
-- Parallel batch processing
-- Full 3D mesh viewer
-- Settings auto-save on change
-- Queue item editing
+### In Development for v0.3.0 (Sprint 9)
+
+#### ✅ Implemented Features
+
+**Settings Auto-Save (v0.3.0):**
+- Settings automatically save 500ms after changes are made
+- Visual status indicator shows auto-save state (Idle, Pending, Saving, Saved, Error)
+- Debouncing prevents excessive file writes
+- Error handling with user-friendly messages
+- Manual save option still available
+
+**Queue Item Editing (v0.3.0):**
+- Edit button for each pending queue item
+- Edit output format, output path, and conversion options
+- Validation ensures edited values are valid
+- Cannot edit processing or completed items
+- Fix mistakes without removing and re-adding items
+
+#### 🟡 In Progress
+
+**Full STEP B-Rep Support:**
+- opencascade-rs integration research complete
+- Prototype implementation in progress
+- Full B-Rep support with curved surfaces (planned)
+
+**3D Mesh Viewer:**
+- 3D rendering library evaluation complete (three-d recommended)
+- Prototype implementation in progress
+- Full 3D preview functionality (planned)
+
+#### ⏳ Planned
+
+**Parallel Batch Processing:**
+- Architecture design complete
+- Implementation pending (currently sequential processing)
+- Concurrent file conversion (planned)
+
+---
+
+### Planned for v0.3.0 (In Development - Sprint 9)
+**Status:** Implementation in progress
+
+#### Core Features
+- **Full STEP B-Rep Support** - Research complete, prototype in progress
+  - ✅ opencascade-rs integration research complete
+  - ✅ Integration feasibility confirmed
+  - 🟡 Prototype implementation in progress
+  - NURBS surface support (planned)
+  - Cylindrical and spherical surface support (planned)
+  - Full B-Rep geometry conversion (planned)
+
+- **Parallel Batch Processing** - Architecture designed, implementation pending
+  - ✅ Architecture design complete
+  - ⏳ Implementation pending (currently sequential)
+  - Thread pool implementation planned (rayon or std::thread)
+  - Concurrent file conversion (planned)
+  - Thread-safe queue management (planned)
+  - Progress tracking for parallel operations (planned)
+
+#### GUI Enhancements
+- **Settings Auto-Save** - ✅ **IMPLEMENTED**
+  - ✅ Auto-save on settings change (500ms debounce)
+  - ✅ Visual feedback for auto-save status
+  - ✅ Error handling for save failures
+  - ✅ Seamless user experience
+
+- **Queue Item Editing** - ✅ **IMPLEMENTED**
+  - ✅ Edit output format for queue items
+  - ✅ Edit output path for queue items
+  - ✅ Edit conversion options (quality, mesh options)
+  - ✅ Validation for edited values
+  - ✅ Prevent editing of processing/completed items
+
+#### 3D Viewer
+- **3D Mesh Viewer** - Research complete, prototype in progress
+  - ✅ 3D rendering library evaluation complete (three-d recommended)
+  - 🟡 Prototype implementation in progress
+  - Basic mesh rendering prototype (planned)
+  - Camera controls (planned, if feasible)
+  - Integration with preview panel (planned)
+
+#### Research & Prototyping
+- ✅ opencascade-rs integration research complete
+- ✅ 3D rendering library evaluation complete
+- ✅ Parallel processing architecture design complete
+- ✅ Build complexity documented
+- ✅ Performance characteristics documented
 
 ---
 

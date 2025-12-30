@@ -1,17 +1,17 @@
 # Project Roadmap
 ## Simple Image Converter
 
-**Last Updated:** December 29, 2025 (v0.2.0 Released)
-**Current Version:** v0.2.0
+**Last Updated:** December 30, 2025 (v0.2.2 Released)
+**Current Version:** v0.2.2
 **Next Release:** v0.3.0 (Full STEP/CAD Support with opencascade-rs)
 
 ---
 
-## 🎯 Current Phase: v0.2.0 - STEP/CAD Support
+## 🎯 Current Phase: v0.2.2 - GUI Enhancements Complete
 
 ### Status Overview
 
-**Current Status:** ✅ **v0.2.0 RELEASED - v0.3.0 PLANNING**
+**Current Status:** ✅ **v0.2.2 RELEASED - v0.3.0 PLANNING**
 
 **Architectural Decision:** ✅ **APPROVED** - See `ARCHITECT_REVIEW_STEP_IMPLEMENTATION.md` for complete decision record.
 - **v0.2.0:** FACETED_BREP extraction (Pure Rust) - ✅ Approved

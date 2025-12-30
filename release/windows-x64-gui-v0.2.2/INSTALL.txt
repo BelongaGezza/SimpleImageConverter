@@ -1,0 +1,39 @@
+# SimpleImageConverter GUI for Windows
+
+## Installation
+
+1. Extract this ZIP file to a location of your choice (e.g., C:\Tools\SimpleImageConverter)
+2. Double-click converter-gui.exe to launch the application
+3. (Optional) Create a desktop shortcut for easy access
+
+## Usage
+
+1. Launch converter-gui.exe
+2. Drag and drop a file into the drop zone, or click "Browse Files..." to select a file
+3. Select the output format from the radio buttons
+4. Adjust options (optional):
+   - Change output filename
+   - Select output location
+   - Adjust quality slider (for JPEG/WebP images)
+5. Click "Convert" to start the conversion
+6. View results in the status bar and messages area
+
+## Features
+
+- Drag-and-drop file support
+- Visual format selection
+- Quality settings for lossy image formats
+- User-friendly error messages
+- Progress indicators for long operations
+- Thread-safe conversion processing
+- Batch processing (v0.2.2)
+- Preview functionality (v0.2.2)
+- Settings persistence (v0.2.2)
+- Conversion history (v0.2.2)
+
+## Supported Formats
+
+**Images:** PNG, JPEG, BMP, GIF, TIFF, WebP (SVG read-only)
+**Meshes:** STL, OBJ, PLY, OFF, glTF, DXF (STEP read-only, feature-gated)
+
+For more information, see the main README.md file.

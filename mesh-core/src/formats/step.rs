@@ -608,7 +608,66 @@ impl Default for StepFormat {
 #[cfg(feature = "step")]
 impl MeshReader for StepFormat {
     fn read(&self, data: &[u8]) -> Result<Mesh> {
-        self.parse_step(data)
+        // Strategy 1: Try FACETED_BREP first (pure Rust, fast, always available)
+        match self.parse_step(data) {
+            Ok(mesh) => return Ok(mesh),
+            Err(e) => {
+                // Check if error indicates curved surfaces (MANIFOLD_SOLID_BREP)
+                // If so, try opencascade-rs fallback (if available)
+                let error_msg = e.to_string();
+                if error_msg.contains("MANIFOLD_SOLID_BREP")
+                    || error_msg.contains("curved surfaces")
+                    || error_msg.contains("NURBS")
+                {
+                    // Try opencascade-rs fallback
+                    #[cfg(feature = "step-opencascade")]
+                    {
+                        if let Ok(mesh) = self.extract_with_opencascade(data) {
+                            return Ok(mesh);
+                        }
+                        // If opencascade-rs also fails, return original error with additional context
+                        return Err(ConversionError::ConversionFailed(format!(
+                            "{}\n\n\
+                             Attempted opencascade-rs fallback but it also failed. \
+                             This may indicate: \
+                             - OCCT is not installed or not found \
+                             - The STEP file is corrupted or invalid \
+                             - opencascade-rs integration needs further development",
+                            error_msg
+                        )));
+                    }
+
+                    // If opencascade-rs not available, return original error with suggestion
+                    return Err(ConversionError::ConversionFailed(format!(
+                        "{}\n\n\
+                         SOLUTION: Build with --features step-opencascade for full B-Rep support. \
+                         This requires OpenCASCADE Technology (OCCT) 7.7+ to be installed. \
+                         See RESEARCH_OPENCASCADE_RS_SPRINT9.md for installation instructions.",
+                        error_msg
+                    )));
+                }
+                // For other errors (parsing, validation, etc.), return as-is
+                return Err(e);
+            }
+        }
+    }
+}
+
+#[cfg(feature = "step")]
+impl StepFormat {
+    /// Extract mesh using opencascade-rs (fallback for curved surfaces)
+    ///
+    /// This method is called when FACETED_BREP extraction fails due to curved surfaces.
+    /// It requires the step-opencascade feature to be enabled and OCCT to be installed.
+    #[cfg(feature = "step-opencascade")]
+    fn extract_with_opencascade(&self, data: &[u8]) -> Result<Mesh> {
+        use crate::formats::step_opencascade;
+
+        // Use default tessellation quality (0.01 = 1% of bounding box)
+        // TODO: Make this configurable via ConversionOptions
+        const DEFAULT_DEFLECTION: f64 = 0.01;
+
+        step_opencascade::extract_mesh(data, &self.limits, DEFAULT_DEFLECTION)
     }
 }
 

@@ -5,10 +5,11 @@
 //!
 //! This module provides the UI for managing and displaying the batch conversion queue.
 
-use crate::app::ConverterApp;
+use crate::app::{ConverterApp, OutputFormat};
 use crate::batch_queue::{BatchItem, BatchItemStatus};
 use egui::{Color32, RichText, Ui};
 use rfd;
+use std::path::PathBuf;
 
 /// Render the batch queue UI panel
 ///
@@ -109,9 +110,12 @@ pub fn render_batch_queue(ui: &mut Ui, app: &mut ConverterApp) {
             .show(ui, |ui| {
                 if let Some(ref queue) = app.batch_queue {
                     for (index, item) in queue.items.iter().enumerate() {
-                        let should_remove = render_queue_item(ui, item, index);
+                        let (should_remove, should_edit_id) = render_queue_item(ui, item, index);
                         if should_remove {
                             items_to_remove.push(item.id);
+                        }
+                        if let Some(edit_id) = should_edit_id {
+                            app.editing_queue_item = Some(edit_id);
                         }
                     }
                 }
@@ -161,8 +165,10 @@ pub fn render_batch_queue(ui: &mut Ui, app: &mut ConverterApp) {
 
 /// Render a single queue item
 ///
-/// Returns `true` if the item should be removed.
-fn render_queue_item(ui: &mut Ui, item: &BatchItem, _index: usize) -> bool {
+/// Returns a tuple: (should_remove, should_edit_id)
+/// - should_remove: true if the item should be removed
+/// - should_edit_id: Some(id) if the item should be edited, None otherwise
+fn render_queue_item(ui: &mut Ui, item: &BatchItem, _index: usize) -> (bool, Option<uuid::Uuid>) {
     ui.group(|ui| {
         ui.vertical(|ui| {
             // File name and format
@@ -241,23 +247,307 @@ fn render_queue_item(ui: &mut Ui, item: &BatchItem, _index: usize) -> bool {
                 }
             });
 
-            // Remove button
+            // Action buttons (Edit and Remove)
             let mut should_remove = false;
+            let mut should_edit = false;
             ui.horizontal(|ui| {
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                    let can_edit = matches!(item.status, BatchItemStatus::Pending);
                     let can_remove = !matches!(item.status, BatchItemStatus::Processing);
+
                     ui.set_enabled(can_remove);
                     if ui.small_button("Remove").clicked() && can_remove {
                         should_remove = true; // Signal that this item should be removed
                     }
+
+                    ui.set_enabled(can_edit);
+                    if ui.small_button("Edit").clicked() && can_edit {
+                        should_edit = true; // Signal that this item should be edited
+                    }
                 });
             });
-            should_remove
+            if should_edit {
+                return (false, Some(item.id));
+            }
+            (should_remove, None)
         });
     });
 
     ui.add_space(5.0);
-    false // Don't remove by default
+    (false, None) // Don't remove or edit by default
+}
+
+/// Render the queue item editing dialog
+///
+/// Displays a modal dialog for editing a queue item's output format, path, and options.
+pub fn render_edit_dialog(ui: &mut Ui, app: &mut ConverterApp) {
+    let Some(editing_id) = app.editing_queue_item else {
+        return; // No item being edited
+    };
+
+    // Extract item data before the closure to avoid borrowing issues
+    let (file_type, output_format, output_path, options, source_path) = {
+        let Some(ref queue) = app.batch_queue else {
+            app.editing_queue_item = None;
+            return;
+        };
+
+        let Some(item) = queue.get_item(editing_id) else {
+            app.editing_queue_item = None;
+            return;
+        };
+
+        // Only allow editing pending items
+        if !matches!(item.status, BatchItemStatus::Pending) {
+            app.editing_queue_item = None;
+            return;
+        }
+
+        // Clone necessary data
+        (
+            item.file_type,
+            item.output_format.clone(),
+            item.output_path.clone(),
+            item.options.clone(),
+            item.source_path.clone(),
+        )
+    };
+
+    // Create modal dialog
+    egui::Window::new("Edit Queue Item")
+        .collapsible(false)
+        .resizable(true)
+        .default_width(500.0)
+        .show(ui.ctx(), |ui| {
+            ui.vertical(|ui| {
+                // Source file (read-only)
+                ui.horizontal(|ui| {
+                    ui.label("Source File:");
+                    let filename = source_path
+                        .file_name()
+                        .and_then(|n| n.to_str())
+                        .unwrap_or("Unknown");
+                    ui.label(RichText::new(filename).strong());
+                });
+
+                ui.add_space(10.0);
+
+                // Output format selection
+                ui.label("Output Format:");
+                let mut selected_format = output_format.clone();
+                let format_changed = match file_type {
+                    crate::app::FileType::Image => {
+                        let formats = crate::format_helpers::get_writable_image_formats();
+                        let mut changed = false;
+                        ui.horizontal_wrapped(|ui| {
+                            for format in formats {
+                                let format_enum = crate::app::OutputFormat::Image(format);
+                                let is_selected = matches!(
+                                    selected_format,
+                                    crate::app::OutputFormat::Image(f) if f == format
+                                );
+                                let label = crate::format_helpers::get_image_format_name(format);
+                                if ui.selectable_label(is_selected, label).clicked() {
+                                    selected_format = format_enum;
+                                    changed = true;
+                                }
+                            }
+                        });
+                        changed
+                    }
+                    crate::app::FileType::Mesh => {
+                        let formats = crate::format_helpers::get_writable_mesh_formats();
+                        let mut changed = false;
+                        ui.horizontal_wrapped(|ui| {
+                            for format in formats {
+                                let format_enum = crate::app::OutputFormat::Mesh(format);
+                                let is_selected = matches!(
+                                    selected_format,
+                                    crate::app::OutputFormat::Mesh(f) if f == format
+                                );
+                                let label = crate::format_helpers::get_mesh_format_name(format);
+                                if ui.selectable_label(is_selected, label).clicked() {
+                                    selected_format = format_enum;
+                                    changed = true;
+                                }
+                            }
+                        });
+                        changed
+                    }
+                };
+
+                ui.add_space(10.0);
+
+                // Output path
+                ui.label("Output Path:");
+                let mut output_path_str = output_path.to_string_lossy().to_string();
+                let output_path_response = ui.text_edit_singleline(&mut output_path_str);
+                let output_path_changed = output_path_response.changed();
+
+                ui.horizontal(|ui| {
+                    if ui.button("Browse...").clicked() {
+                        let mut dialog = rfd::FileDialog::new().set_file_name(
+                            output_path
+                                .file_name()
+                                .and_then(|n| n.to_str())
+                                .unwrap_or("output"),
+                        );
+
+                        if let Some(parent) = output_path.parent() {
+                            if let Ok(canonical) = parent.canonicalize() {
+                                dialog = dialog.set_directory(canonical);
+                            }
+                        }
+
+                        if let Some(selected_path) = dialog.save_file() {
+                            output_path_str = selected_path.to_string_lossy().to_string();
+                        }
+                    }
+                });
+
+                ui.add_space(10.0);
+
+                // Quality (for image formats)
+                let mut quality = options.quality;
+                let mut quality_changed = false;
+                if matches!(file_type, crate::app::FileType::Image) {
+                    if let crate::app::OutputFormat::Image(img_fmt) = selected_format {
+                        if crate::format_helpers::format_supports_quality(img_fmt) {
+                            ui.label("Quality:");
+                            let quality_response = ui.add(egui::Slider::new(&mut quality, 1..=100));
+                            ui.label(format!("{}", quality));
+                            quality_changed = quality_response.changed();
+                        }
+                    }
+                }
+
+                // Mesh options (for mesh formats)
+                let mut mesh_options = options.mesh_options.clone();
+                let mut mesh_options_changed = false;
+                if matches!(file_type, crate::app::FileType::Mesh) {
+                    ui.add_space(10.0);
+                    ui.separator();
+                    ui.label("Mesh Options:");
+
+                    if let Some(ref mut opts) = mesh_options {
+                        let mut recalc = opts.recalculate_normals;
+                        let recalc_response = ui.checkbox(&mut recalc, "Recalculate Normals");
+                        if recalc_response.changed() {
+                            opts.recalculate_normals = recalc;
+                            mesh_options_changed = true;
+                        }
+
+                        let mut validate = opts.validate;
+                        let validate_response = ui.checkbox(&mut validate, "Validate Mesh");
+                        if validate_response.changed() {
+                            opts.validate = validate;
+                            mesh_options_changed = true;
+                        }
+                    }
+                }
+
+                ui.add_space(20.0);
+
+                // Dialog buttons - use a mutable flag to track actions outside closure
+                let mut should_cancel = false;
+                let mut should_save = false;
+                let mut save_data: Option<(
+                    OutputFormat,
+                    PathBuf,
+                    u8,
+                    Option<crate::batch_queue::MeshOptions>,
+                    Option<String>,
+                )> = None;
+
+                ui.horizontal(|ui| {
+                    if ui.button("Cancel").clicked() {
+                        should_cancel = true;
+                    }
+
+                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                        if ui.button("Save").clicked() {
+                            // Validate and prepare save data
+                            let output_path = PathBuf::from(&output_path_str);
+
+                            // Validate output path
+                            match common::validation::validate_file_path(&output_path) {
+                                Ok(()) => {
+                                    should_save = true;
+                                    save_data = Some((
+                                        selected_format.clone(),
+                                        output_path,
+                                        quality,
+                                        mesh_options.clone(),
+                                        None,
+                                    ));
+                                }
+                                Err(e) => {
+                                    // Store error message to show after closure
+                                    save_data = Some((
+                                        selected_format.clone(),
+                                        output_path,
+                                        quality,
+                                        mesh_options.clone(),
+                                        Some(e.to_string()),
+                                    ));
+                                }
+                            }
+                        }
+                    });
+                });
+
+                // Handle actions after closure to avoid borrowing issues
+                if should_cancel {
+                    app.editing_queue_item = None;
+                }
+
+                if let Some((
+                    selected_format_val,
+                    output_path_val,
+                    quality_val,
+                    mesh_options_val,
+                    validation_error,
+                )) = save_data
+                {
+                    if should_save {
+                        // Update queue item
+                        if let Some(ref mut queue) = app.batch_queue {
+                            // Update format (this also updates output path extension)
+                            if format_changed {
+                                queue.update_item_format(editing_id, selected_format_val.clone());
+                            }
+
+                            // Update output path if changed
+                            if output_path_changed {
+                                queue.update_item_output_path(editing_id, output_path_val.clone());
+                            }
+
+                            // Update options if changed
+                            if quality_changed || mesh_options_changed {
+                                let new_options = crate::batch_queue::BatchItemOptions {
+                                    quality: quality_val,
+                                    mesh_options: mesh_options_val,
+                                };
+                                queue.update_item_options(editing_id, new_options);
+                            }
+
+                            app.add_message(
+                                "Queue item updated".to_string(),
+                                crate::app::MessageType::Success,
+                            );
+                        }
+
+                        app.editing_queue_item = None;
+                    } else if let Some(error_msg) = validation_error {
+                        // Validation failed
+                        app.add_message(
+                            format!("Invalid output path: {}", error_msg),
+                            crate::app::MessageType::Error,
+                        );
+                    }
+                }
+            });
+        });
 }
 
 /// Add a file to the batch queue with automatic format detection
@@ -359,10 +649,16 @@ fn add_file_to_batch_queue(app: &mut ConverterApp, file_path: std::path::PathBuf
 
     // Add to queue
     if let Some(ref mut queue) = app.batch_queue {
-        queue.add_item(batch_item);
-        app.add_message(
-            "File added to batch queue".to_string(),
-            crate::app::MessageType::Info,
-        );
+        match queue.add_item(batch_item) {
+            Ok(()) => {
+                app.add_message(
+                    "File added to batch queue".to_string(),
+                    crate::app::MessageType::Info,
+                );
+            }
+            Err(e) => {
+                app.add_message(e, crate::app::MessageType::Error);
+            }
+        }
     }
 }

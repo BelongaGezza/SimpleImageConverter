@@ -15,6 +15,9 @@ mod settings;
 mod ui;
 mod utils;
 
+#[cfg(feature = "viewer-3d")]
+mod preview_3d;
+
 use app::ConverterApp;
 
 fn main() -> eframe::Result<()> {

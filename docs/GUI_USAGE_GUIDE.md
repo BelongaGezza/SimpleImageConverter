@@ -384,11 +384,39 @@ Convert multiple files at once using the batch processing queue:
 
 1. **Add files to queue** - Click "Add Files" or drag multiple files into the batch queue panel
 2. **Review queue** - Check files, formats, and settings for each item
-3. **Process queue** - Click "Process Queue" to convert all files sequentially
-4. **Monitor progress** - Watch real-time progress for each file
-5. **Review results** - Check statistics and handle any failed conversions
+3. **Edit queue items (v0.3.0)** - Click "Edit" button on any pending item to change format, output path, or options
+4. **Process queue** - Click "Process Queue" to convert all files sequentially
+5. **Monitor progress** - Watch real-time progress for each file
+6. **Review results** - Check statistics and handle any failed conversions
 
 **For detailed information, see:** [Batch Processing Guide](BATCH_PROCESSING_GUIDE.md)
+
+### Queue Item Editing (v0.3.0)
+
+Edit queue items before processing to fix mistakes or adjust settings:
+
+1. **Open edit dialog** - Click the "Edit" button on any pending queue item
+2. **Edit fields** - Change:
+   - **Output format** - Select a different format from the dropdown
+   - **Output path** - Change the output file location
+   - **Quality** - Adjust quality for lossy image formats (JPEG, WebP)
+   - **Mesh options** - Adjust mesh conversion options (if applicable)
+3. **Validate changes** - The dialog validates your changes:
+   - Format compatibility is checked
+   - Output path is validated
+   - Invalid values are rejected
+4. **Save changes** - Click "Save" to update the queue item
+5. **Cancel** - Click "Cancel" or close the dialog to discard changes
+
+**Restrictions:**
+- **Pending items only** - You can only edit items with "Pending" status
+- **Processing items** - Cannot edit items currently being processed
+- **Completed items** - Cannot edit items that are already completed or failed
+
+**Benefits:**
+- Fix mistakes without removing and re-adding items
+- Adjust settings for individual items
+- More flexible batch processing workflow
 
 ### Preview Functionality
 
@@ -407,8 +435,13 @@ Your preferences are saved automatically:
 
 1. **Open Settings** - Click "Settings" in menu bar
 2. **Configure preferences** - Set default output directory, quality, resource limits, etc.
-3. **Save settings** - Click "Save" to persist your preferences
-4. **Settings restored** - Your preferences are restored on next launch
+3. **Auto-save (v0.3.0)** - Settings automatically save 500ms after you make a change (no need to click "Save")
+4. **Manual save** - You can still click "Save" to save immediately
+5. **Settings restored** - Your preferences are restored on next launch
+
+**Auto-Save Status Indicator:**
+- Shows current auto-save status (Idle, Pending, Saving, Saved, Error)
+- Visual feedback confirms when settings are saved
 
 **For detailed information, see:** [Settings Guide](SETTINGS_GUIDE.md)
 
@@ -432,6 +465,46 @@ Track your recent conversions:
 7. **Clear history** - Click "Clear History" button to remove all entries
 
 **Note:** History is stored in settings file and persists across sessions.
+
+---
+
+## v0.3.0 Planned Features (In Development)
+
+### Parallel Batch Processing
+
+**Status:** ⏳ Planned for future version - Currently batch processing is sequential
+
+**Planned Features:**
+- Concurrent file conversion using thread pool
+- Automatic thread management based on CPU cores
+- Configurable maximum concurrent conversions
+- Real-time progress tracking for each parallel operation
+- Improved performance for large batch queues
+
+**Current Implementation:**
+- Batch processing is currently sequential (one file at a time)
+- Files are processed in order
+- UI remains responsive during processing
+- Progress tracking works for sequential processing
+
+**Note:** Parallel batch processing is being researched and designed. Sequential processing is fully functional and suitable for most use cases.
+
+### 3D Mesh Viewer
+
+**Coming in v0.3.0:** Full 3D preview of mesh files before conversion.
+
+**Features:**
+- Interactive 3D mesh rendering
+- Camera controls (rotate, zoom, pan)
+- Integration with preview panel
+- Performance optimized for large meshes
+
+**Benefits:**
+- Visual verification before conversion
+- Better understanding of mesh structure
+- Catch issues before processing
+
+**Note:** These features are currently in research and development. Check the [CHANGELOG.md](../CHANGELOG.md) for the latest status.
 
 ---
 

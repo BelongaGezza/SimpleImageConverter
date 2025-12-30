@@ -1,7 +1,7 @@
 # Batch Processing Guide
 ## Simple Image Converter - Convert Multiple Files at Once
 
-**Version:** 0.2.2  
+**Version:** 0.3.0  
 **Last Updated:** December 30, 2025
 
 ---
@@ -121,6 +121,8 @@ Each item in the queue shows:
 ### Processing Behavior
 
 - **Sequential processing** - Files are processed one at a time (in order)
+  - **Note:** Parallel processing (multiple files simultaneously) is planned for a future version
+  - Current implementation processes files sequentially for reliability and simplicity
 - **Error handling** - Failed conversions don't stop the queue
 - **Continue on error** - Processing continues even if some files fail
 - **Automatic progression** - Next item starts automatically when current completes
@@ -159,11 +161,33 @@ When all items are processed:
 
 **Note:** Reordering is planned for a future version. Currently, items are processed in the order they were added.
 
-### Editing Queue Items
+### Editing Queue Items (v0.3.0)
 
-**Note:** Editing individual queue items is planned for a future version. To change settings:
-1. Remove the item from the queue
-2. Add it again with new settings
+**Edit queue items before processing** to fix mistakes or adjust settings:
+
+1. **Open edit dialog** - Click the "Edit" button on any pending queue item
+2. **Edit fields** - Change:
+   - **Output format** - Select a different format from the dropdown
+   - **Output path** - Change the output file location (click "Browse..." to select)
+   - **Quality** - Adjust quality for lossy image formats (JPEG, WebP) using the slider
+   - **Mesh options** - Adjust mesh conversion options (if applicable)
+3. **Validate changes** - The dialog validates your changes:
+   - Format compatibility is checked
+   - Output path is validated (must be a valid, writable location)
+   - Invalid values are rejected with error messages
+4. **Save changes** - Click "Save" to update the queue item
+5. **Cancel** - Click "Cancel" or close the dialog to discard changes
+
+**Restrictions:**
+- **Pending items only** - You can only edit items with "Pending" status
+- **Processing items** - Cannot edit items currently being processed
+- **Completed/Failed items** - Cannot edit items that are already completed or failed
+
+**Benefits:**
+- Fix mistakes without removing and re-adding items
+- Adjust settings for individual items (e.g., different quality for each image)
+- More flexible batch processing workflow
+- Save time when you need to make corrections
 
 ---
 

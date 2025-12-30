@@ -9,6 +9,8 @@ pub mod ply;
 pub mod registry;
 #[cfg(feature = "step")]
 pub mod step;
+#[cfg(feature = "step-opencascade")]
+pub mod step_opencascade;
 pub mod stl;
 pub mod traits;
 

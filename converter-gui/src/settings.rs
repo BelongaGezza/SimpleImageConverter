@@ -48,6 +48,12 @@ pub struct AppSettings {
     /// Maximum number of history entries to keep
     #[serde(default = "default_max_history_entries")]
     pub max_history_entries: usize,
+
+    /// Maximum concurrent conversions for parallel batch processing (1-16)
+    /// Default: CPU cores (capped at 8)
+    /// None means use default (CPU cores)
+    #[serde(default)]
+    pub max_concurrent_conversions: Option<usize>,
 }
 
 fn default_window_width() -> f32 {
@@ -81,6 +87,7 @@ impl Default for AppSettings {
             recent_files: Vec::new(),
             conversion_history_enabled: default_true(),
             max_history_entries: default_max_history_entries(),
+            max_concurrent_conversions: None, // Use default (CPU cores)
         }
     }
 }
@@ -202,6 +209,9 @@ impl AppSettings {
         // Validate max history entries (reasonable limit)
         let max_history_entries = self.max_history_entries.clamp(10, 1000);
 
+        // Validate max concurrent conversions (1-16 range)
+        let max_concurrent_conversions = self.max_concurrent_conversions.map(|v| v.clamp(1, 16));
+
         Ok(Self {
             window_width,
             window_height,
@@ -211,6 +221,7 @@ impl AppSettings {
             recent_files,
             conversion_history_enabled: self.conversion_history_enabled,
             max_history_entries,
+            max_concurrent_conversions,
         })
     }
 

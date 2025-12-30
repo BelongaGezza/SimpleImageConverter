@@ -50,7 +50,7 @@ Two separate CLI tools written in Rust:
 3. Run `converter-gui`
 
 **Linux (Ubuntu 24.04+):**
-1. Download `simpleimageconverter-gui-v0.2.2-linux-x64.tar.gz` from [Releases](https://github.com/BelongaGezza/SimpleImageConverter/releases)
+1. Download `simpleimageconverter-gui-v0.2.1-linux-x64.tar.gz` from [Releases](https://github.com/BelongaGezza/SimpleImageConverter/releases)
 2. Extract: `tar -xzf simpleimageconverter-gui-*.tar.gz`
 3. Run `converter-gui`
 
@@ -283,25 +283,18 @@ cargo build --release --target x86_64-pc-windows-gnu
 - [x] Direct library integration
 - [x] User-friendly interface
 
-**Sprint 8: GUI Enhancements** ✅ **COMPLETE** (v0.2.2 released)
+**Sprint 8: GUI Enhancements** 🟡 **IN PROGRESS** (v0.2.2 in development)
 - [x] v0.2.1 release preparation and packaging
-- [x] Batch processing UI
-- [x] Settings panel and persistence
-- [x] Preview functionality
-- [x] Conversion history
-
-**Sprint 9: v0.3.0 Feature Development** 🟡 **IN PROGRESS**
-- [ ] opencascade-rs integration research and prototype
-- [ ] Parallel batch processing implementation
-- [ ] 3D mesh viewer research and prototype
-- [ ] Settings auto-save implementation
-- [ ] Queue item editing implementation
+- [ ] Batch processing UI
+- [ ] Settings panel and persistence
+- [ ] Preview functionality
+- [ ] Conversion history
 
 **Sprint 7-8: STEP + CAD** ✅ COMPLETE (v0.2.0)
 - [x] STEP FACETED_BREP extraction (v0.2.0)
 - [x] STEP read support (feature-gated)
 - [x] CAD export documentation
-- [ ] Full STEP B-Rep support (v0.3.0 - opencascade-rs integration) - **IN RESEARCH**
+- [ ] Full STEP B-Rep support (v0.3.0 - opencascade-rs integration) - **DEFERRED**
 
 ## 🧪 Testing
 
@@ -383,12 +376,9 @@ This repository is currently **private** during initial development. Once mature
   - Feature-gated STEP support (`--features step`)
   - Comprehensive STEP documentation
   - 192 tests passing (all test suites)
-- [ ] **v0.3.0** - Advanced Features (In Development - Sprint 9)
-  - Full STEP B-Rep support (opencascade-rs integration research)
-  - Parallel batch processing (concurrent file conversion)
-  - 3D mesh viewer (research and prototype)
-  - Settings auto-save on change
-  - Queue item editing
+- [ ] **v0.3.0** - Full STEP/CAD support (Planned)
+  - opencascade-rs integration for full B-Rep support
+  - Curved surface support (NURBS, cylinders, spheres)
   - Performance optimizations
 - [x] **v0.2.1** - GUI release ✅ **RELEASED** (December 30, 2025)
   - Graphical user interface with egui framework

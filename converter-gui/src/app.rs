@@ -9,10 +9,12 @@ use crate::ui;
 use crate::utils;
 use common::limits::ResourceLimits;
 use mesh_core::ConversionOptions;
+use rayon::prelude::*;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Instant;
+use uuid::Uuid;
 
 /// Main application struct implementing eframe::App
 ///
@@ -88,6 +90,14 @@ pub struct ConverterApp {
 
     /// Whether preview panel is expanded
     pub show_preview: bool,
+
+    /// Auto-save state for settings
+    /// Tracks when settings were last changed and auto-save status
+    pub settings_auto_save: SettingsAutoSave,
+
+    /// Queue item editing dialog state
+    /// Tracks which queue item is being edited (None if dialog is closed)
+    pub editing_queue_item: Option<Uuid>,
 }
 
 /// File type detection result
@@ -201,6 +211,34 @@ pub enum ConversionStatus {
     Error { message: String },
 }
 
+/// Auto-save state for settings
+///
+/// Tracks when settings were last changed and manages debounced auto-save.
+#[derive(Debug, Clone)]
+pub struct SettingsAutoSave {
+    /// Timestamp when settings were last changed (None if no changes)
+    pub last_changed: Option<Instant>,
+    /// Current auto-save status
+    pub status: AutoSaveStatus,
+    /// Timestamp when status was set to Saved/Error (for auto-reset)
+    pub status_set_time: Option<Instant>,
+}
+
+/// Auto-save status for visual feedback
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AutoSaveStatus {
+    /// No pending changes
+    Idle,
+    /// Settings changed, waiting for debounce
+    Pending,
+    /// Currently saving
+    Saving,
+    /// Successfully saved
+    Saved,
+    /// Save failed
+    Error,
+}
+
 impl Default for ConverterApp {
     fn default() -> Self {
         Self {
@@ -230,6 +268,72 @@ impl Default for ConverterApp {
             ))),
             show_settings_panel: false,
             show_preview: true, // Preview expanded by default
+            settings_auto_save: SettingsAutoSave {
+                last_changed: None,
+                status: AutoSaveStatus::Idle,
+                status_set_time: None,
+            },
+            editing_queue_item: None,
+        }
+    }
+}
+
+impl SettingsAutoSave {
+    /// Mark settings as changed (resets debounce timer)
+    pub fn mark_changed(&mut self) {
+        self.last_changed = Some(Instant::now());
+        self.status = AutoSaveStatus::Pending;
+        self.status_set_time = None;
+    }
+
+    /// Check if debounce period has elapsed and trigger save if needed
+    ///
+    /// Returns `true` if save should be triggered.
+    pub fn should_save(&self) -> bool {
+        if let Some(last_changed) = self.last_changed {
+            // Debounce period: 500ms
+            const DEBOUNCE_MS: u64 = 500;
+            last_changed.elapsed().as_millis() >= DEBOUNCE_MS as u128
+                && self.status == AutoSaveStatus::Pending
+        } else {
+            false
+        }
+    }
+
+    /// Mark as currently saving
+    pub fn set_saving(&mut self) {
+        self.status = AutoSaveStatus::Saving;
+        self.status_set_time = None;
+    }
+
+    /// Mark as successfully saved
+    pub fn set_saved(&mut self) {
+        self.last_changed = None;
+        self.status = AutoSaveStatus::Saved;
+        self.status_set_time = Some(Instant::now());
+    }
+
+    /// Mark as error
+    pub fn set_error(&mut self) {
+        self.status = AutoSaveStatus::Error;
+        self.status_set_time = Some(Instant::now());
+    }
+
+    /// Check if status should be reset to idle (after showing Saved/Error for 2 seconds)
+    pub fn should_reset_status(&self) -> bool {
+        if let Some(status_set_time) = self.status_set_time {
+            matches!(self.status, AutoSaveStatus::Saved | AutoSaveStatus::Error)
+                && status_set_time.elapsed().as_secs() >= 2
+        } else {
+            false
+        }
+    }
+
+    /// Reset to idle (called after showing saved/error status)
+    pub fn reset_to_idle(&mut self) {
+        if self.last_changed.is_none() {
+            self.status = AutoSaveStatus::Idle;
+            self.status_set_time = None;
         }
     }
 }
@@ -239,6 +343,31 @@ impl eframe::App for ConverterApp {
         // Load settings on first update if not already loaded
         if self.settings.is_none() {
             self.load_settings();
+        }
+
+        // Handle settings auto-save debounce
+        if self.settings_auto_save.should_save() {
+            if let Some(ref settings) = self.settings {
+                self.settings_auto_save.set_saving();
+                match settings.save() {
+                    Ok(()) => {
+                        self.settings_auto_save.set_saved();
+                        // Auto-save succeeded - no message needed (visual indicator shows it)
+                    }
+                    Err(e) => {
+                        self.settings_auto_save.set_error();
+                        self.add_message(
+                            format!("Failed to auto-save settings: {}", e),
+                            MessageType::Error,
+                        );
+                    }
+                }
+            }
+        }
+
+        // Reset auto-save status after showing saved/error for a short time
+        if self.settings_auto_save.should_reset_status() {
+            self.settings_auto_save.reset_to_idle();
         }
 
         // Sync batch queue updates from processing thread
@@ -612,15 +741,19 @@ impl eframe::App for ConverterApp {
                         // Batch queue panel (collapsible) - REMOVED DUPLICATE
                         ui.collapsing("Batch Processing Queue", |ui| {
                             ui::batch_queue::render_batch_queue(ui, self);
+                            // Render edit dialog if an item is being edited
+                            ui::batch_queue::render_edit_dialog(ui, self);
                         });
 
                         ui.add_space(20.0);
 
                         // Settings panel (if enabled)
                         if self.show_settings_panel {
-                            ui.collapsing("Settings", |ui| {
-                                ui::settings_panel::render_settings_panel(ui, self);
-                            });
+                            egui::CollapsingHeader::new("Settings")
+                                .default_open(true)
+                                .show(ui, |ui| {
+                                    ui::settings_panel::render_settings_panel(ui, self);
+                                });
                             ui.add_space(15.0);
                         }
 
@@ -901,7 +1034,7 @@ impl ConverterApp {
     /// Start batch queue processing
     ///
     /// This method spawns a thread to process all pending items in the batch queue
-    /// sequentially. The UI remains responsive during processing.
+    /// in parallel (for images) or sequentially (for meshes). The UI remains responsive during processing.
     ///
     /// # Arguments
     ///
@@ -916,7 +1049,7 @@ impl ConverterApp {
             if !queue.has_pending() {
                 return Err("No pending items in queue".to_string());
             }
-            if queue.current_index.is_some() {
+            if queue.current_index.is_some() || !queue.processing_ids.is_empty() {
                 return Err("Batch processing already in progress".to_string());
             }
             // Create Arc<Mutex<>> for thread-safe queue access
@@ -924,6 +1057,17 @@ impl ConverterApp {
         } else {
             return Err("Batch queue not initialized".to_string());
         };
+
+        // Get max concurrent conversions from settings
+        let max_concurrent = self
+            .settings
+            .as_ref()
+            .and_then(|s| s.max_concurrent_conversions)
+            .unwrap_or_else(|| {
+                // Default to CPU cores, capped at 8
+                num_cpus::get().min(8)
+            })
+            .max(1); // Ensure at least 1
 
         // Build resource limits
         let max_file_size_bytes = (self.max_file_size_mb as usize)
@@ -937,78 +1081,138 @@ impl ConverterApp {
             .build();
 
         // Store Arc reference in app state for thread-safe updates
-        // We'll update the main queue from the thread
         let queue_arc_for_thread = queue_arc.clone();
 
         // Spawn batch processing thread
         let ctx_clone = ctx.clone();
         std::thread::spawn(move || {
-            // Process items sequentially
+            // Process items in parallel batches
             loop {
-                let next_index = {
+                // Get batch of pending items (up to max_concurrent)
+                let pending_ids: Vec<uuid::Uuid> = {
                     let queue = queue_arc_for_thread.lock().unwrap();
-                    queue.next_pending()
+                    queue.get_pending_items(max_concurrent)
                 };
 
-                if let Some(index) = next_index {
-                    // Update current index
-                    {
-                        let mut queue = queue_arc_for_thread.lock().unwrap();
-                        queue.current_index = Some(index);
-                    }
-
-                    // Process the item
-                    let result = {
-                        let mut queue = queue_arc_for_thread.lock().unwrap();
-                        if let Some(item) = queue.items.get_mut(index) {
-                            Self::process_batch_item_internal(item, &limits)
-                        } else {
-                            continue;
-                        }
-                    };
-
-                    // Update queue with result
-                    {
-                        let mut queue = queue_arc_for_thread.lock().unwrap();
-                        if let Some(item) = queue.items.get_mut(index) {
-                            match result {
-                                Ok(output_path) => {
-                                    item.status = crate::batch_queue::BatchItemStatus::Completed {
-                                        output_path,
-                                    };
-                                    item.progress = 1.0;
-                                }
-                                Err(error_msg) => {
-                                    item.status = crate::batch_queue::BatchItemStatus::Failed {
-                                        error: error_msg.clone(),
-                                    };
-                                    item.error = Some(error_msg);
-                                    item.progress = 0.0;
-                                }
-                            }
-                        }
-                        queue.current_index = None;
-                    }
-
-                    ctx_clone.request_repaint();
-                } else {
+                if pending_ids.is_empty() {
                     // No more pending items
                     break;
                 }
+
+                // Process items in parallel using rayon
+                pending_ids.par_iter().for_each(|&id| {
+                    Self::process_batch_item_parallel(
+                        queue_arc_for_thread.clone(),
+                        id,
+                        &limits,
+                        ctx_clone.clone(),
+                    );
+                });
+
+                // Request UI repaint after batch
+                ctx_clone.request_repaint();
             }
         });
 
-        // Mark as processing in main queue
+        // Sync with thread-safe queue
         if let Some(ref mut queue) = self.batch_queue {
-            queue.current_index = Some(0);
-            // Sync with thread-safe queue
             *queue = queue_arc.lock().unwrap().clone();
         }
 
         Ok(())
     }
 
-    /// Internal helper method for processing a batch item
+    /// Process a batch item in parallel (thread-safe)
+    ///
+    /// This method is called from parallel workers to process individual items.
+    /// It handles thread-safe queue updates and conversion execution.
+    fn process_batch_item_parallel(
+        queue: Arc<Mutex<crate::batch_queue::BatchQueue>>,
+        id: uuid::Uuid,
+        limits: &ResourceLimits,
+        ctx: egui::Context,
+    ) {
+        // Mark as processing (thread-safe)
+        let can_process = {
+            let mut guard = queue.lock().unwrap();
+            guard.mark_processing(id)
+        };
+
+        if !can_process {
+            return; // Already processing or not found
+        }
+
+        // Get item data (clone to avoid holding lock during conversion)
+        let item_data = {
+            let guard = queue.lock().unwrap();
+            guard.get_item(id).cloned()
+        };
+
+        if let Some(item) = item_data {
+            // Perform conversion (no lock held)
+            let result = match item.output_format {
+                OutputFormat::Image(img_format) => conversion::convert_image(
+                    &item.source_path,
+                    &item.output_path,
+                    img_format,
+                    item.options.quality,
+                    limits,
+                )
+                .map_err(|e| error_messages::format_user_message(&e)),
+                OutputFormat::Mesh(mesh_format) => {
+                    let mesh_options = item
+                        .options
+                        .mesh_options
+                        .as_ref()
+                        .map(|m| mesh_core::ConversionOptions {
+                            transform: m.transform,
+                            recalculate_normals: m.recalculate_normals,
+                            validate: m.validate,
+                        })
+                        .unwrap_or_default();
+
+                    conversion::convert_mesh(
+                        &item.source_path,
+                        &item.output_path,
+                        mesh_format,
+                        mesh_options,
+                        limits,
+                    )
+                    .map_err(|e| error_messages::format_user_message(&e))
+                }
+            };
+
+            // Update status (thread-safe)
+            {
+                let mut guard = queue.lock().unwrap();
+                match result {
+                    Ok(output_path) => {
+                        guard.update_item_status(
+                            id,
+                            crate::batch_queue::BatchItemStatus::Completed { output_path },
+                            1.0,
+                        );
+                    }
+                    Err(error_msg) => {
+                        // Also set error field
+                        if let Some(item) = guard.get_item_mut(id) {
+                            item.error = Some(error_msg.clone());
+                        }
+                        guard.update_item_status(
+                            id,
+                            crate::batch_queue::BatchItemStatus::Failed { error: error_msg },
+                            0.0,
+                        );
+                    }
+                }
+            }
+
+            // Request UI repaint
+            ctx.request_repaint();
+        }
+    }
+
+    /// Internal helper method for processing a batch item (sequential mode - kept for compatibility)
     fn process_batch_item_internal(
         item: &mut crate::batch_queue::BatchItem,
         limits: &ResourceLimits,

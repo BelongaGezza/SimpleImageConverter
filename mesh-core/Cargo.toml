@@ -33,6 +33,10 @@ truck-meshalgo = { version = "0.4.0", optional = true }
 # ruststep for STEP file parsing (hybrid approach)
 # Enable AP203 feature for 3D design STEP files
 ruststep = { version = "0.4", optional = true, features = ["ap203"] }
+# opencascade-rs for full STEP B-Rep support (v0.3.0 prototype)
+# Note: Requires OCCT (OpenCASCADE Technology) to be installed on the system
+opencascade = { version = "0.2", optional = true }
+opencascade-sys = { version = "0.2", optional = true }
 
 [dev-dependencies]
 common = { path = "../common" }
@@ -47,6 +51,11 @@ step = [
     "truck-meshalgo",
     "ruststep",
 ]
+# Enable full STEP B-Rep support via opencascade-rs (requires OCCT installation)
+# This feature enables support for MANIFOLD_SOLID_BREP with curved surfaces
+# Note: Requires OpenCASCADE Technology (OCCT) 7.7+ to be installed on the system
+# See RESEARCH_OPENCASCADE_RS_SPRINT9.md for installation instructions
+step-opencascade = ["opencascade", "opencascade-sys", "step"]
 
 # Configure check-cfg to recognize ap203 as valid (it's enabled on ruststep dependency when step is enabled)
 # Note: ap203 is a feature on the ruststep dependency, not our crate, but we need to tell the compiler it's valid

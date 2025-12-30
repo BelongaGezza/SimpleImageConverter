@@ -515,10 +515,10 @@ STEP read-only support (FACETED_BREP) was completed in v0.2.0. Further STEP enha
 
 ---
 
-## SPRINT 8: v0.2.1 Release & GUI Enhancements (Weeks 15-16) 🟡 IN PROGRESS
+## SPRINT 8: v0.2.1 Release & GUI Enhancements (Weeks 15-16) ✅ COMPLETE
 
 **Goal:** Complete v0.2.1 release and begin v0.2.2 GUI enhancements  
-**Status:** 🟡 **IN PROGRESS** - Release preparation and GUI enhancements development
+**Status:** ✅ **COMPLETE** - v0.2.2 Released December 30, 2025
 
 ### User Stories
 - As a user, I want v0.2.1 released so I can use the GUI application
@@ -537,30 +537,30 @@ Sprint 7 completed GUI foundation. Sprint 8 focuses on:
 ### High-Level Tasks
 
 #### Phase 1: v0.2.1 Release (Days 1-5)
-- [ ] Final testing and validation
-- [ ] Version updates and release preparation
-- [ ] Binary packaging (Windows, macOS, Linux)
-- [ ] Git tagging and GitHub release
-- [ ] Release notes finalization
+- [x] Final testing and validation
+- [x] Version updates and release preparation
+- [x] Binary packaging (Windows, macOS, Linux)
+- [x] Git tagging and GitHub release
+- [x] Release notes finalization
 
 #### Phase 2: v0.2.2 Foundation (Days 6-8)
-- [ ] Settings persistence architecture
-- [ ] Batch queue data structure
-- [ ] Preview rendering infrastructure
+- [x] Settings persistence architecture
+- [x] Batch queue data structure
+- [x] Preview rendering infrastructure
 
 #### Phase 3: v0.2.2 Implementation (Days 9-12)
-- [ ] Settings persistence implementation
-- [ ] Batch queue UI component
-- [ ] Batch processing implementation
-- [ ] Preview panel implementation
-- [ ] Settings UI implementation
-- [ ] Conversion history implementation
+- [x] Settings persistence implementation
+- [x] Batch queue UI component
+- [x] Batch processing implementation
+- [x] Preview panel implementation
+- [x] Settings UI implementation
+- [x] Conversion history implementation
 
 #### Phase 4: Integration & Testing (Days 13-14)
-- [ ] Integration testing
-- [ ] Security review
-- [ ] Documentation updates
-- [ ] Sprint review and retrospective
+- [x] Integration testing
+- [x] Security review
+- [x] Documentation updates
+- [x] Sprint review and retrospective
 
 ### Definition of Done
 - ✅ v0.2.1 released (binaries, GitHub release, documentation)
@@ -580,51 +580,52 @@ Sprint 7 completed GUI foundation. Sprint 8 focuses on:
 
 ---
 
-## SPRINT 9: GUI Enhancements Continued (Weeks 17-18) - PLANNED
+## SPRINT 9: v0.3.0 Feature Development (Weeks 17-18) - PLANNED
 
-**Goal:** Set up GUI framework and basic interface
+**Goal:** Begin v0.3.0 feature development with focus on research, prototyping, and initial implementation
+
+**Note:** GUI foundation was completed in Sprint 7. Sprint 9 focuses on advanced features for v0.3.0.
 
 ### User Stories
-- As a user, I want a GUI so I can convert files without command line
-- As a user, I want to select files visually so conversion is easier
+- As a user, I want parallel batch processing so conversions are faster
+- As a user, I want full STEP B-Rep support so I can convert curved surfaces
+- As a user, I want a 3D mesh viewer so I can preview meshes before conversion
+- As a user, I want settings to auto-save so I don't lose my preferences
 
-### Tasks
+### High-Level Tasks
 
-#### Day 1-3: egui Setup
-- [ ] Create converter-gui crate
-- [ ] Integrate eframe
-- [ ] Basic window setup
-- [ ] Import img-core and mesh-core libraries
+#### Phase 1: Research & Evaluation (Days 1-4)
+- [ ] opencascade-rs integration research
+- [ ] 3D rendering library evaluation
+- [ ] Parallel processing architecture design
 
-#### Day 4-6: Application Structure
-- [ ] App state management
-- [ ] Tab system (2D/3D)
-- [ ] Menu bar
-- [ ] Status bar
+#### Phase 2: Prototyping (Days 5-8)
+- [ ] opencascade-rs prototype (if feasible)
+- [ ] 3D viewer prototype (if feasible)
+- [ ] Parallel processing prototype
 
-#### Day 7-9: File Selection UI
-- [ ] File picker integration
-- [ ] Source file display
-- [ ] Format dropdown
-- [ ] Output path selection
+#### Phase 3: Implementation (Days 9-12)
+- [ ] Parallel batch processing implementation
+- [ ] Settings auto-save implementation
+- [ ] Queue item editing implementation
 
-#### Day 10-11: Conversion Integration
-- [ ] Wire up img-core conversion
-- [ ] Wire up mesh-core conversion
-- [ ] Error display
-- [ ] Success messages
-
-#### Day 12-14: Basic Testing
-- [ ] Manual testing
-- [ ] UI responsiveness
-- [ ] Error handling
-- [ ] Cross-platform check
+#### Phase 4: Integration & Testing (Days 13-14)
+- [ ] Integration testing
+- [ ] Security review
+- [ ] Documentation updates
+- [ ] Sprint review and retrospective
 
 ### Definition of Done
-- ✅ GUI launches and runs
-- ✅ Single file conversion works (2D and 3D)
-- ✅ Basic error handling
-- ✅ Interface is usable
+- ✅ Research tasks completed
+- ✅ At least one prototype completed
+- ✅ Parallel batch processing functional (or architecture ready)
+- ✅ Settings auto-save functional
+- ✅ Queue item editing functional (or design complete)
+- ✅ All new features tested
+- ✅ Security review passed
+- ✅ Documentation updated
+
+**Note:** See `SPRINT_9_TASKING.md` for detailed task breakdown and assignments.
 
 ---
 

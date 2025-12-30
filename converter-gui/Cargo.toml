@@ -15,6 +15,9 @@ path = "src/main.rs"
 eframe = "0.27"
 egui = "0.27"
 rfd = "0.14"
+# wgpu for 3D mesh viewer (prototype for Sprint 9)
+wgpu = { version = "28", optional = true }
+bytemuck = { version = "1", optional = true }
 image.workspace = true
 serde = { workspace = true }
 toml = "0.8"
@@ -22,12 +25,19 @@ directories = "5.0"
 uuid = { version = "1.0", features = ["v4", "serde"] }
 chrono = { version = "0.4", features = ["serde"] }
 open = "5.0"
+rayon = "1.8"
+num_cpus = "1.0"
 
 # Workspace dependencies
 common = { path = "../common" }
 img-core = { path = "../img-core" }
 mesh-core = { path = "../mesh-core" }
 thiserror = { workspace = true }
+
+[features]
+default = []
+# Enable 3D mesh viewer (requires wgpu)
+viewer-3d = ["wgpu", "bytemuck"]
 
 [dev-dependencies]
 tempfile = "3.8"
