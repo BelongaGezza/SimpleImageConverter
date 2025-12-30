@@ -34,6 +34,7 @@ use std::path::{Path, PathBuf};
 /// let sanitized = sanitize_path_for_display(path);
 /// // Returns something like "Documents\\photo.jpg" or just "photo.jpg"
 /// ```
+#[allow(dead_code)] // Reserved for future use
 pub fn sanitize_path_for_display(path: &Path) -> String {
     // Try to get relative path from home directory
     if let Ok(home) = std::env::var("USERPROFILE") {
@@ -280,6 +281,7 @@ fn check_system_directory_string(path: &Path) -> Result<(), String> {
 /// let output = generate_output_filename(input, "jpg").unwrap();
 /// assert_eq!(output.file_name().unwrap().to_str().unwrap(), "photo.jpg");
 /// ```
+#[allow(dead_code)] // Reserved for future use
 pub fn generate_output_filename(
     input_path: &Path,
     output_format_extension: &str,

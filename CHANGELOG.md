@@ -7,13 +7,104 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Planned for v0.2.2 (In Development)
-- Batch processing UI
-- Preview functionality
-- Settings persistence
-- Conversion history
+### Planned for v0.3.0 (Future)
+- Full STEP B-Rep support (NURBS, cylinders, spheres)
+- Parallel batch processing
+- Full 3D mesh viewer
+- Settings auto-save on change
+- Queue item editing
 
-**Status:** 🚧 Development starting
+---
+
+## [0.2.2] - 2025-12-30
+
+### Added
+
+#### GUI Enhancements (converter-gui)
+- 📦 **Batch Processing** - Convert multiple files at once
+  - Batch queue UI component with file list
+  - Multi-file selection (drag-and-drop or file dialog)
+  - Sequential queue processing (one file at a time)
+  - Real-time progress tracking per item
+  - Queue statistics (total, completed, failed)
+  - Error resilience (failed conversions don't stop queue)
+  - Queue management (add, remove, clear items)
+- 🖼️ **Preview Functionality** - Preview images and meshes before conversion
+  - Image preview panel with thumbnail generation
+  - Mesh preview with metadata display (simplified for v0.2.2)
+  - Preview updates on format change
+  - Lazy loading and caching for performance
+- ⚙️ **Settings Persistence** - Save user preferences across sessions
+  - Settings panel UI with categories (General, Conversion, History)
+  - Platform-specific settings file storage (TOML format)
+  - Default output directory configuration
+  - Quality defaults and resource limits
+  - Advanced options visibility preference
+  - Settings validation and corruption handling
+- 📜 **Conversion History** - Track recent conversions
+  - History tracking (source, output, format, timestamp)
+  - History UI panel with recent conversions list
+  - Status indicators (✓ for success, ✗ for failure) with tooltips
+  - "Open Output" button - Opens converted files in system default application
+  - Error handling for file opening (file not found, open failures)
+  - History size limits (configurable, default: 50 entries)
+  - Clear history functionality
+  - Remove individual entries
+
+#### Core Libraries
+- `converter-gui/src/batch_queue.rs`: Batch queue data structures and management
+- `converter-gui/src/settings.rs`: Settings persistence and configuration
+- `converter-gui/src/history.rs`: Conversion history tracking
+- `converter-gui/src/ui/batch_queue.rs`: Batch queue UI component
+- `converter-gui/src/ui/preview.rs`: Preview panel UI component
+- `converter-gui/src/ui/settings_panel.rs`: Settings UI component
+- `converter-gui/src/ui/history_panel.rs`: History UI component
+
+#### Documentation
+- `docs/BATCH_PROCESSING_GUIDE.md`: Comprehensive batch processing user guide
+- `docs/SETTINGS_GUIDE.md`: Complete settings and configuration guide
+- Updated `docs/GUI_USAGE_GUIDE.md` with v0.2.2 features
+
+### Changed
+- Settings are now persisted across application sessions
+- Batch processing enables efficient multi-file conversion
+- Preview panel provides visual feedback before conversion
+- Conversion history tracks user operations
+
+### Technical Details
+- Settings stored in TOML format in platform-specific directories
+  - Windows: `%APPDATA%\SimpleImageConverter\config.toml`
+  - macOS: `~/Library/Application Support/SimpleImageConverter/config.toml`
+  - Linux: `~/.config/simpleimageconverter/config.toml`
+- Batch queue uses sequential processing (parallel processing planned for v0.2.3)
+- Preview uses thumbnail generation for large images
+- History stored in settings file with size limits
+
+### Known Limitations
+- Batch processing is sequential only (parallel processing planned for v0.3.0)
+- Mesh preview shows metadata only (full 3D viewer planned for v0.3.0)
+- Settings require manual save (auto-save on change planned for v0.3.0)
+- Queue items cannot be edited after adding (editing planned for v0.3.0)
+
+### Security
+- Settings file path validation
+- Batch queue path validation
+- Preview file size limits
+- History path sanitization
+- All security checks pass (reviewed by Security Specialist)
+
+### Notes
+- ✅ All v0.2.2 features fully implemented and tested
+- ✅ Code reviewed and approved by Senior Engineer
+- ✅ Architecture reviewed and approved by System Architect (Grade: A)
+- ✅ Security reviewed and approved by Security Specialist
+- ✅ Documentation complete (Batch Processing Guide, Settings Guide)
+- ✅ UI implementation complete (all components functional)
+- ✅ Settings persistence working across sessions
+- ✅ Batch processing tested and verified
+- ✅ Preview functionality operational
+- ✅ Conversion history tracking active
+- ✅ **RELEASED** - December 30, 2025
 
 ---
 

@@ -6,9 +6,12 @@
 //! This is the main entry point for the GUI application using egui/eframe.
 
 mod app;
+mod batch_queue;
 mod conversion;
 mod error_messages;
 mod format_helpers;
+mod history;
+mod settings;
 mod ui;
 mod utils;
 

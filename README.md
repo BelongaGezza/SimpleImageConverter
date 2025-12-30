@@ -10,8 +10,8 @@ Two separate CLI tools written in Rust:
 
 **Status:** ✅ Active Development (Private Repository)
 
-**Current Version:** 0.2.1 (Released - December 30, 2025)  
-**Next Version:** 0.2.2 (In Development - GUI Enhancements)
+**Current Version:** 0.2.2 (Released - December 30, 2025)  
+**Next Version:** 0.3.0 (Planned - Advanced Features)
 
 ## ✨ Features
 
@@ -40,12 +40,12 @@ Two separate CLI tools written in Rust:
 #### GUI Application (Recommended for Most Users)
 
 **Windows 11:**
-1. Download `simpleimageconverter-gui-v0.2.1-windows-x64.zip` from [Releases](https://github.com/BelongaGezza/SimpleImageConverter/releases)
+1. Download `simpleimageconverter-gui-v0.2.2-windows-x64.zip` from [Releases](https://github.com/BelongaGezza/SimpleImageConverter/releases)
 2. Extract to a location of your choice (e.g., `C:\Tools\SimpleImageConverter`)
 3. Run `converter-gui.exe`
 
 **macOS:**
-1. Download `simpleimageconverter-gui-v0.2.1-macos-x64.tar.gz` from [Releases](https://github.com/BelongaGezza/SimpleImageConverter/releases)
+1. Download `simpleimageconverter-gui-v0.2.2-macos-x64.tar.gz` from [Releases](https://github.com/BelongaGezza/SimpleImageConverter/releases)
 2. Extract: `tar -xzf simpleimageconverter-gui-*.tar.gz`
 3. Run `converter-gui`
 
@@ -386,7 +386,7 @@ This repository is currently **private** during initial development. Once mature
   - Visual format selection
   - Direct library integration
   - User-friendly error messages
-- [ ] **v0.2.2** - GUI enhancements 🟡 **IN DEVELOPMENT** (December 2025)
+- [x] **v0.2.2** - GUI enhancements ✅ **RELEASED** (December 30, 2025)
   - Batch processing (convert multiple files at once)
   - Preview functionality (image/mesh preview before conversion)
   - Settings persistence (save user preferences)

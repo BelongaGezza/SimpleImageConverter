@@ -1,8 +1,8 @@
 # GUI Usage Guide
 ## Simple Image Converter - Graphical User Interface
 
-**Version:** 0.2.1  
-**Last Updated:** December 2025
+**Version:** 0.2.2  
+**Last Updated:** December 30, 2025
 
 ---
 
@@ -376,8 +376,69 @@ The GUI uses **direct library integration** with `img-core` and `mesh-core`:
 
 ---
 
+## v0.2.2 New Features
+
+### Batch Processing
+
+Convert multiple files at once using the batch processing queue:
+
+1. **Add files to queue** - Click "Add Files" or drag multiple files into the batch queue panel
+2. **Review queue** - Check files, formats, and settings for each item
+3. **Process queue** - Click "Process Queue" to convert all files sequentially
+4. **Monitor progress** - Watch real-time progress for each file
+5. **Review results** - Check statistics and handle any failed conversions
+
+**For detailed information, see:** [Batch Processing Guide](BATCH_PROCESSING_GUIDE.md)
+
+### Preview Functionality
+
+Preview images and meshes before conversion:
+
+1. **Select a file** - Choose an image or mesh file
+2. **Preview appears** - Image preview shows in preview panel (meshes show metadata)
+3. **Review before converting** - Verify file is correct before conversion
+4. **Format change updates preview** - Preview updates when you change output format
+
+**Note:** Image previews show thumbnails for large images. Mesh previews show metadata (full 3D viewer planned for future version).
+
+### Settings Persistence
+
+Your preferences are saved automatically:
+
+1. **Open Settings** - Click "Settings" in menu bar
+2. **Configure preferences** - Set default output directory, quality, resource limits, etc.
+3. **Save settings** - Click "Save" to persist your preferences
+4. **Settings restored** - Your preferences are restored on next launch
+
+**For detailed information, see:** [Settings Guide](SETTINGS_GUIDE.md)
+
+### Conversion History
+
+Track your recent conversions:
+
+1. **History enabled** - Conversion history is enabled by default
+2. **View history** - Access conversion history from menu or panel
+3. **Recent conversions** - See source file, output file, format, and timestamp
+4. **Status indicators** - Each entry shows a status icon:
+   - **Green ✓** - Conversion successful (hover to see "Conversion successful" tooltip)
+   - **Red ✗** - Conversion failed (hover to see "Conversion failed" tooltip)
+   - **Note:** These are status indicators only, not interactive checkboxes
+5. **Open output** - Click "Open Output" button to open the converted file in your system's default application
+   - Only available for successful conversions
+   - Opens the file using the system default application (e.g., image viewer, 3D model viewer)
+   - Shows success message in messages area when file opens
+   - Shows error message if file cannot be opened or doesn't exist
+6. **Remove entries** - Click "Remove" button to delete individual history entries
+7. **Clear history** - Click "Clear History" button to remove all entries
+
+**Note:** History is stored in settings file and persists across sessions.
+
+---
+
 **For more information, see:**
 - [README.md](../README.md) - Project overview
 - [CHANGELOG.md](../CHANGELOG.md) - Version history
 - [RELEASE_NOTES_v0.2.1.md](../RELEASE_NOTES_v0.2.1.md) - Release details
+- [Batch Processing Guide](BATCH_PROCESSING_GUIDE.md) - Batch conversion guide
+- [Settings Guide](SETTINGS_GUIDE.md) - Configuration guide
 

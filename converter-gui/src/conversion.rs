@@ -129,6 +129,40 @@ pub fn convert_image(
     Ok(output_path.to_path_buf())
 }
 
+/// Convert an image file in batch context (with progress tracking support)
+///
+/// This function is similar to `convert_image` but is designed for batch processing
+/// where progress updates may be needed. For v0.2.2, it's a wrapper around `convert_image`,
+/// but can be extended with progress callbacks in the future.
+///
+/// # Arguments
+///
+/// * `input_path` - Path to the input image file
+/// * `output_path` - Path where the converted image will be saved
+/// * `output_format` - The target image format for conversion
+/// * `quality` - Quality setting (1-100) for lossy formats (JPEG, WebP)
+/// * `limits` - Resource limits for security validation
+///
+/// # Returns
+///
+/// `Ok(PathBuf)` with the output path on success, or an error if conversion fails.
+///
+/// # Errors
+///
+/// Same as `convert_image` - see that function's documentation.
+#[allow(dead_code)] // Reserved for future parallel batch processing
+pub fn convert_image_batch(
+    input_path: &Path,
+    output_path: &Path,
+    output_format: ImageFormat,
+    quality: u8,
+    limits: &ResourceLimits,
+) -> Result<PathBuf> {
+    // For v0.2.2, batch conversion is the same as single conversion
+    // Future: Add progress callbacks here
+    convert_image(input_path, output_path, output_format, quality, limits)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -340,4 +374,38 @@ mod mesh_tests {
 
     // Note: Full integration tests would require actual mesh files
     // These are handled in the mesh-core crate's integration tests
+}
+
+/// Convert a mesh file in batch context (with progress tracking support)
+///
+/// This function is similar to `convert_mesh` but is designed for batch processing
+/// where progress updates may be needed. For v0.2.2, it's a wrapper around `convert_mesh`,
+/// but can be extended with progress callbacks in the future.
+///
+/// # Arguments
+///
+/// * `input_path` - Path to the input mesh file
+/// * `output_path` - Path where the converted mesh will be saved
+/// * `output_format` - The target mesh format for conversion
+/// * `options` - Conversion options (transform, validate, recalculate-normals)
+/// * `limits` - Resource limits for security validation
+///
+/// # Returns
+///
+/// `Ok(PathBuf)` with the output path on success, or an error if conversion fails.
+///
+/// # Errors
+///
+/// Same as `convert_mesh` - see that function's documentation.
+#[allow(dead_code)] // Reserved for future parallel batch processing
+pub fn convert_mesh_batch(
+    input_path: &Path,
+    output_path: &Path,
+    output_format: MeshFormat,
+    options: ConversionOptions,
+    limits: &ResourceLimits,
+) -> Result<PathBuf> {
+    // For v0.2.2, batch conversion is the same as single conversion
+    // Future: Add progress callbacks here
+    convert_mesh(input_path, output_path, output_format, options, limits)
 }
