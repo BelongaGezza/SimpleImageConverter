@@ -195,6 +195,7 @@ impl BatchQueue {
     ///
     /// Returns the index of the next pending item, or `None` if all items
     /// are processed or there are no items.
+    #[allow(dead_code)]
     pub fn next_pending(&self) -> Option<usize> {
         self.items
             .iter()

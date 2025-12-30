@@ -21,6 +21,7 @@ use tempfile::TempDir;
 use uuid::Uuid;
 
 // Helper function to create a minimal valid PNG file
+#[allow(dead_code)]
 fn create_test_png_file(dir: &std::path::Path, name: &str) -> PathBuf {
     let path = dir.join(name);
 
@@ -50,6 +51,7 @@ fn create_test_png_file(dir: &std::path::Path, name: &str) -> PathBuf {
 }
 
 // Helper function to create a minimal valid STL file
+#[allow(dead_code)]
 fn create_test_stl_file(dir: &std::path::Path, name: &str) -> PathBuf {
     let path = dir.join(name);
 
@@ -110,7 +112,7 @@ fn test_batch_queue_basic_operations() {
     );
 
     // Test add_item
-    queue.add_item(item.clone());
+    let _ = queue.add_item(item.clone());
     assert_eq!(queue.items.len(), 1);
 
     // Test get_item
@@ -129,7 +131,7 @@ fn test_batch_queue_basic_operations() {
     assert_eq!(queue.items.len(), 0);
 
     // Test clear
-    queue.add_item(item.clone());
+    let _ = queue.add_item(item.clone());
     queue.clear();
     assert_eq!(queue.items.len(), 0);
     assert_eq!(queue.current_index, None);
@@ -150,7 +152,7 @@ fn test_batch_queue_item_editing() {
         },
     );
     let item_id = item.id;
-    queue.add_item(item);
+    let _ = queue.add_item(item);
 
     // Test update_item_format
     assert!(queue.update_item_format(item_id, OutputFormat::Image(ImageFormat::Png)));
@@ -266,7 +268,7 @@ fn test_batch_processing_error_handling() {
             mesh_options: None,
         },
     );
-    queue.add_item(invalid_item.clone());
+    let _ = queue.add_item(invalid_item.clone());
 
     // Test that queue handles invalid items gracefully
     // (Actual processing would fail, but queue should remain valid)
@@ -295,7 +297,7 @@ fn test_queue_statistics_with_mixed_statuses() {
     item1.status = BatchItemStatus::Completed {
         output_path: PathBuf::from("test1.jpg"),
     };
-    queue.add_item(item1);
+    let _ = queue.add_item(item1);
 
     let mut item2 = BatchItem::new(
         PathBuf::from("test2.png"),
@@ -310,7 +312,7 @@ fn test_queue_statistics_with_mixed_statuses() {
     item2.status = BatchItemStatus::Failed {
         error: "Test error".to_string(),
     };
-    queue.add_item(item2);
+    let _ = queue.add_item(item2);
 
     let mut item3 = BatchItem::new(
         PathBuf::from("test3.png"),
@@ -323,7 +325,7 @@ fn test_queue_statistics_with_mixed_statuses() {
         },
     );
     item3.status = BatchItemStatus::Processing;
-    queue.add_item(item3);
+    let _ = queue.add_item(item3);
 
     let item4 = BatchItem::new(
         PathBuf::from("test4.png"),
@@ -335,7 +337,7 @@ fn test_queue_statistics_with_mixed_statuses() {
             mesh_options: None,
         },
     );
-    queue.add_item(item4);
+    let _ = queue.add_item(item4);
 
     let stats = queue.statistics();
     assert_eq!(stats.total, 4);
@@ -372,7 +374,7 @@ fn test_batch_queue_thread_safety_structure() {
                 mesh_options: None,
             },
         );
-        guard.add_item(item);
+        let _ = guard.add_item(item);
     }
 
     // Test that changes persist
@@ -426,7 +428,7 @@ fn test_queue_item_editing_validation() {
         },
     );
     let item_id = item.id;
-    queue.add_item(item);
+    let _ = queue.add_item(item);
 
     // Test that editing works only for pending items
     let item_mut = queue.get_item_mut(item_id).unwrap();
@@ -470,7 +472,7 @@ fn test_batch_queue_next_pending() {
     item1.status = BatchItemStatus::Completed {
         output_path: PathBuf::from("test1.jpg"),
     };
-    queue.add_item(item1);
+    let _ = queue.add_item(item1);
 
     // Should return None (no pending items)
     assert_eq!(queue.next_pending(), None);
@@ -486,7 +488,7 @@ fn test_batch_queue_next_pending() {
             mesh_options: None,
         },
     );
-    queue.add_item(item2);
+    let _ = queue.add_item(item2);
 
     // Should return index of pending item (index 1)
     assert_eq!(queue.next_pending(), Some(1));
@@ -510,7 +512,7 @@ fn test_batch_queue_performance() {
                 mesh_options: None,
             },
         );
-        queue.add_item(item);
+        let _ = queue.add_item(item);
     }
     let add_time = start.elapsed();
 
@@ -563,7 +565,7 @@ fn test_batch_queue_memory_efficiency() {
                 mesh_options: None,
             },
         );
-        queue.add_item(item);
+        let _ = queue.add_item(item);
     }
 
     // Verify all items are stored
@@ -600,7 +602,7 @@ fn test_queue_item_editing_integration() {
         },
     );
     let item1_id = item1.id;
-    queue.add_item(item1);
+    let _ = queue.add_item(item1);
 
     let item2 = BatchItem::new(
         PathBuf::from("test2.png"),
@@ -613,7 +615,7 @@ fn test_queue_item_editing_integration() {
         },
     );
     let item2_id = item2.id;
-    queue.add_item(item2);
+    let _ = queue.add_item(item2);
 
     // Edit first item
     assert!(queue.update_item_format(item1_id, OutputFormat::Image(ImageFormat::Bmp)));

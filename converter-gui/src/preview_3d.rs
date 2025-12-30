@@ -27,6 +27,7 @@ use std::sync::Arc;
 /// - Camera position and orientation
 /// - Rendering context (wgpu device, queue, etc.)
 #[cfg(feature = "viewer-3d")]
+#[allow(dead_code)]
 pub struct Viewer3D {
     /// The mesh to render
     mesh: Option<Arc<Mesh>>,
@@ -41,6 +42,7 @@ pub struct Viewer3D {
 }
 
 #[cfg(feature = "viewer-3d")]
+#[allow(dead_code)]
 impl Viewer3D {
     /// Create a new 3D viewer
     pub fn new() -> Self {
@@ -78,7 +80,7 @@ impl Viewer3D {
 
     /// Handle mouse wheel for zoom
     pub fn handle_zoom(&mut self, delta: f32) {
-        self.zoom = (self.zoom + delta * 0.1).max(0.1).min(10.0);
+        self.zoom = (self.zoom + delta * 0.1).clamp(0.1, 10.0);
     }
 
     /// Render the 3D mesh in an egui panel
@@ -107,10 +109,9 @@ impl Viewer3D {
 
         if response.hovered() {
             // Handle mouse wheel for zoom
-            if let Some(scroll_delta) = ui.input(|i| i.scroll_delta.y) {
-                if scroll_delta != 0.0 {
-                    self.handle_zoom(scroll_delta * 0.01);
-                }
+            let scroll_delta = ui.input(|i| i.raw_scroll_delta.y);
+            if scroll_delta != 0.0 {
+                self.handle_zoom(scroll_delta * 0.01);
             }
         }
 
@@ -229,6 +230,8 @@ impl Default for Viewer3D {
 /// Error type for 3D viewer operations
 #[cfg(feature = "viewer-3d")]
 #[derive(Debug)]
+#[allow(dead_code)]
+#[allow(clippy::enum_variant_names)]
 pub enum Viewer3DError {
     InitializationFailed(String),
     MeshLoadFailed(String),
@@ -268,6 +271,7 @@ impl std::error::Error for Viewer3DError {}
 ///
 /// `Result<()>` indicating success or failure
 #[cfg(feature = "viewer-3d")]
+#[allow(dead_code)]
 pub fn load_mesh_for_viewer(mesh: Arc<Mesh>, viewer: &mut Viewer3D) -> Result<(), Viewer3DError> {
     // Validate mesh
     if mesh.vertices.is_empty() {

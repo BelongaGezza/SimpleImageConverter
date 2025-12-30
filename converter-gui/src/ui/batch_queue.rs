@@ -11,6 +11,15 @@ use egui::{Color32, RichText, Ui};
 use rfd;
 use std::path::PathBuf;
 
+/// Type alias for save data tuple to reduce complexity
+type SaveData = (
+    OutputFormat,
+    PathBuf,
+    u8,
+    Option<crate::batch_queue::MeshOptions>,
+    Option<String>,
+);
+
 /// Render the batch queue UI panel
 ///
 /// Displays the queue of files waiting to be converted, with controls to
@@ -306,7 +315,7 @@ pub fn render_edit_dialog(ui: &mut Ui, app: &mut ConverterApp) {
         // Clone necessary data
         (
             item.file_type,
-            item.output_format.clone(),
+            item.output_format,
             item.output_path.clone(),
             item.options.clone(),
             item.source_path.clone(),
@@ -334,7 +343,7 @@ pub fn render_edit_dialog(ui: &mut Ui, app: &mut ConverterApp) {
 
                 // Output format selection
                 ui.label("Output Format:");
-                let mut selected_format = output_format.clone();
+                let mut selected_format = output_format;
                 let format_changed = match file_type {
                     crate::app::FileType::Image => {
                         let formats = crate::format_helpers::get_writable_image_formats();
@@ -451,13 +460,7 @@ pub fn render_edit_dialog(ui: &mut Ui, app: &mut ConverterApp) {
                 // Dialog buttons - use a mutable flag to track actions outside closure
                 let mut should_cancel = false;
                 let mut should_save = false;
-                let mut save_data: Option<(
-                    OutputFormat,
-                    PathBuf,
-                    u8,
-                    Option<crate::batch_queue::MeshOptions>,
-                    Option<String>,
-                )> = None;
+                let mut save_data: Option<SaveData> = None;
 
                 ui.horizontal(|ui| {
                     if ui.button("Cancel").clicked() {
@@ -474,7 +477,7 @@ pub fn render_edit_dialog(ui: &mut Ui, app: &mut ConverterApp) {
                                 Ok(()) => {
                                     should_save = true;
                                     save_data = Some((
-                                        selected_format.clone(),
+                                        selected_format,
                                         output_path,
                                         quality,
                                         mesh_options.clone(),
@@ -484,7 +487,7 @@ pub fn render_edit_dialog(ui: &mut Ui, app: &mut ConverterApp) {
                                 Err(e) => {
                                     // Store error message to show after closure
                                     save_data = Some((
-                                        selected_format.clone(),
+                                        selected_format,
                                         output_path,
                                         quality,
                                         mesh_options.clone(),
@@ -514,7 +517,7 @@ pub fn render_edit_dialog(ui: &mut Ui, app: &mut ConverterApp) {
                         if let Some(ref mut queue) = app.batch_queue {
                             // Update format (this also updates output path extension)
                             if format_changed {
-                                queue.update_item_format(editing_id, selected_format_val.clone());
+                                queue.update_item_format(editing_id, selected_format_val);
                             }
 
                             // Update output path if changed

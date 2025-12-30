@@ -1213,6 +1213,7 @@ impl ConverterApp {
     }
 
     /// Internal helper method for processing a batch item (sequential mode - kept for compatibility)
+    #[allow(dead_code)]
     fn process_batch_item_internal(
         item: &mut crate::batch_queue::BatchItem,
         limits: &ResourceLimits,
