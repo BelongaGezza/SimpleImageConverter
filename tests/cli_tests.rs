@@ -40,7 +40,7 @@ fn get_mesh_convert_binary() -> String {
 }
 
 #[test]
-#[ignore] // Requires built binaries
+#[ignore] // CLI integration test - run with `cargo test -- --ignored` after building binaries
 fn test_img_convert_help() {
     let binary = get_img_convert_binary();
     let output = if binary == "cargo" {
@@ -62,7 +62,7 @@ fn test_img_convert_help() {
 }
 
 #[test]
-#[ignore] // Requires built binaries
+#[ignore] // CLI integration test - run with `cargo test -- --ignored` after building binaries
 fn test_mesh_convert_help() {
     let binary = get_mesh_convert_binary();
     let output = if binary == "cargo" {

@@ -96,11 +96,20 @@ cargo build --release
 # Basic conversion
 ./mesh-convert model.stl obj
 
-# Binary to ASCII STL
-./mesh-convert model.stl stl --format-variant ascii
+# With coordinate transform (Z-up to Y-up)
+./mesh-convert model.stl obj --transform y-up
 
-# Note: Transform, recalculate-normals, and validate features are planned for v0.1.1
-# Currently these options show "not yet implemented" warnings
+# With explicit coordinate system transform
+./mesh-convert model.stl obj --transform z-up:y-up
+
+# Recalculate vertex normals
+./mesh-convert model.stl obj --recalculate-normals
+
+# Validate mesh integrity
+./mesh-convert model.stl obj --validate
+
+# Combined options
+./mesh-convert model.stl obj --transform y-up --recalculate-normals --validate --output result.obj
 ```
 
 ## 📋 Requirements
@@ -222,17 +231,24 @@ cargo build --release --target x86_64-pc-windows-gnu
 
 ### 📅 Planned Phases
 
+**Sprint 7: GUI Implementation** ⚡ **IN PROGRESS** (v0.2.1 target)
+- [ ] GUI application with egui framework
+- [ ] Drag-and-drop file support
+- [ ] Visual format selection
+- [ ] Direct library integration
+- [ ] User-friendly interface
+
 **Sprint 7-8: STEP + CAD** ✅ COMPLETE (v0.2.0)
 - [x] STEP FACETED_BREP extraction (v0.2.0)
 - [x] STEP read support (feature-gated)
 - [x] CAD export documentation
-- [ ] Full STEP B-Rep support (v0.3.0 - opencascade-rs integration)
+- [ ] Full STEP B-Rep support (v0.3.0 - opencascade-rs integration) - **DEFERRED**
 
-**Sprint 9-12: GUI** 📅 **FUTURE** (Planned for v1.0.0)
-- [ ] egui framework setup
-- [ ] Drag-and-drop interface
-- [ ] Batch processing
-- [ ] Settings panel
+**Sprint 9-12: GUI Enhancements** 📅 **FUTURE** (Planned for v0.2.2+)
+- [ ] Batch processing UI
+- [ ] Settings panel and persistence
+- [ ] Preview functionality
+- [ ] Conversion history
 
 ## 🧪 Testing
 
