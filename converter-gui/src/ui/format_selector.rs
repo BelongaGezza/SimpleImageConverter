@@ -5,8 +5,8 @@
 
 use crate::app::{ConverterApp, FileType, OutputFormat};
 use crate::format_helpers::{
-    get_image_format_name, get_mesh_format_name, get_mesh_format_extension,
-    get_writable_image_formats, get_writable_mesh_formats, get_format_extension,
+    get_format_extension, get_image_format_name, get_mesh_format_extension, get_mesh_format_name,
+    get_writable_image_formats, get_writable_mesh_formats,
 };
 use egui::Ui;
 use std::path::PathBuf;
@@ -52,11 +52,14 @@ fn render_image_formats(ui: &mut Ui, app: &mut ConverterApp) {
     for format in &formats {
         let format_name = get_image_format_name(*format);
 
-        if ui.radio_value(
-            &mut app.output_format,
-            Some(OutputFormat::Image(*format)),
-            format_name,
-        ).changed() {
+        if ui
+            .radio_value(
+                &mut app.output_format,
+                Some(OutputFormat::Image(*format)),
+                format_name,
+            )
+            .changed()
+        {
             update_output_filename(app);
         }
     }
@@ -78,11 +81,14 @@ fn render_mesh_formats(ui: &mut Ui, app: &mut ConverterApp) {
     for format in &formats {
         let format_name = get_mesh_format_name(*format);
 
-        if ui.radio_value(
-            &mut app.output_format,
-            Some(OutputFormat::Mesh(*format)),
-            format_name,
-        ).changed() {
+        if ui
+            .radio_value(
+                &mut app.output_format,
+                Some(OutputFormat::Mesh(*format)),
+                format_name,
+            )
+            .changed()
+        {
             update_output_filename(app);
         }
     }
@@ -101,7 +107,7 @@ fn update_output_filename(app: &mut ConverterApp) {
             // Create new filename with new extension
             let mut new_filename = PathBuf::from(stem);
             new_filename.set_extension(extension);
-            
+
             // Update output filename (just the name, not full path)
             if let Some(name) = new_filename.file_name().and_then(|n| n.to_str()) {
                 app.output_filename = name.to_string();

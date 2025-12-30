@@ -8,4 +8,3 @@ pub mod format_selector;
 pub mod messages;
 pub mod options_panel;
 pub mod status_bar;
-

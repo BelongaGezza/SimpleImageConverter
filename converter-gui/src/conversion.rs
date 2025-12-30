@@ -14,8 +14,7 @@ use common::limits::ResourceLimits;
 use common::validation::validate_file_path;
 use img_core::{FormatRegistry, ImageConverter, ImageFormat, QualitySettings};
 use mesh_core::{
-    ConversionOptions, FormatRegistry as MeshFormatRegistry, MeshConverter,
-    MeshFormat,
+    ConversionOptions, FormatRegistry as MeshFormatRegistry, MeshConverter, MeshFormat,
 };
 use std::path::{Path, PathBuf};
 
@@ -78,7 +77,10 @@ pub fn convert_image(
     // Validate output filename (no invalid characters, no path traversal)
     if let Some(filename) = output_path.file_name().and_then(|n| n.to_str()) {
         validate_output_filename(filename).map_err(|e| {
-            common::error::ConversionError::InvalidInput(format!("Output filename validation failed: {}", e))
+            common::error::ConversionError::InvalidInput(format!(
+                "Output filename validation failed: {}",
+                e
+            ))
         })?;
     } else {
         return Err(common::error::ConversionError::InvalidInput(
@@ -87,9 +89,8 @@ pub fn convert_image(
     }
 
     // Validate output path is not in system directories (security check)
-    validate_output_path_not_system(output_path).map_err(|e| {
-        common::error::ConversionError::ValidationFailed(e)
-    })?;
+    validate_output_path_not_system(output_path)
+        .map_err(common::error::ConversionError::ValidationFailed)?;
 
     // Check if output file already exists (for user confirmation later)
     // Note: We don't fail here, but the UI should warn the user
@@ -153,9 +154,14 @@ mod tests {
             common::error::ConversionError::InvalidInput(msg) => {
                 // If it's a quality error, it should mention quality
                 // If it's a path error, that's also fine - path validation runs first
-                assert!(msg.contains("Quality") || msg.contains("quality") || 
-                        msg.contains("path") || msg.contains("file"),
-                        "Unexpected error message: {}", msg);
+                assert!(
+                    msg.contains("Quality")
+                        || msg.contains("quality")
+                        || msg.contains("path")
+                        || msg.contains("file"),
+                    "Unexpected error message: {}",
+                    msg
+                );
             }
             _ => {
                 // Other error types are also acceptable (e.g., path validation)
@@ -260,9 +266,8 @@ pub fn convert_mesh(
     }
 
     // Validate output path is not in system directories (security check)
-    validate_output_path_not_system(output_path).map_err(|e| {
-        common::error::ConversionError::ValidationFailed(e)
-    })?;
+    validate_output_path_not_system(output_path)
+        .map_err(common::error::ConversionError::ValidationFailed)?;
 
     // Check if output file already exists (for user confirmation later)
     // Note: We don't fail here, but the UI should warn the user
@@ -287,12 +292,8 @@ pub fn convert_mesh(
 
     // Convert mesh with options
     let converter = MeshConverter::new();
-    let output_data = converter.convert_with_options(
-        &input_data,
-        reader.as_ref(),
-        writer.as_ref(),
-        &options,
-    )?;
+    let output_data =
+        converter.convert_with_options(&input_data, reader.as_ref(), writer.as_ref(), &options)?;
 
     // Write output file
     write_file_bytes(output_path, &output_data)?;
@@ -322,7 +323,7 @@ mod mesh_tests {
         let limits = ResourceLimits::default();
         let input_path = Path::new("test.stl");
         let output_path = Path::new("test.obj");
-        
+
         // Test with transform option
         let options = ConversionOptions {
             transform: Some((CoordinateSystem::ZUp, CoordinateSystem::YUp)),
@@ -340,4 +341,3 @@ mod mesh_tests {
     // Note: Full integration tests would require actual mesh files
     // These are handled in the mesh-core crate's integration tests
 }
-

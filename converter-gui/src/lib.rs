@@ -5,6 +5,5 @@ pub mod app;
 pub mod conversion;
 pub mod error_messages;
 pub mod format_helpers;
-pub mod utils;
 pub mod ui;
-
+pub mod utils;

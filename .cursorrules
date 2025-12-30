@@ -102,3 +102,28 @@ See `.agents/` directory for full agent definitions:
 
 ## Security
 All file input is untrusted. Consider security implications in all implementations.
+
+## Date Handling (CRITICAL)
+
+**IMPORTANT:** Always use the actual current date when creating or updating documents. Do NOT use future dates.
+
+### Date Rules:
+- **Current Date:** December 30, 2025 (as of this rule creation)
+- **Project Timeline:** This project has been running in December 2025 only
+- **Never use future dates** for completion dates, review dates, or creation dates
+- When creating documents, use the actual date the work is being done
+- For "Last Updated" fields, use the actual date of the update
+
+### Date Format:
+- Use format: "December 30, 2025" or "2025-12-30" for specific dates
+- Use format: "December 2025" for month/year only
+- For unreleased versions, use "TBD" or "In Development" rather than future dates
+
+### Examples:
+- ✅ **Created:** December 30, 2025
+- ✅ **Last Updated:** December 2025
+- ✅ **Release Date:** TBD (not yet released)
+- ❌ **Created:** January 2026 (WRONG - future date)
+- ❌ **Release Date:** January 2026 (WRONG - use TBD if not released)
+
+**If you are unsure of the current date, ask the user or use a conservative date that is definitely in the past relative to when the project started.**

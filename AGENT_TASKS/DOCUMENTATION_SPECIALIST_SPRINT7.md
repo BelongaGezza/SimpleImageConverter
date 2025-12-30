@@ -217,7 +217,7 @@ pub fn convert_image(...) -> Result<PathBuf>
 
 ### v0.2.1 Entry Template
 ```markdown
-## v0.2.1 - GUI Release (January 2026)
+## v0.2.1 - GUI Release (December 2025)
 
 ### Added
 - 🎨 Graphical User Interface (GUI) using egui framework
@@ -251,7 +251,7 @@ pub fn convert_image(...) -> Result<PathBuf>
 ```markdown
 # Simple Image Converter v0.2.1 - GUI Release
 
-**Release Date:** January 2026  
+**Release Date:** December 2025  
 **Type:** Feature Release
 
 ## What's New
@@ -344,6 +344,6 @@ cargo test --doc              # Test doc examples
 **Great documentation makes the GUI accessible to all users. Your work is essential!**
 
 **Document Version:** 1.0  
-**Created:** January 2026  
+**Created:** December 2025  
 **Status:** Ready for Implementation
 

@@ -2,7 +2,7 @@
 ## Living Knowledge Base for Simple Image Converter
 
 **Maintained By:** Researcher (Dr. Taylor Kim)  
-**Last Updated:** January 2026  
+**Last Updated:** December 2025  
 **Update Frequency:** Weekly + as needed  
 **Purpose:** Track Rust ecosystem changes, library updates, and project learnings
 
@@ -56,7 +56,7 @@
 | 2025-12-27 | **SECURITY** | **FIXED** CVE-2020-25573 - Replaced ply-rs with ply-rs-bw | Researcher |
 | 2025-12-27 | Updates | stl_io 0.7→0.10, resvg 0.40→0.45, thiserror 2.0 available | Researcher |
 | 2025-12-29 | ruststep | Added comprehensive ruststep guidance (docs/RUSTSTEP_GUIDANCE.md) | System Architect |
-| 2026-01 | **GUI** | Added egui/eframe/rfd framework section for Sprint 7 GUI implementation | Researcher |
+| 2025-12 | **GUI** | Added egui/eframe/rfd framework section for Sprint 7 GUI implementation | Researcher |
 
 ---
 
@@ -494,7 +494,7 @@ struct Cli {
 
 ### GUI Framework: egui/eframe
 
-**Last Updated:** January 2026  
+**Last Updated:** December 2025  
 **Researcher:** Dr. Taylor Kim  
 **Status:** ✅ Planned for Sprint 7 (v0.2.1)
 

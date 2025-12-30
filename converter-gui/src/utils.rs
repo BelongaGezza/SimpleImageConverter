@@ -71,12 +71,12 @@ pub fn sanitize_path_for_display(path: &Path) -> String {
             .file_name()
             .and_then(|n| n.to_str())
             .unwrap_or("unknown");
-        
+
         // If filename alone is short enough, return it
         if filename.len() <= 60 {
             return filename.to_string();
         }
-        
+
         // Otherwise truncate
         format!("...{}", &path_str[path_str.len().saturating_sub(57)..])
     } else {
@@ -154,7 +154,7 @@ pub fn validate_output_filename(filename: &str) -> Result<(), String> {
 ///
 /// // User directory should be OK
 /// assert!(validate_output_path_not_system(Path::new("C:\\Users\\photo.jpg")).is_ok());
-/// 
+///
 /// // System directories should fail (if they exist on the system)
 /// // Note: This test may not work on all systems, so we check the result
 /// let system_result = validate_output_path_not_system(Path::new("C:\\Windows\\photo.jpg"));
@@ -182,7 +182,16 @@ pub fn validate_output_path_not_system(path: &Path) -> Result<(), String> {
 
 /// Check if a canonicalized path is in a system directory
 fn check_system_directory(path: &Path) -> Result<(), String> {
-    let path_str = path.display().to_string().to_lowercase();
+    let mut path_str = path.display().to_string().to_lowercase();
+
+    // Strip Windows extended-length path prefix (\\?\)
+    // canonicalize() on Windows can return paths with this prefix
+    if path_str.starts_with("\\\\?\\") {
+        path_str = path_str[4..].to_string();
+    }
+
+    // Normalize: remove trailing backslashes for consistent comparison
+    let path_str = path_str.trim_end_matches('\\');
 
     // Windows system directories to avoid
     let system_dirs = [
@@ -196,7 +205,8 @@ fn check_system_directory(path: &Path) -> Result<(), String> {
     ];
 
     for system_dir in &system_dirs {
-        if path_str.starts_with(system_dir) {
+        let normalized_dir = system_dir.trim_end_matches('\\');
+        if path_str.starts_with(normalized_dir) {
             return Err("Cannot write to system directories.".to_string());
         }
     }
@@ -205,10 +215,14 @@ fn check_system_directory(path: &Path) -> Result<(), String> {
 }
 
 /// Check if a path string contains system directory patterns
+///
+/// This is a fallback when canonicalization fails. It checks for system
+/// directory patterns in the path string directly.
 fn check_system_directory_string(path: &Path) -> Result<(), String> {
     let path_str = path.display().to_string().to_lowercase();
 
     // Check for system directory patterns in the path
+    // Patterns with backslashes (for paths like C:\Windows\file)
     let system_patterns = [
         "\\windows\\",
         "\\system32\\",
@@ -219,6 +233,20 @@ fn check_system_directory_string(path: &Path) -> Result<(), String> {
 
     for pattern in &system_patterns {
         if path_str.contains(pattern) {
+            return Err("Cannot write to system directories.".to_string());
+        }
+    }
+
+    // Check for root system directories (e.g., C:\Windows\file or C:\Windows)
+    // This handles cases where the path starts with a system directory
+    let root_system_dirs = ["c:\\windows", "c:\\program files", "c:\\programdata"];
+
+    for root_dir in &root_system_dirs {
+        // Check if path starts with the root directory followed by backslash or end of string
+        if path_str.starts_with(root_dir)
+            && (path_str.len() == root_dir.len()
+                || path_str.as_bytes().get(root_dir.len()) == Some(&b'\\'))
+        {
             return Err("Cannot write to system directories.".to_string());
         }
     }
@@ -323,10 +351,43 @@ mod tests {
     fn test_validate_output_path_not_system() {
         // User directory should be OK
         assert!(validate_output_path_not_system(Path::new("C:\\Users\\photo.jpg")).is_ok());
-        
+
         // System directories should fail
         assert!(validate_output_path_not_system(Path::new("C:\\Windows\\photo.jpg")).is_err());
-        assert!(validate_output_path_not_system(Path::new("C:\\Program Files\\photo.jpg")).is_err());
+        assert!(
+            validate_output_path_not_system(Path::new("C:\\Program Files\\photo.jpg")).is_err()
+        );
+    }
+
+    #[test]
+    fn test_validate_output_path_not_system_comprehensive() {
+        // System directories with files - should fail
+        assert!(validate_output_path_not_system(Path::new("C:\\Windows\\photo.jpg")).is_err());
+        assert!(validate_output_path_not_system(Path::new("C:\\Program Files\\app.exe")).is_err());
+        assert!(
+            validate_output_path_not_system(Path::new("C:\\Windows\\System32\\dll.dll")).is_err()
+        );
+        assert!(
+            validate_output_path_not_system(Path::new("C:\\Windows\\SysWOW64\\dll.dll")).is_err()
+        );
+        assert!(validate_output_path_not_system(Path::new("C:\\ProgramData\\config.ini")).is_err());
+
+        // Edge cases - system directories themselves (should fail)
+        // Note: These may not work on all systems if the directories don't exist
+        // but the pattern matching should catch them
+        let _windows_result = validate_output_path_not_system(Path::new("C:\\Windows"));
+        let _program_files_result = validate_output_path_not_system(Path::new("C:\\Program Files"));
+        // On Windows systems, these should fail; on other systems they may pass
+        // but the important thing is that paths WITH files in these directories fail
+
+        // User directories - should pass
+        assert!(validate_output_path_not_system(Path::new("C:\\Users\\photo.jpg")).is_ok());
+        assert!(
+            validate_output_path_not_system(Path::new("C:\\Users\\Documents\\photo.jpg")).is_ok()
+        );
+
+        // Relative paths in user directories - should pass
+        // (These will be resolved relative to current directory)
     }
 
     #[test]
@@ -340,7 +401,9 @@ mod tests {
     fn test_generate_output_filename_no_extension() {
         let input = Path::new("document");
         let output = generate_output_filename(input, "jpg").unwrap();
-        assert_eq!(output.file_name().unwrap().to_str().unwrap(), "document.jpg");
+        assert_eq!(
+            output.file_name().unwrap().to_str().unwrap(),
+            "document.jpg"
+        );
     }
 }
-

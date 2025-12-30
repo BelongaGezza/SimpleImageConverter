@@ -39,7 +39,10 @@ pub fn format_user_message(error: &ConversionError) -> String {
             // Check for specific error patterns in the message
             if msg.contains("extension") || msg.contains("format") || msg.contains("Unsupported") {
                 "File type not supported.".to_string()
-            } else if msg.contains("size") || msg.contains("too large") || msg.contains("exceeds limit") {
+            } else if msg.contains("size")
+                || msg.contains("too large")
+                || msg.contains("exceeds limit")
+            {
                 if msg.contains("dimension") || msg.contains("width") || msg.contains("height") {
                     "Image too large. Maximum dimension is 65535 pixels.".to_string()
                 } else if msg.contains("vertices") || msg.contains("vertex") {
@@ -59,9 +62,7 @@ pub fn format_user_message(error: &ConversionError) -> String {
                 "Invalid file. Check if file exists and is readable.".to_string()
             }
         }
-        ConversionError::UnsupportedFormat(_) => {
-            "File type not supported.".to_string()
-        }
+        ConversionError::UnsupportedFormat(_) => "File type not supported.".to_string(),
         ConversionError::InvalidFormat(msg) => {
             // Format mismatch (extension vs magic bytes)
             if msg.contains("mismatch") {
@@ -70,9 +71,7 @@ pub fn format_user_message(error: &ConversionError) -> String {
                 "Invalid file format.".to_string()
             }
         }
-        ConversionError::Io(_) => {
-            "Can't read file. Check if file exists.".to_string()
-        }
+        ConversionError::Io(_) => "Can't read file. Check if file exists.".to_string(),
         ConversionError::ConversionFailed(msg) => {
             if msg.contains("corrupted") || msg.contains("invalid") {
                 "File may be corrupted or invalid.".to_string()
@@ -121,12 +120,8 @@ pub fn format_user_message(error: &ConversionError) -> String {
 ///
 /// A user-friendly error message
 #[allow(dead_code)] // May be used for quality validation in future
-pub fn format_quality_error(quality: u8) -> String {
-    if quality > 100 {
-        "Quality must be between 1 and 100.".to_string()
-    } else {
-        "Quality must be between 1 and 100.".to_string()
-    }
+pub fn format_quality_error(_quality: u8) -> String {
+    "Quality must be between 1 and 100.".to_string()
 }
 
 #[cfg(test)]
@@ -166,9 +161,13 @@ mod tests {
 
     #[test]
     fn test_format_invalid_input_dimension() {
-        let error = ConversionError::InvalidInput("Image width exceeds dimension limit".to_string());
+        let error =
+            ConversionError::InvalidInput("Image width exceeds dimension limit".to_string());
         let message = format_user_message(&error);
-        assert_eq!(message, "Image too large. Maximum dimension is 65535 pixels.");
+        assert_eq!(
+            message,
+            "Image too large. Maximum dimension is 65535 pixels."
+        );
     }
 
     #[test]
@@ -186,14 +185,15 @@ mod tests {
             "Image dimension 100000 exceeds limit".to_string(),
         );
         let message = format_user_message(&error);
-        assert_eq!(message, "Image too large. Maximum dimension is 65535 pixels.");
+        assert_eq!(
+            message,
+            "Image too large. Maximum dimension is 65535 pixels."
+        );
     }
 
     #[test]
     fn test_format_resource_limit_size() {
-        let error = ConversionError::ResourceLimitExceeded(
-            "File size exceeds limit".to_string(),
-        );
+        let error = ConversionError::ResourceLimitExceeded("File size exceeds limit".to_string());
         let message = format_user_message(&error);
         assert_eq!(message, "File too large. Maximum size is 100 MB.");
     }
@@ -206,27 +206,23 @@ mod tests {
 
     #[test]
     fn test_format_mesh_vertices_error() {
-        let error = ConversionError::ResourceLimitExceeded(
-            "Mesh vertices exceed limit".to_string(),
-        );
+        let error =
+            ConversionError::ResourceLimitExceeded("Mesh vertices exceed limit".to_string());
         let message = format_user_message(&error);
         assert_eq!(message, "Mesh too large. Maximum vertices is 10,000,000.");
     }
 
     #[test]
     fn test_format_mesh_faces_error() {
-        let error = ConversionError::ResourceLimitExceeded(
-            "Mesh faces exceed limit".to_string(),
-        );
+        let error = ConversionError::ResourceLimitExceeded("Mesh faces exceed limit".to_string());
         let message = format_user_message(&error);
         assert_eq!(message, "Mesh too large. Maximum faces is 10,000,000.");
     }
 
     #[test]
     fn test_format_mesh_validation_error() {
-        let error = ConversionError::ValidationFailed(
-            "Mesh topology validation failed".to_string(),
-        );
+        let error =
+            ConversionError::ValidationFailed("Mesh topology validation failed".to_string());
         let message = format_user_message(&error);
         assert_eq!(message, "Mesh validation failed. Check if mesh is valid.");
     }
@@ -245,4 +241,3 @@ mod tests {
         assert_eq!(message, "Mesh too large. Maximum faces is 10,000,000.");
     }
 }
-

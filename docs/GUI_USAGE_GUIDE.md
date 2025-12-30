@@ -2,7 +2,7 @@
 ## Simple Image Converter - Graphical User Interface
 
 **Version:** 0.2.1  
-**Last Updated:** January 2026
+**Last Updated:** December 2025
 
 ---
 

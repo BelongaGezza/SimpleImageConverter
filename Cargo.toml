@@ -51,7 +51,7 @@ criterion = { version = "0.5", features = ["html_reports"] }
 tempfile = "3.10"
 
 [profile.release]
-opt-level = "z"  # Optimize for size
+opt-level = "z"   # Optimize for size
 lto = true
 codegen-units = 1
 strip = true
@@ -60,4 +60,3 @@ panic = "abort"
 [profile.dev]
 opt-level = 0
 debug = true
-

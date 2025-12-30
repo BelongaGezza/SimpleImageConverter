@@ -261,7 +261,9 @@ pub fn get_mesh_format_name(format: MeshFormat) -> &'static str {
 /// assert!(format.is_some());
 /// ```
 #[allow(dead_code)] // May be used for format detection utilities in future
-pub fn detect_image_format(path: &Path) -> Result<Option<ImageFormat>, common::error::ConversionError> {
+pub fn detect_image_format(
+    path: &Path,
+) -> Result<Option<ImageFormat>, common::error::ConversionError> {
     match FormatRegistry::detect_from_path(path) {
         Ok(format) => Ok(Some(format)),
         Err(_) => Ok(None), // Not an image format, but not an error
@@ -294,7 +296,9 @@ pub fn detect_image_format(path: &Path) -> Result<Option<ImageFormat>, common::e
 /// assert!(format.is_some());
 /// ```
 #[allow(dead_code)] // May be used for format detection utilities in future
-pub fn detect_mesh_format(path: &Path) -> Result<Option<MeshFormat>, common::error::ConversionError> {
+pub fn detect_mesh_format(
+    path: &Path,
+) -> Result<Option<MeshFormat>, common::error::ConversionError> {
     match MeshFormatRegistry::detect_from_path(path) {
         Ok(format) => Ok(Some(format)),
         Err(_) => Ok(None), // Not a mesh format, but not an error
@@ -366,7 +370,7 @@ mod tests {
     #[test]
     fn test_detect_image_format() {
         use std::path::Path;
-        
+
         let png_path = Path::new("test.png");
         let result = detect_image_format(png_path).unwrap();
         assert_eq!(result, Some(ImageFormat::Png));
@@ -383,7 +387,7 @@ mod tests {
     #[test]
     fn test_detect_mesh_format() {
         use std::path::Path;
-        
+
         let stl_path = Path::new("test.stl");
         let result = detect_mesh_format(stl_path).unwrap();
         assert_eq!(result, Some(MeshFormat::Stl));

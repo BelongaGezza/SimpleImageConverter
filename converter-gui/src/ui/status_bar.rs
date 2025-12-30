@@ -16,7 +16,7 @@ use egui::{Color32, Ui};
 pub fn render_status_bar(ui: &mut Ui, app: &ConverterApp) {
     ui.horizontal(|ui| {
         ui.separator();
-        
+
         let (status_text, status_color) = match &app.status {
             Status::Ready => ("Ready".to_string(), Color32::GRAY),
             Status::Converting { start_time } => {
@@ -42,7 +42,7 @@ pub fn render_status_bar(ui: &mut Ui, app: &ConverterApp) {
         };
 
         ui.label(egui::RichText::new(&status_text).color(status_color));
-        
+
         // Show progress indicator for long conversions
         if let Status::Converting { start_time } = &app.status {
             let elapsed = start_time.elapsed();
@@ -64,7 +64,7 @@ fn sanitize_path_for_display(path: &std::path::Path) -> String {
             }
         }
     }
-    
+
     // Try to get relative path from current directory
     if let Ok(current_dir) = std::env::current_dir() {
         if let Ok(relative) = path.strip_prefix(&current_dir) {
@@ -74,7 +74,7 @@ fn sanitize_path_for_display(path: &std::path::Path) -> String {
             }
         }
     }
-    
+
     // Truncate if too long
     let path_str = path.display().to_string();
     if path_str.len() > 60 {

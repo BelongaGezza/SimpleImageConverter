@@ -30,15 +30,19 @@ pub fn render_options_panel(ui: &mut Ui, app: &mut ConverterApp) {
         // Output location
         ui.horizontal(|ui| {
             ui.label("Output Location:");
-            
+
             // Display current directory (truncated if too long)
             let dir_display = if app.output_directory.to_string_lossy().len() > 50 {
-                format!("...{}", &app.output_directory.to_string_lossy()[app.output_directory.to_string_lossy().len() - 47..])
+                format!(
+                    "...{}",
+                    &app.output_directory.to_string_lossy()
+                        [app.output_directory.to_string_lossy().len() - 47..]
+                )
             } else {
                 app.output_directory.to_string_lossy().to_string()
             };
             ui.label(&dir_display);
-            
+
             if ui.button("Browse...").clicked() {
                 if let Some(selected_dir) = rfd::FileDialog::new().pick_folder() {
                     // Security: Validate the selected directory using proper directory validation
@@ -79,56 +83,55 @@ pub fn render_options_panel(ui: &mut Ui, app: &mut ConverterApp) {
             // Transform options (radio buttons)
             ui.label("Coordinate System Transform:");
             ui.horizontal(|ui| {
-                if ui.radio_value(
-                    &mut app.mesh_transform,
-                    None,
-                    "None",
-                ).clicked() {
+                if ui
+                    .radio_value(&mut app.mesh_transform, None, "None")
+                    .clicked()
+                {
                     app.mesh_transform = None;
                 }
-                if ui.radio_value(
-                    &mut app.mesh_transform,
-                    Some((CoordinateSystem::ZUp, CoordinateSystem::YUp)),
-                    "Z-up → Y-up",
-                ).clicked() {
+                if ui
+                    .radio_value(
+                        &mut app.mesh_transform,
+                        Some((CoordinateSystem::ZUp, CoordinateSystem::YUp)),
+                        "Z-up → Y-up",
+                    )
+                    .clicked()
+                {
                     app.mesh_transform = Some((CoordinateSystem::ZUp, CoordinateSystem::YUp));
                 }
-                if ui.radio_value(
-                    &mut app.mesh_transform,
-                    Some((CoordinateSystem::YUp, CoordinateSystem::ZUp)),
-                    "Y-up → Z-up",
-                ).clicked() {
+                if ui
+                    .radio_value(
+                        &mut app.mesh_transform,
+                        Some((CoordinateSystem::YUp, CoordinateSystem::ZUp)),
+                        "Y-up → Z-up",
+                    )
+                    .clicked()
+                {
                     app.mesh_transform = Some((CoordinateSystem::YUp, CoordinateSystem::ZUp));
                 }
             });
             ui.add_space(5.0);
 
             // Recalculate normals checkbox
-            ui.checkbox(
-                &mut app.mesh_recalculate_normals,
-                "Recalculate Normals",
-            );
+            ui.checkbox(&mut app.mesh_recalculate_normals, "Recalculate Normals");
             ui.add_space(5.0);
 
             // Validate checkbox
-            ui.checkbox(
-                &mut app.mesh_validate,
-                "Validate Mesh",
-            );
+            ui.checkbox(&mut app.mesh_validate, "Validate Mesh");
             ui.add_space(10.0);
         }
 
         // Advanced options (collapsible)
         ui.collapsing("Advanced Options", |ui| {
             ui.add_space(5.0);
-            
+
             // Max file size
             ui.horizontal(|ui| {
                 ui.label("Max File Size (MB):");
                 ui.add(egui::Slider::new(&mut app.max_file_size_mb, 1..=1024));
                 ui.label(format!("{} MB", app.max_file_size_mb));
             });
-            
+
             // Max dimension (images only)
             if let Some(crate::app::FileType::Image) = app.detected_file_type {
                 ui.horizontal(|ui| {
@@ -137,7 +140,7 @@ pub fn render_options_panel(ui: &mut Ui, app: &mut ConverterApp) {
                     ui.label(format!("{} px", app.max_dimension));
                 });
             }
-            
+
             // Max vertices/faces (meshes only)
             if let Some(crate::app::FileType::Mesh) = app.detected_file_type {
                 ui.horizontal(|ui| {
@@ -145,18 +148,22 @@ pub fn render_options_panel(ui: &mut Ui, app: &mut ConverterApp) {
                     ui.add(egui::Slider::new(&mut app.max_vertices, 1000..=10_000_000));
                     ui.label(format!("{}", app.max_vertices));
                 });
-                
+
                 ui.horizontal(|ui| {
                     ui.label("Max Faces:");
                     ui.add(egui::Slider::new(&mut app.max_faces, 1000..=10_000_000));
                     ui.label(format!("{}", app.max_faces));
                 });
             }
-            
+
             // Warning if limits are increased beyond defaults
             if app.max_file_size_mb > 100 {
-                ui.label(egui::RichText::new("⚠ Warning: Large file size limit may cause performance issues.")
-                    .color(egui::Color32::YELLOW));
+                ui.label(
+                    egui::RichText::new(
+                        "⚠ Warning: Large file size limit may cause performance issues.",
+                    )
+                    .color(egui::Color32::YELLOW),
+                );
             }
         });
     });

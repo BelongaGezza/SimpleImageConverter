@@ -10,7 +10,8 @@ Two separate CLI tools written in Rust:
 
 **Status:** ✅ Active Development (Private Repository)
 
-**Current Version:** 0.2.1 (Released - January 2026) - **GUI Release**
+**Current Version:** 0.2.0 (Released - December 2025)  
+**Next Version:** 0.2.1 (In Development - GUI Release)
 
 ## ✨ Features
 
@@ -374,7 +375,7 @@ This repository is currently **private** during initial development. Once mature
   - opencascade-rs integration for full B-Rep support
   - Curved surface support (NURBS, cylinders, spheres)
   - Performance optimizations
-- [x] **v0.2.1** - GUI release ✅ **RELEASED** (January 2026)
+- [x] **v0.2.1** - GUI release ✅ **IN DEVELOPMENT** (December 2025)
   - Graphical user interface with egui framework
   - Drag-and-drop file support
   - Visual format selection
@@ -418,7 +419,7 @@ For questions or issues during private development phase, contact the repository
 
 ---
 
-**Last Updated:** January 2026  
+**Last Updated:** December 30, 2025  
 **Status:** ✅ v0.2.1 Released - GUI application available! Drag-and-drop interface for easy file conversion.
 
 **Note:** v0.2.0 includes STEP format support (FACETED_BREP only). Full B-Rep support with curved surfaces planned for v0.3.0. See Release Roadmap section above.

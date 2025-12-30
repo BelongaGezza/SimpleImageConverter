@@ -1,8 +1,9 @@
-# Simple Image Converter v0.2.1 - GUI Release
+# Simple Image Converter v0.2.1 - GUI Release (Draft)
 
-**Release Date:** January 2026  
+**Release Date:** TBD (December 2025)  
 **Type:** Feature Release  
-**Target:** v0.2.1
+**Target:** v0.2.1  
+**Status:** 🚧 **IN DEVELOPMENT** - Not yet released
 
 ---
 
