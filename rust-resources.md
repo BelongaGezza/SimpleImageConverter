@@ -2,7 +2,7 @@
 ## Living Knowledge Base for Simple Image Converter
 
 **Maintained By:** Researcher (Dr. Taylor Kim)  
-**Last Updated:** December 27, 2025  
+**Last Updated:** January 2026  
 **Update Frequency:** Weekly + as needed  
 **Purpose:** Track Rust ecosystem changes, library updates, and project learnings
 
@@ -25,6 +25,11 @@
 - ✅ `image` v0.25 - Image processing (latest: 0.25.8)
 - ⚠️ `resvg` v0.40 - SVG rendering (latest: **0.45.1** - update recommended)
 - ✅ `tiny-skia` v0.11 - 2D rendering (latest: 0.11.4)
+
+**GUI Dependencies (Sprint 7):**
+- 📋 `egui` v0.27 - GUI framework (latest: **0.33.3** - stick with 0.27 for Sprint 7)
+- 📋 `eframe` v0.27 - Application framework (latest: **0.33.3** - stick with 0.27 for Sprint 7)
+- 📋 `rfd` v0.14 - File dialogs (latest: **0.16.0** - stick with 0.14 for Sprint 7)
 
 **3D/Mesh Dependencies:**
 - ❌ `stl_io` v0.7 - STL format (latest: **0.10.0** - update required)
@@ -51,6 +56,7 @@
 | 2025-12-27 | **SECURITY** | **FIXED** CVE-2020-25573 - Replaced ply-rs with ply-rs-bw | Researcher |
 | 2025-12-27 | Updates | stl_io 0.7→0.10, resvg 0.40→0.45, thiserror 2.0 available | Researcher |
 | 2025-12-29 | ruststep | Added comprehensive ruststep guidance (docs/RUSTSTEP_GUIDANCE.md) | System Architect |
+| 2026-01 | **GUI** | Added egui/eframe/rfd framework section for Sprint 7 GUI implementation | Researcher |
 
 ---
 
@@ -58,12 +64,13 @@
 
 1. [Rust Language Updates](#rust-language-updates)
 2. [Core Dependencies](#core-dependencies)
-3. [Best Practices](#best-practices)
-4. [Known Issues & Gotchas](#known-issues--gotchas)
-5. [Lessons Learned](#lessons-learned)
-6. [Performance Tips](#performance-tips)
-7. [Security Considerations](#security-considerations)
-8. [Breaking Changes](#breaking-changes)
+3. [GUI Framework: egui/eframe](#gui-framework-egui-eframe)
+4. [Best Practices](#best-practices)
+5. [Known Issues & Gotchas](#known-issues--gotchas)
+6. [Lessons Learned](#lessons-learned)
+7. [Performance Tips](#performance-tips)
+8. [Security Considerations](#security-considerations)
+9. [Breaking Changes](#breaking-changes)
 
 ---
 
@@ -484,6 +491,283 @@ struct Cli {
 ```
 
 **Best Practice:** Use derive API for maintainability
+
+### GUI Framework: egui/eframe
+
+**Last Updated:** January 2026  
+**Researcher:** Dr. Taylor Kim  
+**Status:** ✅ Planned for Sprint 7 (v0.2.1)
+
+#### egui (v0.27) - Immediate Mode GUI
+**License:** MIT OR Apache-2.0  
+**Status:** ✅ Stable (Planned for Sprint 7)  
+**Latest Available:** 0.33.3 (as of Jan 2026)  
+**Current Usage:** Planned for converter-gui crate
+
+**Key Features:**
+- Immediate mode GUI framework (no retained state management)
+- Cross-platform (Windows, macOS, Linux)
+- Lightweight (~2MB overhead)
+- Good for utility apps and tools
+- Web and native support (via eframe)
+
+**Best Practices:**
+
+**1. Thread-Safe State Management:**
+```rust
+use std::sync::{Arc, Mutex};
+
+struct AppState {
+    // Use Arc<Mutex<>> for thread-safe state sharing
+    conversion_state: Arc<Mutex<ConversionState>>,
+}
+
+// Spawn long operations in separate threads
+thread::spawn(move || {
+    // Long-running conversion
+    let mut state = conversion_state.lock().unwrap();
+    state.status = ConversionStatus::Complete;
+});
+```
+
+**2. Immediate Mode Pattern:**
+```rust
+impl eframe::App for ConverterApp {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        // UI is rebuilt every frame - state must be managed carefully
+        egui::CentralPanel::default().show(ctx, |ui| {
+            // UI code here
+        });
+    }
+}
+```
+
+**3. Drag and Drop:**
+```rust
+// Use egui::DragAndDrop API for file drops
+let dropped_files = ctx.input(|i| i.raw.dropped_files.clone());
+for file in dropped_files {
+    if let Some(path) = &file.path {
+        // Handle dropped file
+    }
+}
+```
+
+**Gotchas:**
+- egui is immediate mode - state must be managed carefully
+- Thread synchronization requires `Arc<Mutex<>>` for shared state
+- File dialogs are blocking - use in separate thread if needed
+- UI rebuilds every frame - avoid expensive operations in update loop
+- Memory usage can grow if state isn't cleaned up properly
+
+**Performance Tips:**
+- Avoid expensive operations in `update()` method
+- Use `ctx.request_repaint()` sparingly (only when needed)
+- Cache expensive computations outside the update loop
+- Use `egui::ScrollArea` for large content lists
+
+#### eframe (v0.27) - Application Framework
+**License:** MIT OR Apache-2.0  
+**Status:** ✅ Stable (Planned for Sprint 7)  
+**Latest Available:** 0.33.3 (as of Jan 2026)  
+**Current Usage:** Planned for converter-gui crate
+
+**Key Features:**
+- Application framework for egui
+- Handles windowing and event loop
+- Cross-platform native windows
+- Web support (via wasm)
+
+**Application Structure:**
+```rust
+use eframe::egui;
+
+fn main() -> eframe::Result<()> {
+    let options = eframe::NativeOptions {
+        viewport: egui::ViewportBuilder::default()
+            .with_inner_size([800.0, 600.0])
+            .with_min_inner_size([800.0, 600.0]),
+        ..Default::default()
+    };
+    
+    eframe::run_native(
+        "Simple Image Converter",
+        options,
+        Box::new(|_cc| Box::new(ConverterApp::default())),
+    )
+}
+```
+
+**Window Configuration:**
+```rust
+let options = eframe::NativeOptions {
+    viewport: egui::ViewportBuilder::default()
+        .with_inner_size([800.0, 600.0])  // Initial size
+        .with_min_inner_size([800.0, 600.0])  // Minimum size
+        .with_title("Simple Image Converter"),
+    ..Default::default()
+};
+```
+
+**Gotchas:**
+- Window configuration must be set before `run_native()`
+- High DPI scaling handled automatically
+- System appearance (light/dark mode) supported on macOS
+
+#### rfd (v0.14) - File Dialogs
+**License:** MIT OR Apache-2.0  
+**Status:** ✅ Stable (Planned for Sprint 7)  
+**Latest Available:** 0.16.0 (as of Jan 2026)  
+**Current Usage:** Planned for converter-gui crate
+
+**Key Features:**
+- Cross-platform file dialogs
+- Native file picker on each platform
+- File filter support
+- Async and sync APIs
+
+**Usage Pattern:**
+```rust
+use rfd::FileDialog;
+
+// Open file dialog
+let file = FileDialog::new()
+    .add_filter("Images", &["png", "jpg", "jpeg", "bmp", "gif"])
+    .add_filter("Meshes", &["stl", "obj", "ply", "off"])
+    .pick_file();
+
+if let Some(path) = file {
+    // Handle selected file
+}
+
+// Save file dialog
+let file = FileDialog::new()
+    .add_filter("PNG", &["png"])
+    .set_file_name("output.png")
+    .save_file();
+```
+
+**Gotchas:**
+- File dialogs are blocking - consider using in separate thread for better UX
+- Filters are case-sensitive on some platforms
+- Default directory behavior varies by platform
+- Paths returned are platform-specific (use `PathBuf`)
+
+**Best Practice:**
+```rust
+// Use in separate thread to avoid blocking UI
+let ctx = ctx.clone();
+thread::spawn(move || {
+    let file = FileDialog::new().pick_file();
+    ctx.request_repaint();  // Notify UI of change
+});
+```
+
+#### GUI Security Patterns
+
+**1. Path Validation:**
+```rust
+// Always validate paths from user input
+use common::validation::validate_file_path;
+
+if let Some(path) = dropped_file.path {
+    // Validate before use
+    validate_file_path(&path)?;
+    // Process file
+}
+```
+
+**2. Error Message Sanitization:**
+```rust
+// Never display full paths in error messages
+fn sanitize_path_for_display(path: &Path) -> String {
+    // Remove user home directory if present
+    // Truncate if > 60 characters
+    path.file_name()
+        .and_then(|n| n.to_str())
+        .map(|s| s.to_string())
+        .unwrap_or_else(|| "unknown".to_string())
+}
+```
+
+**3. Resource Limits:**
+```rust
+// Enforce resource limits in GUI
+use common::limits::ResourceLimits;
+
+let limits = ResourceLimits::builder()
+    .max_file_size_mb(100)
+    .max_image_dimension(65535)
+    .build();
+
+// Validate before processing
+read_file_bytes_checked(&path, &limits)?;
+```
+
+**4. Two-Stage Format Detection:**
+```rust
+// Security: Always use two-stage detection (extension + magic bytes)
+let input_format = FormatRegistry::detect_two_stage(input_path, &input_data)?;
+```
+
+**Security Checklist for GUI:**
+- [ ] All file paths validated using `common::validation::validate_file_path()`
+- [ ] Two-stage format detection (extension + magic bytes)
+- [ ] File size checked before reading (DoS prevention)
+- [ ] Output paths validated (not in system directories)
+- [ ] Filenames validated (invalid characters, path traversal prevented)
+- [ ] Resource limits enforced via `ResourceLimits` builder
+- [ ] Error messages sanitized (no full paths, no system info)
+- [ ] All user input validated before use
+
+#### Cross-Platform Considerations
+
+**Windows 11:**
+- Native window decorations
+- High DPI scaling supported
+- Windows UX patterns followed
+
+**macOS 26:**
+- Retina display support
+- System appearance (light/dark mode)
+- Native file dialogs
+
+**Ubuntu LTS 24.04+:**
+- GTK-compatible styling
+- Wayland and X11 support
+- Native file dialogs via rfd
+
+#### Version Notes
+
+**Current Plan:** Use egui 0.27, eframe 0.27, rfd 0.14 (as specified in GUI design)
+
+**Latest Available (Jan 2026):**
+- egui: 0.33.3
+- eframe: 0.33.3
+- rfd: 0.16.0
+
+**Recommendation:** Stick with 0.27 for Sprint 7 to match design document. Consider upgrading to latest versions in future sprint after testing compatibility.
+
+**Breaking Changes to Watch:**
+- Monitor egui/eframe changelogs for API changes
+- Test thoroughly if upgrading versions
+- Check for deprecation warnings
+
+#### Examples and Resources
+
+**Official Documentation:**
+- egui: https://docs.rs/egui/
+- eframe: https://docs.rs/eframe/
+- rfd: https://docs.rs/rfd/
+
+**Community Resources:**
+- egui GitHub: https://github.com/emilk/egui
+- eframe template: https://github.com/emilk/eframe_template
+- egui examples: https://github.com/emilk/egui/tree/master/examples
+
+**Project-Specific:**
+- See `GUI_DESIGN_AND_IMPLEMENTATION.md` for complete GUI design
+- See `SPRINT_7_TASKING.md` for implementation tasks
 
 ---
 

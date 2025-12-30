@@ -10,7 +10,7 @@ Two separate CLI tools written in Rust:
 
 **Status:** ✅ Active Development (Private Repository)
 
-**Current Version:** 0.2.1 (Released - January 2026) - **GUI Release**
+**Current Version:** 0.2.0 (Released - December 29, 2025)
 
 ## ✨ Features
 
@@ -36,24 +36,7 @@ Two separate CLI tools written in Rust:
 
 ### Installation
 
-#### GUI Application (Recommended for Most Users)
-
-**Windows 11:**
-1. Download `simpleimageconverter-gui-v0.2.1-windows-x64.zip` from [Releases](https://github.com/BelongaGezza/SimpleImageConverter/releases)
-2. Extract to a location of your choice (e.g., `C:\Tools\SimpleImageConverter`)
-3. Run `converter-gui.exe`
-
-**macOS:**
-1. Download `simpleimageconverter-gui-v0.2.1-macos-x64.tar.gz` from [Releases](https://github.com/BelongaGezza/SimpleImageConverter/releases)
-2. Extract: `tar -xzf simpleimageconverter-gui-*.tar.gz`
-3. Run `converter-gui`
-
-**Linux (Ubuntu 24.04+):**
-1. Download `simpleimageconverter-gui-v0.2.1-linux-x64.tar.gz` from [Releases](https://github.com/BelongaGezza/SimpleImageConverter/releases)
-2. Extract: `tar -xzf simpleimageconverter-gui-*.tar.gz`
-3. Run `converter-gui`
-
-#### Option 1: Pre-built CLI Binaries
+#### Option 1: Pre-built Binaries (Recommended)
 
 **Windows 11:**
 1. Download `simpleimageconverter-{version}-windows-x64.zip` from [Releases](https://github.com/BelongaGezza/SimpleImageConverter/releases)
@@ -77,32 +60,6 @@ Two separate CLI tools written in Rust:
 - **Windows:** `winget install BelongaGezza.SimpleImageConverter` (coming soon)
 - **macOS:** `brew install --cask simpleimageconverter` (coming soon)
 - **Linux:** `sudo apt install simpleimageconverter` (coming soon)
-
-### GUI Usage
-
-The GUI provides an intuitive drag-and-drop interface for file conversion:
-
-1. **Launch** `converter-gui` (or `converter-gui.exe` on Windows)
-2. **Drag and drop** a file into the drop zone, or click "Browse Files..." to select a file
-3. **Select output format** from the radio buttons (formats are automatically filtered based on file type)
-4. **Adjust options** (optional):
-   - Change output filename
-   - Select output location
-   - Adjust quality slider (for JPEG/WebP images)
-5. **Click "Convert"** to start the conversion
-6. **View results** in the status bar and messages area
-
-**Supported Formats:**
-- **Images:** PNG, JPEG, BMP, GIF, TIFF, WebP (SVG read-only)
-- **Meshes:** STL, OBJ, PLY, OFF, glTF, DXF (STEP read-only, feature-gated)
-
-**Features:**
-- Drag-and-drop file support
-- Visual format selection
-- Quality settings for lossy image formats
-- User-friendly error messages
-- Progress indicators for long operations
-- Thread-safe conversion processing
 
 #### Option 2: Build from Source
 
@@ -139,20 +96,11 @@ cargo build --release
 # Basic conversion
 ./mesh-convert model.stl obj
 
-# With coordinate transform (Z-up to Y-up)
-./mesh-convert model.stl obj --transform y-up
+# Binary to ASCII STL
+./mesh-convert model.stl stl --format-variant ascii
 
-# With explicit coordinate system transform
-./mesh-convert model.stl obj --transform z-up:y-up
-
-# Recalculate vertex normals
-./mesh-convert model.stl obj --recalculate-normals
-
-# Validate mesh integrity
-./mesh-convert model.stl obj --validate
-
-# Combined options
-./mesh-convert model.stl obj --transform y-up --recalculate-normals --validate --output result.obj
+# Note: Transform, recalculate-normals, and validate features are planned for v0.1.1
+# Currently these options show "not yet implemented" warnings
 ```
 
 ## 📋 Requirements
@@ -170,7 +118,7 @@ workspace/
 ├── img-convert/         # 2D CLI binary
 ├── mesh-core/           # 3D mesh conversion library
 ├── mesh-convert/        # 3D CLI binary
-└── converter-gui/       # ✅ GUI application (v0.2.1)
+└── converter-gui/       # **FUTURE:** GUI (Phase 4, not yet implemented)
 ```
 
 **Design Principles:**
@@ -274,24 +222,17 @@ cargo build --release --target x86_64-pc-windows-gnu
 
 ### 📅 Planned Phases
 
-**Sprint 7: GUI Implementation** ✅ **COMPLETE** (v0.2.1 released)
-- [x] GUI application with egui framework
-- [x] Drag-and-drop file support
-- [x] Visual format selection
-- [x] Direct library integration
-- [x] User-friendly interface
-
 **Sprint 7-8: STEP + CAD** ✅ COMPLETE (v0.2.0)
 - [x] STEP FACETED_BREP extraction (v0.2.0)
 - [x] STEP read support (feature-gated)
 - [x] CAD export documentation
-- [ ] Full STEP B-Rep support (v0.3.0 - opencascade-rs integration) - **DEFERRED**
+- [ ] Full STEP B-Rep support (v0.3.0 - opencascade-rs integration)
 
-**Sprint 9-12: GUI Enhancements** 📅 **FUTURE** (Planned for v0.2.2+)
-- [ ] Batch processing UI
-- [ ] Settings panel and persistence
-- [ ] Preview functionality
-- [ ] Conversion history
+**Sprint 9-12: GUI** 📅 **FUTURE** (Planned for v1.0.0)
+- [ ] egui framework setup
+- [ ] Drag-and-drop interface
+- [ ] Batch processing
+- [ ] Settings panel
 
 ## 🧪 Testing
 
@@ -374,17 +315,7 @@ This repository is currently **private** during initial development. Once mature
   - opencascade-rs integration for full B-Rep support
   - Curved surface support (NURBS, cylinders, spheres)
   - Performance optimizations
-- [x] **v0.2.1** - GUI release ✅ **RELEASED** (January 2026)
-  - Graphical user interface with egui framework
-  - Drag-and-drop file support
-  - Visual format selection
-  - Direct library integration
-  - User-friendly error messages
-- [ ] **v0.2.2** - GUI enhancements (Planned)
-  - Batch processing
-  - Preview functionality
-  - Settings persistence
-- [ ] **v1.0.0** - Public release (Sprint 9-12)
+- [ ] **v1.0.0** - GUI release (Sprint 9-12)
 - [ ] **v1.1.0** - Batch processing improvements
 - [ ] **v1.2.0** - Plugin system for custom formats
 
@@ -418,7 +349,7 @@ For questions or issues during private development phase, contact the repository
 
 ---
 
-**Last Updated:** January 2026  
-**Status:** ✅ v0.2.1 Released - GUI application available! Drag-and-drop interface for easy file conversion.
+**Last Updated:** December 29, 2025  
+**Status:** ✅ v0.2.0 Released - STEP format support added, all features implemented and tested (192 tests passing)
 
 **Note:** v0.2.0 includes STEP format support (FACETED_BREP only). Full B-Rep support with curved surfaces planned for v0.3.0. See Release Roadmap section above.

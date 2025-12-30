@@ -40,7 +40,12 @@
       "Bash(cargo run:*)",
       "WebFetch(domain:raw.githubusercontent.com)",
       "WebFetch(domain:steptools.com)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(cargo deny check:*)",
+      "Bash(cargo install:*)",
+      "Bash(git mv:*)",
+      "Bash(cargo about:*)",
+      "Bash(ls:*)"
     ]
   }
 }

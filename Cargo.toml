@@ -6,6 +6,7 @@ members = [
     "img-convert",
     "mesh-core",
     "mesh-convert",
+    "converter-gui",
 ]
 
 [workspace.package]

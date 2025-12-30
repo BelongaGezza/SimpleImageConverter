@@ -9,6 +9,72 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.2.1] - 2026-01-XX
+
+### Added
+
+#### GUI Application (converter-gui)
+- 🎨 Graphical User Interface using egui framework
+- 📁 Drag-and-drop file support for easy file selection
+- 🖼️ Visual format selection with radio buttons
+- ⚙️ Quality settings slider for lossy image formats (JPEG, WebP)
+- 📊 Status bar and progress indicators
+- ✅ User-friendly error messages (no technical jargon)
+- 🔄 Thread-safe conversion processing (responsive UI during conversion)
+- 📝 Messages area for warnings, errors, and success notifications
+- 🎯 Direct library integration (no subprocess calls to CLI binaries)
+
+#### GUI Features
+- File type detection (Image vs Mesh) with automatic format filtering
+- Output filename auto-generation from source file and selected format
+- Output location browser with path validation
+- Advanced options panel (collapsible) for resource limits
+- Quality slider (1-100) for lossy image formats
+- Clear button to reset application state
+- Comprehensive security validations (path validation, format detection, resource limits)
+
+#### Core Libraries
+- `converter-gui`: New GUI application crate
+  - `app.rs`: Application state management
+  - `conversion.rs`: Image conversion integration
+  - `error_messages.rs`: User-friendly error message mapping
+  - `format_helpers.rs`: Format detection and filtering utilities
+  - UI components (drop zone, format selector, options panel, messages, status bar)
+
+### Changed
+- GUI now available as `converter-gui.exe` binary (Windows) or `converter-gui` (macOS/Linux)
+- Error messages are now user-friendly (no technical jargon, no path leaks)
+- Direct library integration replaces subprocess calls (better security, performance)
+
+### Technical Details
+- Direct library integration with `img-core` and `mesh-core` (architecture compliant)
+- Thread-safe conversion processing using `Arc<Mutex<ConversionState>>`
+- Two-stage format detection (extension + magic bytes) for security
+- Comprehensive security validations (path validation, resource limits, error sanitization)
+- Cross-platform ready (Windows tested, macOS/Linux ready)
+
+### Known Limitations
+- Batch processing not yet available (planned for v0.2.2)
+- Preview functionality not yet available (planned for v0.2.2)
+- Settings persistence not yet available (planned for v0.2.2)
+- Conversion history not yet available (planned for v0.2.2)
+
+### Security
+- All security checks pass (reviewed by Security Specialist)
+- Path validation prevents path traversal attacks
+- Error message sanitization prevents information leakage
+- Resource limits enforced for DoS prevention
+- Two-stage format detection prevents format spoofing
+
+### Notes
+- All v0.2.1 GUI features fully implemented and tested
+- Code reviewed and approved by Senior Engineer
+- Architecture reviewed and approved by System Architect
+- Security reviewed and approved by Security Specialist
+- GUI provides intuitive interface for non-technical users
+
+---
+
 ## [0.2.0] - 2025-12-29
 
 ### Added

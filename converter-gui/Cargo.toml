@@ -1,0 +1,26 @@
+[package]
+name = "converter-gui"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "converter-gui"
+path = "src/main.rs"
+
+[dependencies]
+eframe = "0.27"
+egui = "0.27"
+rfd = "0.14"
+
+# Workspace dependencies
+common = { path = "../common" }
+img-core = { path = "../img-core" }
+mesh-core = { path = "../mesh-core" }
+
+[dev-dependencies]
+tempfile = "3.8"
+

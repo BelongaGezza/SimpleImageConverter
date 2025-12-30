@@ -1,0 +1,23 @@
+# SimpleImageConverter for Windows
+
+## Installation
+
+1. Extract this ZIP file to a location of your choice (e.g., C:\Tools\SimpleImageConverter)
+2. (Optional) Add the directory to your PATH environment variable:
+   - Open System Properties > Environment Variables
+   - Edit PATH and add the directory containing img-convert.exe and mesh-convert.exe
+3. Open Command Prompt or PowerShell and run:
+   img-convert --help
+   mesh-convert --help
+
+## Usage
+
+\\\powershell
+# Convert image
+img-convert input.png jpg
+
+# Convert mesh
+mesh-convert model.stl obj
+\\\
+
+For more information, see the main README.md file.
