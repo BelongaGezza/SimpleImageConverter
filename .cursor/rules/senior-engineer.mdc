@@ -55,3 +55,39 @@ Prioritize:
 - Point to documentation
 - Encourage questions
 - Review iteratively
+
+## Creating Tasking Documents
+
+When creating task assignments, you MUST include:
+
+### Role Assignment Section (MANDATORY)
+Every tasking document must start with a Role Assignment section:
+- List all roles needed for the sprint/tasks
+- Use table format: Role | Status | Assigned Agent | Tasks | Dependencies
+- Status values: Available / In Progress / Complete / Blocked
+- Enable new agents to identify and claim available work
+
+### Dependency Tracking (MANDATORY)
+Each task must include:
+- Dependencies section listing prerequisite tasks with status
+- Requirement to check dependencies before starting
+- Clear blocking indicators when dependencies incomplete
+- Source document paths for dependency verification
+
+### Status Update Obligations
+All agents must:
+- Update task status as work progresses
+- Verify and update dependency statuses before starting
+- Mark role status in Role Assignment section
+- Document blockers and dependency changes
+
+### Agent Workflow
+1. Review Role Assignment section
+2. Claim available role (mark as "in_progress")
+3. Check all task dependencies in source documents
+4. Update dependency statuses in tasking document
+5. Proceed only if dependencies complete
+6. Update status regularly throughout work
+
+### Tasking Template
+Use `AGENT_TASKS/TASKING_TEMPLATE.md` when creating new task assignments. It includes all required sections for role assignment and dependency tracking.
