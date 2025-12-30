@@ -165,9 +165,22 @@ impl AppSettings {
 
         // Write to file
         std::fs::write(&config_path, content).map_err(|e| SettingsError::WriteFailed {
-            path: config_path,
+            path: config_path.clone(),
             source: e,
         })?;
+
+        // Set file permissions (Unix only) - read/write for owner, read-only for others
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            if let Ok(metadata) = std::fs::metadata(&config_path) {
+                let mut perms = metadata.permissions();
+                perms.set_mode(0o644); // rw-r--r--
+                let _ = std::fs::set_permissions(&config_path, perms);
+                // Note: We ignore errors here as permissions are not critical for functionality
+                // and may fail in some environments (e.g., read-only filesystem)
+            }
+        }
 
         Ok(())
     }

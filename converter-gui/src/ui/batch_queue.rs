@@ -472,28 +472,41 @@ pub fn render_edit_dialog(ui: &mut Ui, app: &mut ConverterApp) {
                             // Validate and prepare save data
                             let output_path = PathBuf::from(&output_path_str);
 
-                            // Validate output path
-                            match common::validation::validate_file_path(&output_path) {
-                                Ok(()) => {
-                                    should_save = true;
-                                    save_data = Some((
-                                        selected_format,
-                                        output_path,
-                                        quality,
-                                        mesh_options.clone(),
-                                        None,
-                                    ));
-                                }
-                                Err(e) => {
-                                    // Store error message to show after closure
-                                    save_data = Some((
-                                        selected_format,
-                                        output_path,
-                                        quality,
-                                        mesh_options.clone(),
-                                        Some(e.to_string()),
-                                    ));
-                                }
+                            // Validate output path directory exists and is writable
+                            let output_dir_valid = if let Some(parent) = output_path.parent() {
+                                common::validation::validate_directory_path(parent).is_ok()
+                            } else {
+                                false
+                            };
+
+                            // Validate path is not in system directory
+                            let not_system_dir =
+                                crate::utils::validate_output_path_not_system(&output_path).is_ok();
+
+                            if output_dir_valid && not_system_dir {
+                                should_save = true;
+                                save_data = Some((
+                                    selected_format,
+                                    output_path,
+                                    quality,
+                                    mesh_options.clone(),
+                                    None,
+                                ));
+                            } else {
+                                // Store error message to show after closure
+                                let error_msg = if !output_dir_valid {
+                                    "Invalid output directory or directory does not exist"
+                                        .to_string()
+                                } else {
+                                    "Output path is in a system directory".to_string()
+                                };
+                                save_data = Some((
+                                    selected_format,
+                                    output_path,
+                                    quality,
+                                    mesh_options.clone(),
+                                    Some(error_msg),
+                                ));
                             }
                         }
                     });
