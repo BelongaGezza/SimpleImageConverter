@@ -15,11 +15,18 @@ path = "src/main.rs"
 eframe = "0.27"
 egui = "0.27"
 rfd = "0.14"
+image.workspace = true
+serde = { workspace = true }
+toml = "0.8"
+directories = "5.0"
+uuid = { version = "1.0", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
 
 # Workspace dependencies
 common = { path = "../common" }
 img-core = { path = "../img-core" }
 mesh-core = { path = "../mesh-core" }
+thiserror = { workspace = true }
 
 [dev-dependencies]
 tempfile = "3.8"

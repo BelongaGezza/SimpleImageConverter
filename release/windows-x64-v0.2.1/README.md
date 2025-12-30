@@ -386,11 +386,10 @@ This repository is currently **private** during initial development. Once mature
   - Visual format selection
   - Direct library integration
   - User-friendly error messages
-- [ ] **v0.2.2** - GUI enhancements 🟡 **IN DEVELOPMENT** (December 2025)
-  - Batch processing (convert multiple files at once)
-  - Preview functionality (image/mesh preview before conversion)
-  - Settings persistence (save user preferences)
-  - Conversion history (track recent conversions)
+- [ ] **v0.2.2** - GUI enhancements (Planned)
+  - Batch processing
+  - Preview functionality
+  - Settings persistence
 - [ ] **v1.0.0** - Public release (Sprint 9-12)
 - [ ] **v1.1.0** - Batch processing improvements
 - [ ] **v1.2.0** - Plugin system for custom formats

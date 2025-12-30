@@ -7,18 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Planned for v0.2.1 (In Development)
-- GUI application with egui framework
-- Drag-and-drop file support
-- Visual format selection
-- Thread-safe conversion processing
-- User-friendly error messages
+### Planned for v0.2.2 (In Development)
+- Batch processing UI
+- Preview functionality
+- Settings persistence
+- Conversion history
 
-**Status:** 🚧 Development complete, release preparation pending
+**Status:** 🚧 Development starting
 
 ---
 
-## [0.2.1] - 2025-12-XX (In Development - Not Yet Released)
+## [0.2.1] - 2025-12-30
 
 ### Added
 

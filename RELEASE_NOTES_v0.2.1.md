@@ -1,9 +1,9 @@
 # Simple Image Converter v0.2.1 - GUI Release (Draft)
 
-**Release Date:** TBD (December 2025)  
+**Release Date:** December 30, 2025  
 **Type:** Feature Release  
 **Target:** v0.2.1  
-**Status:** 🚧 **IN DEVELOPMENT** - Not yet released
+**Status:** ✅ **RELEASED**
 
 ---
 
@@ -103,7 +103,7 @@ If you're currently using the CLI tools (`img-convert` and `mesh-convert`), the 
 
 - **README.md** - Updated with GUI installation and usage instructions
 - **CHANGELOG.md** - Complete list of changes in v0.2.1
-- **GUI Usage Guide** - Detailed guide for GUI features (coming soon)
+- **GUI Usage Guide** (`docs/GUI_USAGE_GUIDE.md`) - Detailed guide for GUI features
 
 ### 🙏 Acknowledgments
 
