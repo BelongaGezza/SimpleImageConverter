@@ -3,9 +3,15 @@
 
 //! Main application state and window setup for Simple Image Converter GUI
 
+use crate::conversion;
+use crate::error_messages;
 use crate::ui;
+use crate::utils;
+use common::limits::ResourceLimits;
+use mesh_core::ConversionOptions;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
+use std::thread;
 use std::time::Instant;
 
 /// Main application struct implementing eframe::App
@@ -122,12 +128,10 @@ pub enum MessageType {
     /// Informational message (blue)
     Info,
     /// Warning message (yellow)
-    #[allow(dead_code)] // Will be used when conversion warnings are implemented
     Warning,
     /// Error message (red)
     Error,
     /// Success message (green)
-    #[allow(dead_code)] // Will be used when conversion success messages are implemented
     Success,
 }
 
@@ -139,13 +143,10 @@ pub enum Status {
     /// Ready for file selection and conversion
     Ready,
     /// Conversion in progress (with start time for progress tracking)
-    #[allow(dead_code)] // Will be used when conversion thread is implemented (Task 3.4)
     Converting { start_time: Instant },
     /// Conversion completed successfully (with output path)
-    #[allow(dead_code)] // Will be used when conversion thread is implemented (Task 3.4)
     Success { output_path: PathBuf },
     /// Conversion failed (with user-friendly error message)
-    #[allow(dead_code)] // Will be used when conversion thread is implemented (Task 3.4)
     Error { message: String },
 }
 
@@ -154,7 +155,6 @@ pub enum Status {
 /// This struct is wrapped in `Arc<Mutex<>>` to allow safe sharing between
 /// the conversion thread and the UI thread.
 #[derive(Debug)]
-#[allow(dead_code)] // Will be used when conversion thread is implemented (Task 3.4)
 pub struct ConversionState {
     /// Current conversion status
     pub status: ConversionStatus,
@@ -168,7 +168,6 @@ pub struct ConversionState {
 ///
 /// Used by the conversion thread to communicate status updates to the UI thread.
 #[derive(Debug, Clone)]
-#[allow(dead_code)] // Will be used when conversion thread is implemented (Task 3.4)
 pub enum ConversionStatus {
     /// Ready to start conversion
     Ready,
@@ -207,6 +206,64 @@ impl Default for ConverterApp {
 
 impl eframe::App for ConverterApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        // Check conversion state and update UI if conversion completed
+        let conversion_completed = if let Some(ref conversion_state) = self.conversion_state {
+            let state = conversion_state.lock().unwrap();
+            match &state.status {
+                ConversionStatus::Success { output_path } => {
+                    // Conversion completed successfully - extract data before dropping lock
+                    let filename = output_path
+                        .file_name()
+                        .and_then(|n| n.to_str())
+                        .unwrap_or("file")
+                        .to_string();
+                    let output_path = output_path.clone();
+                    Some(Ok((filename, output_path)))
+                }
+                ConversionStatus::Error { message } => {
+                    // Conversion failed - extract message before dropping lock
+                    Some(Err(message.clone()))
+                }
+                ConversionStatus::Converting { .. } => {
+                    // Update status to show conversion in progress
+                    if !matches!(self.status, Status::Converting { .. }) {
+                        self.status = Status::Converting {
+                            start_time: Instant::now(),
+                        };
+                    }
+                    // Request repaint to update progress indicator
+                    ctx.request_repaint();
+                    None
+                }
+                ConversionStatus::Ready => {
+                    // Conversion thread is ready but hasn't started yet
+                    // This shouldn't happen, but handle it gracefully
+                    None
+                }
+            }
+        } else {
+            None
+        };
+
+        // Handle conversion completion outside the lock
+        if let Some(result) = conversion_completed {
+            match result {
+                Ok((filename, output_path)) => {
+                    self.add_message(
+                        format!("File converted successfully: {}", filename),
+                        MessageType::Success,
+                    );
+                    self.status = Status::Success { output_path };
+                }
+                Err(message) => {
+                    self.add_message(message.clone(), MessageType::Error);
+                    self.status = Status::Error { message };
+                }
+            }
+            // Clear conversion state
+            self.conversion_state = None;
+        }
+
         // Menu bar
         egui::TopBottomPanel::top("menu_bar").show(ctx, |ui| {
             egui::menu::bar(ui, |ui| {
@@ -265,69 +322,72 @@ impl eframe::App for ConverterApp {
             ui.vertical(|ui| {
                 ui.heading("Simple Image Converter");
                 ui.add_space(10.0);
-                
+
                 // File drop zone
                 ui::drop_zone::render_drop_zone(ui, self);
-                
+
                 // Ensure proper spacing after drop zone - this moves cursor down
                 ui.add_space(20.0);
-                
+
                 // Source file display (compact)
                 if let Some(ref file) = self.source_file {
                     ui.horizontal(|ui| {
                         ui.label("Source File:");
-                        ui.label(file.file_name()
-                            .and_then(|n| n.to_str())
-                            .unwrap_or("Unknown"));
+                        ui.label(
+                            file.file_name()
+                                .and_then(|n| n.to_str())
+                                .unwrap_or("Unknown"),
+                        );
                     });
                     ui.add_space(10.0);
                 }
-                
+
                 // Format selection and Options panel side-by-side
                 // Use available width and ensure no overlap
                 ui.horizontal(|ui| {
                     let available_width = ui.available_width();
                     let spacing = 10.0;
-                    
+
                     // Calculate widths: format selector gets 40%, options gets 60% (with spacing)
-                    let format_width = (available_width * 0.4).min(300.0).max(200.0);
+                    let format_width = (available_width * 0.4).clamp(200.0, 300.0);
                     let options_width = available_width - format_width - spacing;
-                    
+
                     // Left side: Format selection (fixed proportional width)
                     ui.vertical(|ui| {
                         ui.set_width(format_width);
                         ui::format_selector::render_format_selector(ui, self);
                     });
-                    
+
                     ui.add_space(spacing);
-                    
+
                     // Right side: Options panel (takes remaining space)
                     ui.vertical(|ui| {
                         ui.set_width(options_width);
                         ui::options_panel::render_options_panel(ui, self);
                     });
                 });
-                
+
                 ui.add_space(10.0);
-                
+
                 // Action buttons
                 ui.horizontal(|ui| {
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                         if ui.button("Clear").clicked() {
                             self.reset();
                         }
-                        
-                        let can_convert = self.source_file.is_some() 
+
+                        let can_convert = self.source_file.is_some()
                             && self.output_format.is_some()
                             && !matches!(self.status, Status::Converting { .. });
-                        
+
                         ui.set_enabled(can_convert);
                         if ui.button("Convert").clicked() {
-                            // TODO: Start conversion (Task 3.4)
-                            self.add_message(
-                                "Conversion not yet implemented.".to_string(),
-                                MessageType::Info,
-                            );
+                            if let Err(e) = self.start_conversion(ctx.clone()) {
+                                self.add_message(
+                                    format!("Could not start conversion: {}", e),
+                                    MessageType::Error,
+                                );
+                            }
                         }
                     });
                 });
@@ -406,5 +466,165 @@ impl ConverterApp {
         self.conversion_state = None;
         self.show_advanced = false;
     }
-}
 
+    /// Start conversion in a background thread
+    ///
+    /// This method spawns a thread to perform the conversion, keeping the UI
+    /// responsive during the operation. The conversion state is shared between
+    /// the thread and the UI using `Arc<Mutex<>>`.
+    ///
+    /// # Arguments
+    ///
+    /// * `ctx` - egui context for requesting UI repaints during conversion
+    ///
+    /// # Returns
+    ///
+    /// `Ok(())` if conversion thread was started successfully, or an error
+    /// if required state is missing or invalid.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    /// - Source file is not selected
+    /// - Output format is not selected
+    /// - Output path cannot be constructed
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use converter_gui::app::ConverterApp;
+    /// use egui::Context;
+    ///
+    /// let mut app = ConverterApp::default();
+    /// // ... set source file and output format ...
+    /// // app.start_conversion(ctx)?;
+    /// ```
+    pub fn start_conversion(&mut self, ctx: egui::Context) -> Result<(), String> {
+        // Validate required state
+        let source_file = self
+            .source_file
+            .as_ref()
+            .ok_or("No source file selected.")?;
+        let output_format = self.output_format.ok_or("No output format selected.")?;
+
+        // Build output path
+        let output_path = self.output_directory.join(&self.output_filename);
+        if output_path.file_name().is_none() {
+            return Err("Invalid output filename.".to_string());
+        }
+
+        // Validate output filename
+        if let Some(filename) = output_path.file_name().and_then(|n| n.to_str()) {
+            utils::validate_output_filename(filename)
+                .map_err(|e| format!("Invalid output filename: {}", e))?;
+        } else {
+            return Err("Invalid output filename.".to_string());
+        }
+
+        // Build resource limits (convert u64 to usize where needed)
+        let max_file_size_bytes = (self.max_file_size_mb as usize)
+            .saturating_mul(1024)
+            .saturating_mul(1024);
+        let limits = ResourceLimits::builder()
+            .max_file_size(max_file_size_bytes)
+            .max_image_dimension(self.max_dimension)
+            .max_vertices(self.max_vertices.min(usize::MAX as u64) as usize)
+            .max_faces(self.max_faces.min(usize::MAX as u64) as usize)
+            .build();
+
+        // Create conversion state
+        let conversion_state = Arc::new(Mutex::new(ConversionState {
+            status: ConversionStatus::Ready,
+            progress: 0.0,
+            message: String::new(),
+        }));
+        self.conversion_state = Some(conversion_state.clone());
+
+        // Clone data for thread
+        let source_file = source_file.clone();
+        let output_path = output_path.clone();
+        let quality = self.quality;
+        let mesh_transform = self.mesh_transform;
+        let mesh_recalculate_normals = self.mesh_recalculate_normals;
+        let mesh_validate = self.mesh_validate;
+
+        // Spawn conversion thread
+        thread::spawn(move || {
+            // Update state to converting
+            {
+                let mut state = conversion_state.lock().unwrap();
+                state.status = ConversionStatus::Converting {
+                    start_time: Instant::now(),
+                };
+                state.progress = 0.1;
+                state.message = "Starting conversion...".to_string();
+            }
+            ctx.request_repaint();
+
+            // Perform conversion based on file type
+            let result = match output_format {
+                OutputFormat::Image(img_format) => {
+                    // Image conversion
+                    {
+                        let mut state = conversion_state.lock().unwrap();
+                        state.progress = 0.3;
+                        state.message = "Converting image...".to_string();
+                    }
+                    ctx.request_repaint();
+
+                    conversion::convert_image(
+                        &source_file,
+                        &output_path,
+                        img_format,
+                        quality,
+                        &limits,
+                    )
+                    .map_err(|e| error_messages::format_user_message(&e))
+                }
+                OutputFormat::Mesh(mesh_format) => {
+                    // Mesh conversion
+                    {
+                        let mut state = conversion_state.lock().unwrap();
+                        state.progress = 0.3;
+                        state.message = "Converting mesh...".to_string();
+                    }
+                    ctx.request_repaint();
+
+                    let options = ConversionOptions {
+                        transform: mesh_transform,
+                        recalculate_normals: mesh_recalculate_normals,
+                        validate: mesh_validate,
+                    };
+
+                    conversion::convert_mesh(
+                        &source_file,
+                        &output_path,
+                        mesh_format,
+                        options,
+                        &limits,
+                    )
+                    .map_err(|e| error_messages::format_user_message(&e))
+                }
+            };
+
+            // Update conversion state with result
+            {
+                let mut state = conversion_state.lock().unwrap();
+                match result {
+                    Ok(output_path) => {
+                        state.status = ConversionStatus::Success { output_path };
+                        state.progress = 1.0;
+                        state.message = "Conversion completed successfully.".to_string();
+                    }
+                    Err(error_msg) => {
+                        state.status = ConversionStatus::Error { message: error_msg };
+                        state.progress = 0.0;
+                    }
+                }
+            }
+            ctx.request_repaint();
+        });
+
+        Ok(())
+    }
+}

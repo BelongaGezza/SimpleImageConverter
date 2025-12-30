@@ -6,9 +6,11 @@
 //! This is the main entry point for the GUI application using egui/eframe.
 
 mod app;
+mod conversion;
 mod error_messages;
 mod format_helpers;
 mod ui;
+mod utils;
 
 use app::ConverterApp;
 
