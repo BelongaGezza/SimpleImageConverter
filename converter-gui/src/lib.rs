@@ -10,3 +10,6 @@ pub mod history;
 pub mod settings;
 pub mod ui;
 pub mod utils;
+
+#[cfg(feature = "viewer-3d")]
+pub mod preview_3d;

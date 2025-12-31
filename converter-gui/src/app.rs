@@ -11,10 +11,14 @@ use common::limits::ResourceLimits;
 use mesh_core::ConversionOptions;
 use rayon::prelude::*;
 use std::path::PathBuf;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Instant;
 use uuid::Uuid;
+
+#[cfg(feature = "viewer-3d")]
+use crate::preview_3d;
 
 /// Main application struct implementing eframe::App
 ///
@@ -98,6 +102,22 @@ pub struct ConverterApp {
     /// Queue item editing dialog state
     /// Tracks which queue item is being edited (None if dialog is closed)
     pub editing_queue_item: Option<Uuid>,
+
+    /// Confirmation dialog state
+    /// Tracks which confirmation dialog should be shown
+    pub confirmation_dialog: Option<ConfirmationDialog>,
+
+    /// Batch processing state (pause/cancel flags)
+    /// Shared with batch processing thread for thread-safe control
+    pub batch_processing_state: Option<Arc<BatchProcessingState>>,
+
+    /// 3D viewer state for mesh preview (only available with viewer-3d feature)
+    #[cfg(feature = "viewer-3d")]
+    pub viewer_3d: Option<Arc<Mutex<preview_3d::Viewer3D>>>,
+    
+    /// Track which mesh file is currently loaded in the 3D viewer (for reload detection)
+    #[cfg(feature = "viewer-3d")]
+    pub viewer_3d_loaded_file: Option<PathBuf>,
 }
 
 /// File type detection result
@@ -193,6 +213,77 @@ pub struct ConversionState {
     pub message: String,
 }
 
+/// Batch processing state for pause/resume/cancel control
+///
+/// This struct uses atomic flags for thread-safe pause/cancel state management.
+/// It is shared between the UI thread and batch processing thread via Arc.
+#[derive(Debug)]
+pub struct BatchProcessingState {
+    /// Whether batch processing is paused
+    pub paused: AtomicBool,
+    /// Whether batch processing should be cancelled
+    pub cancelled: AtomicBool,
+}
+
+impl BatchProcessingState {
+    /// Create a new batch processing state
+    pub fn new() -> Self {
+        Self {
+            paused: AtomicBool::new(false),
+            cancelled: AtomicBool::new(false),
+        }
+    }
+
+    /// Check if processing is paused
+    pub fn is_paused(&self) -> bool {
+        self.paused.load(Ordering::Acquire)
+    }
+
+    /// Check if processing is cancelled
+    pub fn is_cancelled(&self) -> bool {
+        self.cancelled.load(Ordering::Acquire)
+    }
+
+    /// Pause processing
+    ///
+    /// Note: This method is kept for future UI integration (Sprint 10 Task 2.1).
+    /// It will be used when pause/resume controls are added to the batch queue UI.
+    #[allow(dead_code)]
+    pub fn pause(&self) {
+        self.paused.store(true, Ordering::Release);
+    }
+
+    /// Resume processing
+    ///
+    /// Note: This method is kept for future UI integration (Sprint 10 Task 2.1).
+    /// It will be used when pause/resume controls are added to the batch queue UI.
+    #[allow(dead_code)]
+    pub fn resume(&self) {
+        self.paused.store(false, Ordering::Release);
+    }
+
+    /// Cancel processing
+    ///
+    /// Note: This method is kept for future UI integration (Sprint 10 Task 2.1).
+    /// It will be used when pause/resume controls are added to the batch queue UI.
+    #[allow(dead_code)]
+    pub fn cancel(&self) {
+        self.cancelled.store(true, Ordering::Release);
+    }
+
+    /// Reset state (for new batch processing session)
+    pub fn reset(&self) {
+        self.paused.store(false, Ordering::Release);
+        self.cancelled.store(false, Ordering::Release);
+    }
+}
+
+impl Default for BatchProcessingState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// Conversion status for thread communication
 ///
 /// Used by the conversion thread to communicate status updates to the UI thread.
@@ -239,6 +330,19 @@ pub enum AutoSaveStatus {
     Error,
 }
 
+/// Confirmation dialog type
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ConfirmationDialog {
+    /// Clear all selections
+    ClearAll,
+    /// Clear batch queue
+    ClearQueue,
+    /// Clear conversion history
+    ClearHistory,
+    /// Cancel batch processing
+    CancelBatchProcessing,
+}
+
 impl Default for ConverterApp {
     fn default() -> Self {
         Self {
@@ -274,6 +378,12 @@ impl Default for ConverterApp {
                 status_set_time: None,
             },
             editing_queue_item: None,
+            confirmation_dialog: None,
+            batch_processing_state: None,
+            #[cfg(feature = "viewer-3d")]
+            viewer_3d: Some(Arc::new(Mutex::new(preview_3d::Viewer3D::new()))),
+            #[cfg(feature = "viewer-3d")]
+            viewer_3d_loaded_file: None,
         }
     }
 }
@@ -289,9 +399,12 @@ impl SettingsAutoSave {
     /// Check if debounce period has elapsed and trigger save if needed
     ///
     /// Returns `true` if save should be triggered.
+    ///
+    /// Performance: Uses 500ms debounce to batch rapid settings changes,
+    /// reducing disk I/O and improving UI responsiveness.
     pub fn should_save(&self) -> bool {
         if let Some(last_changed) = self.last_changed {
-            // Debounce period: 500ms
+            // Debounce period: 500ms (optimal balance between responsiveness and performance)
             const DEBOUNCE_MS: u64 = 500;
             last_changed.elapsed().as_millis() >= DEBOUNCE_MS as u128
                 && self.status == AutoSaveStatus::Pending
@@ -339,13 +452,19 @@ impl SettingsAutoSave {
 }
 
 impl eframe::App for ConverterApp {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+    fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
+        // Performance: egui automatically optimizes redraws - only updates when necessary
+        // (mouse movement, window resize, or explicit request_repaint() calls)
+
         // Load settings on first update if not already loaded
         if self.settings.is_none() {
             self.load_settings();
         }
 
-        // Handle settings auto-save debounce
+        // Handle keyboard shortcuts
+        self.handle_keyboard_shortcuts(ctx);
+
+        // Handle settings auto-save debounce (500ms debounce reduces disk I/O)
         if self.settings_auto_save.should_save() {
             if let Some(ref settings) = self.settings {
                 self.settings_auto_save.set_saving();
@@ -376,7 +495,10 @@ impl eframe::App for ConverterApp {
 
         // Check conversion state and update UI if conversion completed
         let conversion_completed = if let Some(ref conversion_state) = self.conversion_state {
-            let state = conversion_state.lock().unwrap();
+            let state = conversion_state.lock().unwrap_or_else(|poisoned| {
+                eprintln!("Conversion state mutex poisoned, using potentially inconsistent data");
+                poisoned.into_inner()
+            });
             match &state.status {
                 ConversionStatus::Success { output_path } => {
                     // Conversion completed successfully - extract data before dropping lock
@@ -498,16 +620,42 @@ impl eframe::App for ConverterApp {
         egui::TopBottomPanel::top("menu_bar").show(ctx, |ui| {
             egui::menu::bar(ui, |ui| {
                 ui.menu_button("File", |ui| {
-                    if ui.button("Open File...").clicked() {
-                        // TODO: Implement file browser
+                    if ui
+                        .button("Open File...")
+                        .on_hover_text("Open file browser to select an image or mesh file (Keyboard: Ctrl+O)")
+                        .clicked()
+                    {
+                        if let Some(file_path) = rfd::FileDialog::new()
+                            .add_filter(
+                                "Image Files",
+                                &["png", "jpg", "jpeg", "bmp", "gif", "tiff", "tif", "webp", "svg"],
+                            )
+                            .add_filter(
+                                "Mesh Files",
+                                &["stl", "obj", "ply", "off", "gltf", "glb", "dxf", "step", "stp"],
+                            )
+                            .add_filter("All Files", &["*"])
+                            .pick_file()
+                        {
+                            crate::ui::drop_zone::handle_file_selection_internal(self, file_path);
+                        }
                         ui.close_menu();
                     }
-                    if ui.button("Clear").clicked() {
+                    if ui
+                        .button("Clear")
+                        .on_hover_text("Clear all selections and reset to initial state (Keyboard: Ctrl+R)")
+                        .clicked()
+                    {
+                        // Note: Confirmation is handled in the main UI, not in menu
                         self.reset();
                         ui.close_menu();
                     }
                     ui.separator();
-                    if ui.button("Exit").clicked() {
+                    if ui
+                        .button("Exit")
+                        .on_hover_text("Exit the application. Settings will be saved automatically.")
+                        .clicked()
+                    {
                         // Save settings before exiting
                         if let Err(e) = self.save_settings() {
                             eprintln!("Failed to save settings on exit: {}", e);
@@ -517,7 +665,11 @@ impl eframe::App for ConverterApp {
                 });
 
                 ui.menu_button("Edit", |ui| {
-                    if ui.button("Preferences...").clicked() {
+                    if ui
+                        .button("Preferences...")
+                        .on_hover_text("Open settings panel to configure application preferences")
+                        .clicked()
+                    {
                         // Toggle settings panel visibility
                         self.show_settings_panel = !self.show_settings_panel;
                         ui.close_menu();
@@ -525,12 +677,20 @@ impl eframe::App for ConverterApp {
                 });
 
                 ui.menu_button("Help", |ui| {
-                    if ui.button("About").clicked() {
+                    if ui
+                        .button("About")
+                        .on_hover_text("Show information about Simple Image Converter")
+                        .clicked()
+                    {
                         // TODO: Implement about dialog
                         ui.close_menu();
                     }
                     ui.separator();
-                    if ui.button("Source Code").clicked() {
+                    if ui
+                        .button("Source Code")
+                        .on_hover_text("Open the GitHub repository in your default browser")
+                        .clicked()
+                    {
                         // Open GitHub repository in default browser
                         let repo_url = "https://github.com/BelongaGezza/SimpleImageConverter";
                         if let Err(e) = open::that(repo_url) {
@@ -546,7 +706,11 @@ impl eframe::App for ConverterApp {
                         }
                         ui.close_menu();
                     }
-                    if ui.button("License").clicked() {
+                    if ui
+                        .button("License")
+                        .on_hover_text("View the project license (MIT OR Apache-2.0) in your browser")
+                        .clicked()
+                    {
                         // Open GitHub license page in default browser
                         // Since the project uses dual license (MIT OR Apache-2.0),
                         // we'll link to the main repository where both licenses are available
@@ -662,40 +826,162 @@ impl eframe::App for ConverterApp {
                                             }
                                         }
                                         Some(crate::app::FileType::Mesh) => {
-                                            // Show mesh metadata preview
-                                            let limits = ResourceLimits::default();
-                                            match crate::ui::preview::get_mesh_metadata(
-                                                source_file,
-                                                &limits,
-                                            ) {
-                                                Ok(metadata) => {
-                                                    ui.label(format!(
-                                                        "Format: {:?}",
-                                                        metadata.format
-                                                    ));
-                                                    ui.label(format!(
-                                                        "Vertices: {}",
-                                                        metadata.vertex_count
-                                                    ));
-                                                    ui.label(format!(
-                                                        "Faces: {}",
-                                                        metadata.face_count
-                                                    ));
-                                                    ui.label(format!(
-                                                        "Normals: {}",
-                                                        if metadata.has_normals {
-                                                            "Yes"
-                                                        } else {
-                                                            "No"
+                                            #[cfg(feature = "viewer-3d")]
+                                            {
+                                                // Try to show 3D viewer if available
+                                                if let Some(ref viewer_arc) = self.viewer_3d {
+                                                    let mut viewer = viewer_arc.lock().unwrap();
+                                                    
+                                                    // Load mesh if not already loaded or if file changed
+                                                    let should_load = match &self.viewer_3d_loaded_file {
+                                                        Some(loaded_path) if loaded_path == source_file => {
+                                                            // Same file already loaded, no need to reload
+                                                            false
                                                         }
-                                                    ));
-                                                    ui.label(format!(
-                                                        "UVs: {}",
-                                                        if metadata.has_uvs { "Yes" } else { "No" }
-                                                    ));
+                                                        _ => {
+                                                            // Different file or no file loaded, need to load
+                                                            true
+                                                        }
+                                                    };
+                                                    
+                                                    if should_load {
+                                                        // Load mesh for 3D viewer
+                                                        let limits = ResourceLimits::default();
+                                                        match std::fs::read(source_file) {
+                                                            Ok(input_data) => {
+                                                                match mesh_core::FormatRegistry::detect_from_path(source_file) {
+                                                                    Ok(format) => {
+                                                                        let mesh_limits = ResourceLimits::builder()
+                                                                            .max_file_size(limits.max_file_size)
+                                                                            .max_vertices(limits.max_vertices)
+                                                                            .max_faces(limits.max_faces)
+                                                                            .build();
+                                                                        match mesh_core::FormatRegistry::get_reader_with_limits(format, mesh_limits) {
+                                                                            Ok(reader) => {
+                                                                                match reader.read(&input_data) {
+                                                                                    Ok(mesh) => {
+                                                                                        viewer.set_mesh(Arc::new(mesh));
+                                                                                        // Track that this file is now loaded
+                                                                                        self.viewer_3d_loaded_file = Some(source_file.clone());
+                                                                                    }
+                                                                                    Err(e) => {
+                                                                                        // Show error but don't crash
+                                                                                        ui.label(format!("Failed to load mesh: {}", e));
+                                                                                        self.viewer_3d_loaded_file = None;
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                            Err(e) => {
+                                                                                ui.label(format!("Failed to get mesh reader: {}", e));
+                                                                                self.viewer_3d_loaded_file = None;
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                    Err(e) => {
+                                                                        ui.label(format!("Failed to detect mesh format: {}", e));
+                                                                        self.viewer_3d_loaded_file = None;
+                                                                    }
+                                                                }
+                                                            }
+                                                            Err(e) => {
+                                                                ui.label(format!("Failed to read file: {}", e));
+                                                                self.viewer_3d_loaded_file = None;
+                                                            }
+                                                        }
+                                                    }
+                                                    
+                                                    // Render mode controls
+                                                    ui.horizontal(|ui| {
+                                                        ui.label("Render Mode:");
+                                                        if ui.selectable_label(
+                                                            viewer.render_mode() == preview_3d::RenderMode::Solid,
+                                                            "Solid"
+                                                        ).clicked() {
+                                                            viewer.set_render_mode(preview_3d::RenderMode::Solid);
+                                                        }
+                                                        if ui.selectable_label(
+                                                            viewer.render_mode() == preview_3d::RenderMode::Wireframe,
+                                                            "Wireframe"
+                                                        ).clicked() {
+                                                            viewer.set_render_mode(preview_3d::RenderMode::Wireframe);
+                                                        }
+                                                        
+                                                        ui.add_space(10.0);
+                                                        
+                                                        // Camera reset button
+                                                        if ui.button("Reset Camera").clicked() {
+                                                            viewer.reset_camera();
+                                                        }
+                                                    });
+                                                    
+                                                    ui.add_space(5.0);
+                                                    
+                                                    // Allocate space for 3D viewer
+                                                    let viewer_size = egui::Vec2::new(
+                                                        ui.available_width(),
+                                                        400.0_f32.min(ui.available_height() * 0.6)
+                                                    );
+                                                    
+                                                    // Render 3D viewer
+                                                    let _response = viewer.render(ui, viewer_size, frame);
+                                                    
+                                                    // Show mesh info below viewer (if mesh is loaded)
+                                                    if viewer.has_mesh() {
+                                                        // Get mesh metadata for display
+                                                        let limits = ResourceLimits::default();
+                                                        if let Ok(metadata) = crate::ui::preview::get_mesh_metadata(
+                                                            source_file,
+                                                            &limits,
+                                                        ) {
+                                                            ui.add_space(5.0);
+                                                            ui.separator();
+                                                            ui.add_space(5.0);
+                                                            ui.label(format!("Format: {:?}", metadata.format));
+                                                            ui.label(format!("Vertices: {}", metadata.vertex_count));
+                                                            ui.label(format!("Faces: {}", metadata.face_count));
+                                                            ui.label(format!("Normals: {}", if metadata.has_normals { "Yes" } else { "No" }));
+                                                            ui.label(format!("UVs: {}", if metadata.has_uvs { "Yes" } else { "No" }));
+                                                        }
+                                                    }
+                                                } else {
+                                                    // Fallback: show mesh metadata
+                                                    let limits = ResourceLimits::default();
+                                                    match crate::ui::preview::get_mesh_metadata(
+                                                        source_file,
+                                                        &limits,
+                                                    ) {
+                                                        Ok(metadata) => {
+                                                            ui.label(format!("Format: {:?}", metadata.format));
+                                                            ui.label(format!("Vertices: {}", metadata.vertex_count));
+                                                            ui.label(format!("Faces: {}", metadata.face_count));
+                                                            ui.label(format!("Normals: {}", if metadata.has_normals { "Yes" } else { "No" }));
+                                                            ui.label(format!("UVs: {}", if metadata.has_uvs { "Yes" } else { "No" }));
+                                                        }
+                                                        Err(_) => {
+                                                            ui.label("Mesh metadata not available");
+                                                        }
+                                                    }
                                                 }
-                                                Err(_) => {
-                                                    ui.label("Mesh metadata not available");
+                                            } // Close cfg(feature = "viewer-3d") block
+                                            
+                                            #[cfg(not(feature = "viewer-3d"))]
+                                            {
+                                                // Show mesh metadata preview (fallback when viewer-3d feature not enabled)
+                                                let limits = ResourceLimits::default();
+                                                match crate::ui::preview::get_mesh_metadata(
+                                                    source_file,
+                                                    &limits,
+                                                ) {
+                                                    Ok(metadata) => {
+                                                        ui.label(format!("Format: {:?}", metadata.format));
+                                                        ui.label(format!("Vertices: {}", metadata.vertex_count));
+                                                        ui.label(format!("Faces: {}", metadata.face_count));
+                                                        ui.label(format!("Normals: {}", if metadata.has_normals { "Yes" } else { "No" }));
+                                                        ui.label(format!("UVs: {}", if metadata.has_uvs { "Yes" } else { "No" }));
+                                                    }
+                                                    Err(_) => {
+                                                        ui.label("Mesh metadata not available");
+                                                    }
                                                 }
                                             }
                                         }
@@ -712,7 +998,7 @@ impl eframe::App for ConverterApp {
                             self.show_preview = !self.show_preview;
                         }
 
-                        ui.add_space(20.0);
+                        ui.add_space(15.0);
 
                         // Format selection and Options panel side-by-side (below Preview)
                         ui.horizontal(|ui| {
@@ -736,7 +1022,7 @@ impl eframe::App for ConverterApp {
                             });
                         });
 
-                        ui.add_space(20.0);
+                        ui.add_space(15.0);
 
                         // Batch queue panel (collapsible) - REMOVED DUPLICATE
                         ui.collapsing("Batch Processing Queue", |ui| {
@@ -762,7 +1048,7 @@ impl eframe::App for ConverterApp {
                             ui::history_panel::render_history_panel(ui, self);
                         });
 
-                        ui.add_space(20.0);
+                        ui.add_space(15.0);
 
                         // Action buttons
                         ui.horizontal(|ui| {
@@ -772,16 +1058,32 @@ impl eframe::App for ConverterApp {
                                     // Add padding to the right of buttons (left side in RTL layout)
                                     ui.add_space(10.0);
 
-                                    if ui.button("Clear").clicked() {
-                                        self.reset();
-                                    }
+                    if ui
+                        .button("Clear")
+                        .on_hover_text("Clear all selections and reset to initial state (Keyboard: Ctrl+R)")
+                        .clicked()
+                    {
+                        self.confirmation_dialog = Some(ConfirmationDialog::ClearAll);
+                    }
 
                                     let can_convert = self.source_file.is_some()
                                         && self.output_format.is_some()
                                         && !matches!(self.status, Status::Converting { .. });
 
                                     ui.set_enabled(can_convert);
-                                    if ui.button("Convert").clicked() {
+                                    if ui
+                                        .button("Convert")
+                                        .on_hover_text(if can_convert {
+                                            "Start conversion (Keyboard: Enter)"
+                                        } else if self.source_file.is_none() {
+                                            "Select a file first"
+                                        } else if self.output_format.is_none() {
+                                            "Select an output format first"
+                                        } else {
+                                            "Conversion in progress"
+                                        })
+                                        .clicked()
+                                    {
                                         if let Err(e) = self.start_conversion(ctx.clone()) {
                                             self.add_message(
                                                 format!("Could not start conversion: {}", e),
@@ -795,6 +1097,9 @@ impl eframe::App for ConverterApp {
                     }); // Close vertical layout
                 }); // Close ScrollArea
         });
+
+        // Render confirmation dialogs
+        self.render_confirmation_dialogs(ctx);
     }
 }
 
@@ -868,6 +1173,17 @@ impl ConverterApp {
         self.conversion_state = None;
         self.show_advanced = false;
         self.show_preview = true; // Reset preview to expanded state
+        #[cfg(feature = "viewer-3d")]
+        {
+            // Clear 3D viewer state
+            if let Some(ref viewer_arc) = self.viewer_3d {
+                if let Ok(mut viewer) = viewer_arc.lock() {
+                    // Create a new empty viewer to reset state
+                    *viewer = preview_3d::Viewer3D::new();
+                }
+            }
+            self.viewer_3d_loaded_file = None;
+        }
     }
 
     /// Start conversion in a background thread
@@ -955,7 +1271,12 @@ impl ConverterApp {
         thread::spawn(move || {
             // Update state to converting
             {
-                let mut state = conversion_state.lock().unwrap();
+                let mut state = conversion_state.lock().unwrap_or_else(|poisoned| {
+                    eprintln!(
+                        "Conversion state mutex poisoned, using potentially inconsistent data"
+                    );
+                    poisoned.into_inner()
+                });
                 state.status = ConversionStatus::Converting {
                     start_time: Instant::now(),
                 };
@@ -969,7 +1290,10 @@ impl ConverterApp {
                 OutputFormat::Image(img_format) => {
                     // Image conversion
                     {
-                        let mut state = conversion_state.lock().unwrap();
+                        let mut state = conversion_state.lock().unwrap_or_else(|poisoned| {
+                            eprintln!("Conversion state mutex poisoned, using potentially inconsistent data");
+                            poisoned.into_inner()
+                        });
                         state.progress = 0.3;
                         state.message = "Converting image...".to_string();
                     }
@@ -987,7 +1311,10 @@ impl ConverterApp {
                 OutputFormat::Mesh(mesh_format) => {
                     // Mesh conversion
                     {
-                        let mut state = conversion_state.lock().unwrap();
+                        let mut state = conversion_state.lock().unwrap_or_else(|poisoned| {
+                            eprintln!("Conversion state mutex poisoned, using potentially inconsistent data");
+                            poisoned.into_inner()
+                        });
                         state.progress = 0.3;
                         state.message = "Converting mesh...".to_string();
                     }
@@ -1012,7 +1339,12 @@ impl ConverterApp {
 
             // Update conversion state with result
             {
-                let mut state = conversion_state.lock().unwrap();
+                let mut state = conversion_state.lock().unwrap_or_else(|poisoned| {
+                    eprintln!(
+                        "Conversion state mutex poisoned, using potentially inconsistent data"
+                    );
+                    poisoned.into_inner()
+                });
                 match result {
                     Ok(output_path) => {
                         state.status = ConversionStatus::Success { output_path };
@@ -1058,6 +1390,18 @@ impl ConverterApp {
             return Err("Batch queue not initialized".to_string());
         };
 
+        // Create or reset batch processing state
+        let processing_state = if let Some(ref state) = self.batch_processing_state {
+            // Reset existing state
+            state.reset();
+            state.clone()
+        } else {
+            // Create new state
+            let state = Arc::new(BatchProcessingState::new());
+            self.batch_processing_state = Some(state.clone());
+            state
+        };
+
         // Get max concurrent conversions from settings
         let max_concurrent = self
             .settings
@@ -1082,15 +1426,55 @@ impl ConverterApp {
 
         // Store Arc reference in app state for thread-safe updates
         let queue_arc_for_thread = queue_arc.clone();
+        let processing_state_for_thread = processing_state.clone();
 
         // Spawn batch processing thread
         let ctx_clone = ctx.clone();
         std::thread::spawn(move || {
             // Process items in parallel batches
             loop {
+                // Check for cancellation
+                if processing_state_for_thread.is_cancelled() {
+                    // Mark all pending items as cancelled
+                    let mut queue = queue_arc_for_thread.lock().unwrap_or_else(|poisoned| {
+                        eprintln!("Queue mutex poisoned, using potentially inconsistent data");
+                        poisoned.into_inner()
+                    });
+                    for item in queue.items.iter_mut() {
+                        if item.status == crate::batch_queue::BatchItemStatus::Pending {
+                            item.status = crate::batch_queue::BatchItemStatus::Cancelled;
+                        }
+                    }
+                    break;
+                }
+
+                // Wait if paused
+                while processing_state_for_thread.is_paused()
+                    && !processing_state_for_thread.is_cancelled()
+                {
+                    std::thread::sleep(std::time::Duration::from_millis(100));
+                }
+
+                // Check for cancellation again after pause
+                if processing_state_for_thread.is_cancelled() {
+                    let mut queue = queue_arc_for_thread.lock().unwrap_or_else(|poisoned| {
+                        eprintln!("Queue mutex poisoned, using potentially inconsistent data");
+                        poisoned.into_inner()
+                    });
+                    for item in queue.items.iter_mut() {
+                        if item.status == crate::batch_queue::BatchItemStatus::Pending {
+                            item.status = crate::batch_queue::BatchItemStatus::Cancelled;
+                        }
+                    }
+                    break;
+                }
+
                 // Get batch of pending items (up to max_concurrent)
                 let pending_ids: Vec<uuid::Uuid> = {
-                    let queue = queue_arc_for_thread.lock().unwrap();
+                    let queue = queue_arc_for_thread.lock().unwrap_or_else(|poisoned| {
+                        eprintln!("Queue mutex poisoned, using potentially inconsistent data");
+                        poisoned.into_inner()
+                    });
                     queue.get_pending_items(max_concurrent)
                 };
 
@@ -1101,12 +1485,16 @@ impl ConverterApp {
 
                 // Process items in parallel using rayon
                 pending_ids.par_iter().for_each(|&id| {
-                    Self::process_batch_item_parallel(
-                        queue_arc_for_thread.clone(),
-                        id,
-                        &limits,
-                        ctx_clone.clone(),
-                    );
+                    // Check for cancellation before processing each item
+                    if !processing_state_for_thread.is_cancelled() {
+                        Self::process_batch_item_parallel(
+                            queue_arc_for_thread.clone(),
+                            id,
+                            &limits,
+                            ctx_clone.clone(),
+                            processing_state_for_thread.clone(),
+                        );
+                    }
                 });
 
                 // Request UI repaint after batch
@@ -1116,10 +1504,104 @@ impl ConverterApp {
 
         // Sync with thread-safe queue
         if let Some(ref mut queue) = self.batch_queue {
-            *queue = queue_arc.lock().unwrap().clone();
+            *queue = queue_arc
+                .lock()
+                .unwrap_or_else(|poisoned| {
+                    eprintln!(
+                        "Queue mutex poisoned during sync, using potentially inconsistent data"
+                    );
+                    poisoned.into_inner()
+                })
+                .clone();
         }
 
         Ok(())
+    }
+
+    /// Pause batch processing
+    ///
+    /// Pauses the current batch processing operation. Processing can be resumed
+    /// by calling `resume_batch_processing()`.
+    ///
+    /// # Returns
+    ///
+    /// `Ok(())` if processing was paused, or an error if no processing is active.
+    ///
+    /// Note: This method is kept for future UI integration (Sprint 10 Task 2.1).
+    /// It will be called when pause/resume controls are added to the batch queue UI.
+    #[allow(dead_code)]
+    pub fn pause_batch_processing(&self) -> Result<(), String> {
+        if let Some(ref state) = self.batch_processing_state {
+            state.pause();
+            Ok(())
+        } else {
+            Err("No batch processing active".to_string())
+        }
+    }
+
+    /// Resume batch processing
+    ///
+    /// Resumes a paused batch processing operation.
+    ///
+    /// # Returns
+    ///
+    /// `Ok(())` if processing was resumed, or an error if no processing is active.
+    ///
+    /// Note: This method is kept for future UI integration (Sprint 10 Task 2.1).
+    /// It will be called when pause/resume controls are added to the batch queue UI.
+    #[allow(dead_code)]
+    pub fn resume_batch_processing(&self) -> Result<(), String> {
+        if let Some(ref state) = self.batch_processing_state {
+            state.resume();
+            Ok(())
+        } else {
+            Err("No batch processing active".to_string())
+        }
+    }
+
+    /// Cancel batch processing
+    ///
+    /// Cancels the current batch processing operation. Items currently being
+    /// processed will finish, but pending items will be marked as cancelled.
+    ///
+    /// # Returns
+    ///
+    /// `Ok(())` if processing was cancelled, or an error if no processing is active.
+    ///
+    /// Note: This method is kept for future UI integration (Sprint 10 Task 2.1).
+    /// It will be called when pause/resume controls are added to the batch queue UI.
+    #[allow(dead_code)]
+    pub fn cancel_batch_processing(&self) -> Result<(), String> {
+        if let Some(ref state) = self.batch_processing_state {
+            state.cancel();
+            Ok(())
+        } else {
+            Err("No batch processing active".to_string())
+        }
+    }
+
+    /// Check if batch processing is paused
+    ///
+    /// Note: This method is kept for future UI integration (Sprint 10 Task 2.1).
+    /// It will be used to display pause state in the batch queue UI.
+    #[allow(dead_code)]
+    pub fn is_batch_processing_paused(&self) -> bool {
+        self.batch_processing_state
+            .as_ref()
+            .map(|s| s.is_paused())
+            .unwrap_or(false)
+    }
+
+    /// Check if batch processing is cancelled
+    ///
+    /// Note: This method is kept for future UI integration (Sprint 10 Task 2.1).
+    /// It will be used to display cancellation state in the batch queue UI.
+    #[allow(dead_code)]
+    pub fn is_batch_processing_cancelled(&self) -> bool {
+        self.batch_processing_state
+            .as_ref()
+            .map(|s| s.is_cancelled())
+            .unwrap_or(false)
     }
 
     /// Process a batch item in parallel (thread-safe)
@@ -1131,10 +1613,32 @@ impl ConverterApp {
         id: uuid::Uuid,
         limits: &ResourceLimits,
         ctx: egui::Context,
+        processing_state: Arc<BatchProcessingState>,
     ) {
+        // Check for cancellation before starting
+        if processing_state.is_cancelled() {
+            // Mark item as cancelled
+            let mut guard = queue.lock().unwrap_or_else(|poisoned| {
+                eprintln!(
+                    "Queue mutex poisoned in cancel check, using potentially inconsistent data"
+                );
+                poisoned.into_inner()
+            });
+            if let Some(item) = guard.items.iter_mut().find(|i| i.id == id) {
+                if item.status == crate::batch_queue::BatchItemStatus::Pending {
+                    item.status = crate::batch_queue::BatchItemStatus::Cancelled;
+                }
+            }
+            return;
+        }
         // Mark as processing (thread-safe)
         let can_process = {
-            let mut guard = queue.lock().unwrap();
+            let mut guard = queue.lock().unwrap_or_else(|poisoned| {
+                eprintln!(
+                    "Queue mutex poisoned in mark_processing, using potentially inconsistent data"
+                );
+                poisoned.into_inner()
+            });
             guard.mark_processing(id)
         };
 
@@ -1144,7 +1648,10 @@ impl ConverterApp {
 
         // Get item data (clone to avoid holding lock during conversion)
         let item_data = {
-            let guard = queue.lock().unwrap();
+            let guard = queue.lock().unwrap_or_else(|poisoned| {
+                eprintln!("Queue mutex poisoned in get_item, using potentially inconsistent data");
+                poisoned.into_inner()
+            });
             guard.get_item(id).cloned()
         };
 
@@ -1182,11 +1689,21 @@ impl ConverterApp {
                 }
             };
 
-            // Update status (thread-safe)
+            // Update status (thread-safe) - single lock acquisition for efficiency
             {
-                let mut guard = queue.lock().unwrap();
+                let mut guard = queue.lock().unwrap_or_else(|poisoned| {
+                    eprintln!("Queue mutex poisoned in update_status, using potentially inconsistent data");
+                    poisoned.into_inner()
+                });
+
+                // Update item status and error field in single operation to minimize lock contention
                 match result {
                     Ok(output_path) => {
+                        // Set error field first if item exists
+                        if let Some(item) = guard.get_item_mut(id) {
+                            item.error = None;
+                        }
+                        // Update status (this also handles processing_ids and progress)
                         guard.update_item_status(
                             id,
                             crate::batch_queue::BatchItemStatus::Completed { output_path },
@@ -1194,10 +1711,11 @@ impl ConverterApp {
                         );
                     }
                     Err(error_msg) => {
-                        // Also set error field
+                        // Set error field first if item exists
                         if let Some(item) = guard.get_item_mut(id) {
                             item.error = Some(error_msg.clone());
                         }
+                        // Update status (this also handles processing_ids and progress)
                         guard.update_item_status(
                             id,
                             crate::batch_queue::BatchItemStatus::Failed { error: error_msg },
@@ -1281,6 +1799,173 @@ impl ConverterApp {
                 // Settings file doesn't exist or is corrupted - use defaults
                 self.add_message(format!("Using default settings: {}", e), MessageType::Info);
                 self.settings = Some(crate::settings::AppSettings::default());
+            }
+        }
+    }
+
+    /// Handle keyboard shortcuts
+    ///
+    /// Processes common keyboard shortcuts for application actions.
+    fn handle_keyboard_shortcuts(&mut self, ctx: &egui::Context) {
+        let modifiers = ctx.input(|i| i.modifiers);
+        let pressed_keys = ctx.input(|i| i.keys_down.clone());
+
+        // Ctrl+O: Open file
+        if modifiers.ctrl && pressed_keys.contains(&egui::Key::O) {
+            if let Some(file_path) = rfd::FileDialog::new()
+                .add_filter(
+                    "Image Files",
+                    &[
+                        "png", "jpg", "jpeg", "bmp", "gif", "tiff", "tif", "webp", "svg",
+                    ],
+                )
+                .add_filter(
+                    "Mesh Files",
+                    &[
+                        "stl", "obj", "ply", "off", "gltf", "glb", "dxf", "step", "stp",
+                    ],
+                )
+                .add_filter("All Files", &["*"])
+                .pick_file()
+            {
+                crate::ui::drop_zone::handle_file_selection_internal(self, file_path);
+            }
+        }
+
+        // Ctrl+S: Save settings (if settings panel is visible)
+        if modifiers.ctrl && pressed_keys.contains(&egui::Key::S) && self.show_settings_panel {
+            if let Err(e) = self.save_settings() {
+                self.add_message(
+                    format!("Failed to save settings: {}", e),
+                    MessageType::Error,
+                );
+            } else {
+                self.add_message("Settings saved".to_string(), MessageType::Success);
+            }
+        }
+
+        // Ctrl+R: Reset/Clear
+        if modifiers.ctrl && pressed_keys.contains(&egui::Key::R) {
+            self.reset();
+        }
+
+        // Escape: Close dialogs or clear selection
+        if pressed_keys.contains(&egui::Key::Escape) {
+            // Close edit dialog if open
+            if self.editing_queue_item.is_some() {
+                self.editing_queue_item = None;
+            }
+        }
+
+        // Enter: Start conversion (if file and format selected)
+        if pressed_keys.contains(&egui::Key::Enter) {
+            if self.source_file.is_some()
+                && self.output_format.is_some()
+                && !matches!(self.status, Status::Converting { .. })
+            {
+                if let Err(e) = self.start_conversion(ctx.clone()) {
+                    self.add_message(
+                        format!("Could not start conversion: {}", e),
+                        MessageType::Error,
+                    );
+                }
+            }
+        }
+    }
+
+    /// Render confirmation dialogs
+    ///
+    /// Shows confirmation dialogs based on the current confirmation_dialog state.
+    fn render_confirmation_dialogs(&mut self, ctx: &egui::Context) {
+        if let Some(dialog_type) = self.confirmation_dialog {
+            let (title, message, action_text) = match dialog_type {
+                ConfirmationDialog::ClearAll => (
+                    "Clear All?",
+                    "Are you sure you want to clear all selections?\nThis will reset the file selection, format, and options.",
+                    "Clear",
+                ),
+                ConfirmationDialog::ClearQueue => (
+                    "Clear Queue?",
+                    "Are you sure you want to clear the entire batch queue?\nThis action cannot be undone.",
+                    "Clear Queue",
+                ),
+                ConfirmationDialog::ClearHistory => (
+                    "Clear History?",
+                    "Are you sure you want to clear all conversion history?\nThis action cannot be undone.",
+                    "Clear History",
+                ),
+                ConfirmationDialog::CancelBatchProcessing => (
+                    "Cancel Batch Processing?",
+                    "Are you sure you want to cancel batch processing?\nItems currently processing will finish, but pending items will be cancelled.",
+                    "Cancel Processing",
+                ),
+            };
+
+            let mut should_close = false;
+            let mut should_confirm = false;
+
+            egui::Window::new(title)
+                .collapsible(false)
+                .resizable(false)
+                .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
+                .show(ctx, |ui| {
+                    ui.vertical(|ui| {
+                        ui.label(message);
+                        ui.add_space(10.0);
+                        ui.horizontal(|ui| {
+                            if ui.button("Cancel").clicked() {
+                                should_close = true;
+                            }
+                            ui.with_layout(
+                                egui::Layout::right_to_left(egui::Align::Center),
+                                |ui| {
+                                    if ui.button(action_text).clicked() {
+                                        should_confirm = true;
+                                    }
+                                },
+                            );
+                        });
+                    });
+                });
+
+            if should_close || should_confirm {
+                self.confirmation_dialog = None;
+                if should_confirm {
+                    // Execute the action based on dialog type
+                    match dialog_type {
+                        ConfirmationDialog::ClearAll => {
+                            self.reset();
+                        }
+                        ConfirmationDialog::ClearQueue => {
+                            if let Some(ref mut queue) = self.batch_queue {
+                                queue.clear();
+                            }
+                            self.add_message("Batch queue cleared".to_string(), MessageType::Info);
+                        }
+                        ConfirmationDialog::ClearHistory => {
+                            if let Some(ref mut history) = self.history {
+                                history.clear();
+                            }
+                            self.add_message(
+                                "Conversion history cleared".to_string(),
+                                MessageType::Info,
+                            );
+                        }
+                        ConfirmationDialog::CancelBatchProcessing => {
+                            if let Err(e) = self.cancel_batch_processing() {
+                                self.add_message(
+                                    format!("Failed to cancel batch processing: {}", e),
+                                    MessageType::Error,
+                                );
+                            } else {
+                                self.add_message(
+                                    "Batch processing cancelled".to_string(),
+                                    MessageType::Info,
+                                );
+                            }
+                        }
+                    }
+                }
             }
         }
     }
