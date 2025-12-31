@@ -1446,8 +1446,159 @@ This reference document provides comprehensive information for implementing STEP
 
 ---
 
+---
+
+## opencascade-rs Integration (v0.3.0)
+
+### Overview
+
+Starting with v0.3.0, SimpleImageConverter supports full STEP B-Rep reading using `opencascade-rs`, which provides Rust bindings to OpenCASCADE Technology (OCCT). This enables support for MANIFOLD_SOLID_BREP entities with curved surfaces (NURBS, cylinders, spheres, etc.) that cannot be handled by the pure Rust FACETED_BREP extraction.
+
+### Implementation Status
+
+**Current Status:** ✅ **PROTOTYPE COMPLETE** (Sprint 9)  
+**Full Implementation:** 🟡 **IN PROGRESS** (Sprint 10)
+
+**Location:** `mesh-core/src/formats/step_opencascade.rs`
+
+### Architecture
+
+**Hybrid Strategy:**
+1. **Try FACETED_BREP first** (pure Rust, always available, fast)
+2. **Fall back to opencascade-rs** (if enabled and FACETED_BREP fails)
+3. **Error with helpful message** (if both fail or opencascade-rs not available)
+
+**Code Integration:** See `mesh-core/src/formats/step.rs` for fallback mechanism.
+
+### Requirements
+
+**System Dependencies:**
+- OpenCASCADE Technology (OCCT) 7.7+ must be installed
+- CMake 3.18+
+- C++17 compiler (GCC 7+, Clang 5+, or MSVC 2019+)
+
+**Installation:** See `docs/OCCT_INSTALLATION.md` for detailed installation instructions.
+
+### Feature Flag
+
+**Cargo.toml:**
+```toml
+[features]
+step-opencascade = ["opencascade", "opencascade-sys", "step"]
+```
+
+**Build Command:**
+```bash
+cargo build --features step-opencascade
+```
+
+### Binary Size Impact
+
+**Without opencascade-rs:**
+- Base binary: ~5-10 MB
+- With STEP (FACETED_BREP only): ~8-12 MB
+
+**With opencascade-rs (Dynamic Linking - Recommended):**
+- Binary: ~15-25 MB (+10-15 MB from base)
+- OCCT runtime: ~100 MB (separate installation, not in binary)
+- **Total disk space:** ~115-125 MB (if OCCT installed)
+
+**With opencascade-rs (Static Linking):**
+- Binary: ~100-150 MB (+90-140 MB from base)
+- No runtime dependencies
+- **Total disk space:** ~100-150 MB
+
+**Assessment:** ❌ **EXCEEDS TARGET** (<50MB additional)
+- Static linking: +90-140 MB (exceeds target significantly)
+- Dynamic linking: +10-15 MB binary, but requires ~100 MB OCCT runtime
+
+**Mitigation:**
+- ✅ Feature-gated (optional dependency)
+- ✅ Clear documentation of size impact
+- ✅ User choice via feature flags
+- ✅ Dynamic linking recommended (smaller binary)
+
+### Build Complexity
+
+**Build Time Impact:**
+- **opencascade-sys compilation:** 10-30 minutes (first build)
+- **Incremental builds:** 1-5 minutes (depends on changes)
+- **CI/CD impact:** Requires OCCT installation in CI environment
+
+**Assessment:** ⚠️ **HIGH COMPLEXITY**
+- Requires C++ dependency installation
+- Platform-specific configuration
+- Longer build times
+- CI/CD setup complexity
+
+**API Usage Example:**
+
+```rust
+use mesh_core::formats::step_opencascade;
+
+// Extract mesh from STEP file using opencascade-rs
+let limits = ResourceLimits::default();
+let deflection = 0.01; // Tessellation quality (1% of bounding box)
+let mesh = step_opencascade::extract_mesh(step_data, &limits, deflection)?;
+```
+
+**Implementation Details:**
+- Uses `STEPControl_Reader` to read STEP files
+- Uses `BRepMesh_IncrementalMesh` for tessellation
+- Extracts triangulation data from tessellated shapes
+- Deduplicates vertices using quantized coordinates
+- Calculates normals using `recalculate_normals`
+
+**See Also:**
+- `docs/OCCT_INSTALLATION.md` - Installation guide
+- `docs/OPENCASCADE_RS_LIMITATIONS.md` - Limitations and known issues
+- `RESEARCH_OPENCASCADE_RS_SPRINT9.md` - Research findings
+- `ARCHITECT_REVIEW_STEP_IMPLEMENTATION.md` - Architecture decision
+
+### Limitations
+
+**Known Limitations:**
+1. **OCCT Installation Required:** Cannot use without OCCT installed
+2. **Build Complexity:** Requires C++ toolchain and OCCT
+3. **Binary Size:** Significant size increase (especially static linking)
+4. **Cross-Platform:** OCCT installation varies by platform
+5. **Testing:** Requires OCCT for integration tests
+6. **Temporary Files:** OCCT expects file paths, not in-memory data
+7. **Tessellation Quality:** Fixed deflection parameter (0.01), not configurable yet
+8. **Memory Usage:** Scales with model complexity, no built-in limits in OCCT
+
+**Workarounds:**
+- Feature-gated (can build without opencascade-rs)
+- Falls back to FACETED_BREP if opencascade-rs unavailable
+- Clear error messages guide users
+- Dynamic linking recommended (smaller binary)
+- Use ResourceLimits to limit mesh size
+
+**See Also:**
+- `docs/OPENCASCADE_RS_LIMITATIONS.md` - Comprehensive limitations and known issues
+
+### Testing Status
+
+**Prototype Testing:**
+- ✅ Code compiles with feature flag enabled
+- ✅ Error handling tested
+- ✅ Resource limits validation tested
+- ✅ Integration with StepFormat tested (fallback mechanism)
+
+**Deferred (Requires OCCT Installation):**
+- ⏳ Actual STEP file reading with OCCT
+- ⏳ Tessellation testing
+- ⏳ Mesh extraction testing
+- ⏳ Performance testing
+- ⏳ Cross-platform build testing
+
+**See Also:**
+- `JUNIOR_ENGINEER_3D_TASK2.1_COMPLETION.md` - Prototype completion report
+
+---
+
 **Document Status:** Reference Document  
-**Last Updated:** December 27, 2025  
-**Maintained By:** Research Team  
+**Last Updated:** December 30, 2025  
+**Maintained By:** Research Team, Senior Engineer  
 **For:** System Architect, Senior Engineer, Implementation Team
 

@@ -56,38 +56,62 @@ Prioritize:
 - Encourage questions
 - Review iteratively
 
-## Creating Tasking Documents
+---
 
-When creating task assignments, you MUST include:
+## Creating Tasking Documents (CRITICAL)
 
-### Role Assignment Section (MANDATORY)
-Every tasking document must start with a Role Assignment section:
-- List all roles needed for the sprint/tasks
-- Use table format: Role | Status | Assigned Agent | Tasks | Dependencies
-- Status values: Available / In Progress / Complete / Blocked
-- Enable new agents to identify and claim available work
+Use the **Role-Claiming Model** for all task assignments.
 
-### Dependency Tracking (MANDATORY)
-Each task must include:
-- Dependencies section listing prerequisite tasks with status
-- Requirement to check dependencies before starting
-- Clear blocking indicators when dependencies incomplete
-- Source document paths for dependency verification
+### How It Works
 
-### Status Update Obligations
-All agents must:
-- Update task status as work progresses
-- Verify and update dependency statuses before starting
-- Mark role status in Role Assignment section
-- Document blockers and dependency changes
+1. Agents arrive untyped
+2. Agents read the Role Assignment table
+3. Agents claim an available role (Status = "Available")
+4. Agents read the persona file and become that role
+5. Agents mark the role as "In Progress"
 
-### Agent Workflow
-1. Review Role Assignment section
-2. Claim available role (mark as "in_progress")
-3. Check all task dependencies in source documents
-4. Update dependency statuses in tasking document
-5. Proceed only if dependencies complete
-6. Update status regularly throughout work
+### Required Sections
 
-### Tasking Template
-Use `AGENT_TASKS/TASKING_TEMPLATE.md` when creating new task assignments. It includes all required sections for role assignment and dependency tracking.
+#### 1. Role Selection Section (FIRST)
+
+```markdown
+## CRITICAL: Role Selection (READ FIRST - STOP HERE UNTIL COMPLETE)
+
+**You are an unassigned agent. You MUST claim a role before proceeding.**
+
+Look at the Role Assignment table. Find a role with Status = `Available`.
+Claim it by:
+1. Updating Status to `In Progress`
+2. Adding your session ID to Assigned Agent
+3. Reading the persona file and adopting that identity
+
+If all roles are taken, STOP.
+```
+
+#### 2. Role Assignment Table (MANDATORY)
+
+**Include `Persona File` column:**
+
+```markdown
+| Role | Persona File | Status | Assigned Agent | Tasks | Dependencies |
+|------|--------------|--------|----------------|-------|--------------|
+| UI Designer (Jamie Chen) | `.agents/ui-designer.md` | Available | - | Tasks 3.2, 3.3 | None |
+| Junior Engineer 3D (Alex Rivera) | `.agents/junior-engineer-3d.md` | Available | - | Tasks 1.1, 2.1 | None |
+```
+
+### Persona Files
+
+| Role | Persona File |
+|------|--------------|
+| System Architect | `.agents/system-architect.md` |
+| Senior Engineer | `.agents/senior-engineer.md` |
+| Junior Engineer 2D | `.agents/junior-engineer-2d.md` |
+| Junior Engineer 3D | `.agents/junior-engineer-3d.md` |
+| Security Specialist | `.agents/security-specialist.md` |
+| Documentation Specialist | `.agents/documentation-specialist.md` |
+| Researcher | `.agents/researcher.md` |
+| UI Designer | `.agents/ui-designer.md` |
+
+### Template
+
+Use `AGENT_TASKS/TASKING_TEMPLATE.md` for all new task assignments.

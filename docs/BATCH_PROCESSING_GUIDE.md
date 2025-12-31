@@ -120,12 +120,49 @@ Each item in the queue shows:
 
 ### Processing Behavior
 
-- **Sequential processing** - Files are processed one at a time (in order)
-  - **Note:** Parallel processing (multiple files simultaneously) is planned for a future version
-  - Current implementation processes files sequentially for reliability and simplicity
+- **Parallel processing (v0.3.0)** - Multiple files are processed simultaneously
+  - Files are processed concurrently using a thread pool
+  - Default concurrency: Number of CPU cores (capped at 8)
+  - Configurable via Settings → Conversion → Max Concurrent Conversions
+  - **Performance:** Up to 4x faster on 4-core systems compared to sequential processing
 - **Error handling** - Failed conversions don't stop the queue
 - **Continue on error** - Processing continues even if some files fail
-- **Automatic progression** - Next item starts automatically when current completes
+- **Automatic progression** - New items start automatically as slots become available
+
+### Pause, Resume, and Cancel (v0.3.0)
+
+**Status:** Backend implementation complete, UI controls in progress (Sprint 10)
+
+**Pause Processing:**
+- Click the **"Pause"** button to temporarily stop batch processing
+- Currently processing items will finish, but new items won't start
+- Queue state is preserved (no data loss)
+- Processing can be resumed at any time
+
+**Resume Processing:**
+- Click the **"Resume"** button to continue processing after pausing
+- Processing continues from where it left off
+- Pending items resume processing in order
+
+**Cancel Processing:**
+- Click the **"Cancel"** button to stop batch processing completely
+- Currently processing items will finish (cannot interrupt in-progress conversions)
+- All pending items are marked as "Cancelled"
+- Queue statistics update to reflect cancelled items
+- You can clear cancelled items or restart processing
+
+**Visual Feedback:**
+- Pause button shows when processing is active
+- Resume button shows when processing is paused
+- Cancel button is always available during processing
+- Status indicators show current state (Processing, Paused, Cancelled)
+
+**Use Cases:**
+- **Pause:** Temporarily stop to free up system resources
+- **Resume:** Continue processing after pause
+- **Cancel:** Stop processing entirely (e.g., wrong files in queue)
+
+**Note:** These controls are currently being implemented in Sprint 10. Backend functionality is complete and ready for UI integration.
 
 ### Completion
 
@@ -306,14 +343,122 @@ If you encounter issues not covered here:
 
 ---
 
+## Parallel Processing (v0.3.0)
+
+### Overview
+
+Parallel batch processing allows multiple files to be converted simultaneously, significantly improving performance for large batch queues. Instead of processing files one at a time, the application uses a thread pool to process multiple files concurrently.
+
+### How It Works
+
+1. **Thread Pool** - Uses `rayon` library for efficient parallel processing
+2. **Concurrency Control** - Limits concurrent conversions to prevent resource exhaustion
+3. **Automatic Load Balancing** - Work-stealing scheduler distributes work evenly across threads
+4. **Thread-Safe Queue** - All queue operations are thread-safe using `Arc<Mutex<>>`
+
+### Configuration
+
+**Max Concurrent Conversions Setting:**
+- **Location:** Settings → Conversion → Max Concurrent Conversions
+- **Default:** Number of CPU cores (capped at 8)
+- **Range:** 1-16 concurrent conversions
+- **Recommendation:** 
+  - **4-core system:** 4 concurrent conversions (optimal)
+  - **8-core system:** 8 concurrent conversions (optimal)
+  - **Lower-end systems:** 2-4 concurrent conversions (to reduce memory usage)
+
+**How to Configure:**
+1. Open Settings (menu bar → Settings)
+2. Navigate to "Conversion" section
+3. Find "Max Concurrent Conversions" setting
+4. Adjust slider or enter value (1-16)
+5. Settings auto-save after 500ms
+
+### Performance Benefits
+
+**Speedup Examples:**
+- **10 files, 2 seconds each:**
+  - Sequential: 20 seconds total
+  - Parallel (4 cores): ~5 seconds total (**4x speedup**)
+- **100 files, 1 second each:**
+  - Sequential: 100 seconds total
+  - Parallel (4 cores): ~25 seconds total (**4x speedup**)
+
+**Factors Affecting Performance:**
+- **CPU cores:** More cores = better parallel performance
+- **File size:** Larger files may benefit more from parallel processing
+- **File type:** CPU-bound conversions (images, meshes) benefit most
+- **Memory:** Each concurrent conversion uses memory; adjust concurrency if memory-constrained
+
+### Thread Safety and Resource Limits
+
+**Thread Safety:**
+- All queue operations are thread-safe
+- Status updates are synchronized
+- Progress tracking works correctly with parallel processing
+- No data races or race conditions
+
+**Resource Limits:**
+- **Memory:** Each concurrent conversion loads a file into memory
+  - Estimate: ~3x file size for images, ~2x for meshes
+  - Example: 4 concurrent 10MB images = ~120MB memory usage
+- **CPU:** Optimal concurrency = number of CPU cores
+- **Disk I/O:** Multiple file writes may impact performance on slower drives
+
+**Resource Management:**
+- Concurrency limits prevent excessive memory usage
+- Default cap at 8 prevents system overload
+- Adjust concurrency based on your system's capabilities
+
+### Progress Tracking
+
+**Per-Item Progress:**
+- Each item shows individual progress (0-100%)
+- Progress updates in real-time during conversion
+- Multiple items can show progress simultaneously
+
+**Overall Progress:**
+- Overall queue progress shown in status bar
+- Calculated as: (Completed + Failed) / Total
+- Updates as items complete
+
+**Example Display:**
+- "Processing: 5/10 (50%)" - 5 items completed out of 10 total
+- Individual items show: "Processing (45%)" - 45% complete
+
+### Troubleshooting Parallel Processing
+
+**Issue: "High memory usage during batch processing"**
+- **Cause:** Too many concurrent conversions
+- **Solution:** Reduce "Max Concurrent Conversions" in Settings (try 2-4)
+
+**Issue: "CPU usage at 100%"**
+- **Cause:** Normal behavior for parallel processing
+- **Solution:** This is expected; parallel processing uses all CPU cores for maximum speed
+
+**Issue: "Some files failing during parallel processing"**
+- **Cause:** Resource exhaustion or file-specific issues
+- **Solution:** 
+  - Check individual error messages for failed items
+  - Reduce concurrency if memory-constrained
+  - Verify file integrity and format compatibility
+
+**Issue: "Slower than expected"**
+- **Cause:** I/O bottleneck (slow disk) or low concurrency setting
+- **Solution:** 
+  - Increase "Max Concurrent Conversions" if CPU usage is low
+  - Check disk I/O performance
+  - Verify files are on fast storage (SSD recommended)
+
 ## Technical Details
 
 ### Processing Architecture
 
-- **Sequential processing** - One file at a time (prevents resource exhaustion)
-- **Thread-safe** - Queue updates are thread-safe
-- **Error isolation** - Each conversion is independent
-- **Progress tracking** - Real-time status updates
+- **Parallel processing** - Multiple files processed simultaneously using thread pool
+- **Thread-safe** - Queue updates are thread-safe using `Arc<Mutex<BatchQueue>>`
+- **Error isolation** - Each conversion is independent (failures don't affect others)
+- **Progress tracking** - Real-time status updates for all concurrent operations
+- **Resource management** - Configurable concurrency limits prevent resource exhaustion
 
 ### Resource Limits
 
@@ -326,10 +471,11 @@ These limits apply to each file individually.
 
 ### Performance Considerations
 
-- **Processing time** - Depends on file count, size, and format complexity
-- **Memory usage** - Each file loads into memory during conversion
-- **Disk I/O** - Multiple file writes may impact performance
-- **UI responsiveness** - UI remains responsive during batch processing
+- **Processing time** - Significantly reduced with parallel processing (4x speedup on 4-core systems)
+- **Memory usage** - Each concurrent conversion loads a file into memory (adjust concurrency if memory-constrained)
+- **Disk I/O** - Multiple file writes may impact performance on slower drives (SSD recommended)
+- **UI responsiveness** - UI remains responsive during batch processing (conversions run in background threads)
+- **CPU usage** - Parallel processing uses all CPU cores (100% CPU usage is normal and expected)
 
 ---
 

@@ -16,7 +16,7 @@ mod ui;
 mod utils;
 
 #[cfg(feature = "viewer-3d")]
-mod preview_3d;
+pub mod preview_3d;
 
 use app::ConverterApp;
 

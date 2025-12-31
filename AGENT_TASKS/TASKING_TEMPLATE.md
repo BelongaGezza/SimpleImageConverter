@@ -1,38 +1,91 @@
-# Sprint X Task Assignment - [ROLE_NAME] ([Agent Name])
+# Sprint X Task Assignment
 ## [Feature/Task Name] - v[X.Y.Z]
 
-**Agent:** [Role Name] ([Agent Name])  
-**Role:** [Primary/Supporting/Oversight] Lead/Support for [Feature/Task]  
-**Sprint Duration:** X weeks (Weeks X-Y)  
+**Sprint Duration:** X weeks (Weeks X-Y)
 **Target Release:** vX.Y.Z
-
-## Role Assignment
-
-**Purpose:** Agents should review this section first to identify available work. When taking a role, update the status to "in_progress" and include your agent identifier.
-
-### Available Roles
-
-| Role | Status | Assigned Agent | Tasks | Dependencies |
-|------|--------|----------------|-------|--------------|
-| Role Name (e.g., "UI Designer") | Available / In Progress / Complete / Blocked | Agent identifier | Task list | Dependent tasks |
-| Role Name 2 | Available | - | Tasks 2.1, 2.2 | Task 1.3 complete |
-
-**Role Status Values:**
-- `Available` - Role is ready to be taken by any agent
-- `In Progress` - Role is currently assigned to an agent (include agent identifier)
-- `Complete` - All tasks for this role are finished
-- `Blocked` - Role is waiting on dependencies
-
-**For New Agents:**
-1. Review all roles in this table
-2. Identify the first role marked as "Available" that matches your capabilities
-3. Update the status to "In Progress" and add your agent identifier
-4. Review the tasks assigned to your role
-5. Check all dependencies before starting work
 
 ---
 
-## 📊 Progress Summary
+## CRITICAL: Role Selection (READ FIRST - STOP HERE UNTIL COMPLETE)
+
+**You are an unassigned agent. You MUST claim a role before proceeding.**
+
+### Step 1: Review Available Roles
+
+Look at the Role Assignment table below. Find a role where:
+- Status = `Available`
+- No agent is currently assigned
+
+### Step 2: Claim Your Role
+
+Once you find an available role:
+1. **Edit this document** to update that role's row:
+   - Change Status from `Available` to `In Progress`
+   - Add your session identifier to the "Assigned Agent" column
+2. **Read the persona file** listed in the "Persona File" column
+3. **Adopt that persona** for all remaining work on this tasking
+
+### Step 3: Become Your Role
+
+After claiming, you ARE that agent. Read the persona file and embody:
+- The agent's name and identity
+- Their expertise and communication style
+- Their decision-making authority
+- Their specific responsibilities
+
+**IMPORTANT:** If all roles show "In Progress" or "Complete", STOP. Do not proceed - there is no work available for you.
+
+---
+
+## Role Assignment
+
+| Role | Persona File | Status | Assigned Agent | Tasks | Dependencies |
+|------|--------------|--------|----------------|-------|--------------|
+| UI Designer (Jamie Chen) | `.agents/ui-designer.md` | Available | - | Tasks 3.2, 3.3 | None |
+| Junior Engineer 3D (Alex Rivera) | `.agents/junior-engineer-3d.md` | Available | - | Tasks 1.1, 2.1, 2.2 | None |
+| Security Specialist (Casey Morgan) | `.agents/security-specialist.md` | Available | - | Task 4.2 | Tasks 3.1-3.3 |
+| Documentation Specialist (Morgan Lee) | `.agents/documentation-specialist.md` | Available | - | Task 4.3 | All other tasks |
+
+**Status Values:**
+- `Available` - Role can be claimed by any unassigned agent
+- `In Progress` - Role has been claimed (see Assigned Agent column)
+- `Complete` - All tasks for this role are finished
+- `Blocked` - Role is waiting on dependencies (cannot be claimed yet)
+
+### Role Claiming Example
+
+**Before** (you see this):
+```
+| UI Designer (Jamie Chen) | `.agents/ui-designer.md` | Available | - | Tasks 3.2, 3.3 | None |
+```
+
+**After** (you update to this):
+```
+| UI Designer (Jamie Chen) | `.agents/ui-designer.md` | In Progress | agent-session-12345 | Tasks 3.2, 3.3 | None |
+```
+
+Then read `.agents/ui-designer.md` and become Jamie Chen for this tasking.
+
+---
+
+## Agent Persona Reference
+
+The following persona files define each role's identity, expertise, and responsibilities:
+
+| Role | Persona File | Key Expertise |
+|------|--------------|---------------|
+| System Architect | `.agents/system-architect.md` | Architecture, design decisions, technology selection |
+| Senior Engineer | `.agents/senior-engineer.md` | Core implementation, code reviews, sprint coordination |
+| Junior Engineer 2D | `.agents/junior-engineer-2d.md` | 2D image formats (PNG, JPEG, BMP, GIF) |
+| Junior Engineer 3D | `.agents/junior-engineer-3d.md` | 3D mesh formats (PLY, OFF, glTF, STEP) |
+| Security Specialist | `.agents/security-specialist.md` | Security reviews, vulnerability analysis |
+| Documentation Specialist | `.agents/documentation-specialist.md` | API docs, user guides, examples |
+| Researcher | `.agents/researcher.md` | Ecosystem monitoring, library evaluation |
+| UI Designer | `.agents/ui-designer.md` | GUI design, egui implementation, UX |
+
+---
+
+## Progress Summary
 
 **Overall Status:** [ ] Not Started / [ ] In Progress / [x] Complete
 
@@ -41,54 +94,52 @@
 - [ ] Task 2: Description
 - [x] Task 3: Description (Complete)
 
-**Last Updated:** [Date]  
-**Last Updated By:** [Agent Name]
+**Last Updated:** [Date]
+**Last Updated By:** [Role Name - Agent ID]
 
 ---
 
 ## Your Mission
 
-[Clear description of the role's mission and responsibilities for this sprint/task.]
+[Clear description of the sprint mission and overall goals.]
 
 ---
 
-## Required Reading (Before Starting)
+## Required Reading (After Claiming Role)
 
-1. **SPRINT_X_SUMMARY.md** - Executive briefing and sprint overview
-2. **SPRINT_X_TASKING.md** - Complete detailed task breakdown (if exists)
-3. **[ARCHITECTURE_DOC.md]** - Architecture guidelines
+1. **Your persona file** (from Role Assignment table) - Adopt this identity
+2. **SPRINT_X_SUMMARY.md** - Executive briefing and sprint overview
+3. **SPRINT_X_TASKING.md** - Complete detailed task breakdown (if exists)
 4. **AI_DEVELOPMENT_GUIDE.md** - Team coordination guidelines
 5. **rust-resources.md** - Check for library updates and best practices
 
 ---
 
-## Your Assigned Tasks
+## Task Definitions
 
 ### Phase X: [Phase Name] (Days X-Y)
 
 #### Task X.Y: Task Name
-**Priority:** Critical / High / Medium  
-**Estimated:** X hours  
-**Status:** [ ] Not Started / [ ] In Progress / [x] Complete / [ ] Blocked  
-**Assigned Role:** [Role Name]
+**Priority:** Critical / High / Medium
+**Estimated:** X hours
+**Status:** [ ] Not Started / [ ] In Progress / [x] Complete / [ ] Blocked
+**Assigned Role:** [Role Name from Role Assignment table]
 
 **Dependencies:**
-- ⏳ **Task A.B:** Dependency description - **Source:** `AGENT_TASKS/ROLE_NAME_SPRINT.md` - **Status:** [Status from source document]
-- ✅ **Task C.D:** Dependency description - **Source:** `AGENT_TASKS/ROLE_NAME_SPRINT.md` - **Status:** Complete
+- :hourglass_flowing_sand: **Task A.B:** Dependency description - **Source:** `AGENT_TASKS/[filename].md` - **Status:** [Check source document]
+- :white_check_mark: **Task C.D:** Dependency description - **Source:** `AGENT_TASKS/[filename].md` - **Status:** Complete
 
 **Dependency Check (REQUIRED before starting):**
 Before beginning this task, you MUST:
-1. ✅ Locate each dependency's source tasking document
-2. ✅ Check the current status of all dependencies in their source documents
-3. ✅ Verify all blocking dependencies are marked complete
-4. ✅ Update the dependency status in this section with the current status
-5. ✅ If dependencies are incomplete, mark this task as "Blocked" and wait
-6. ✅ Document the date/time when dependencies were verified
+1. Locate each dependency's source document
+2. Check the current status of all dependencies
+3. Verify all blocking dependencies are marked complete
+4. If dependencies are incomplete, mark this task as "Blocked" and wait
+5. Document when dependencies were verified
 
 **Dependency Verification Log:**
-- [Date/Time]: Checked Task A.B status - Status: [Status]
-- [Date/Time]: Checked Task C.D status - Status: Complete
-- [Date/Time]: All dependencies verified - Proceeding with task
+- [Date/Time]: Checked Task A.B - Status: [Status]
+- [Date/Time]: All dependencies verified - Proceeding
 
 **What to Do:**
 - Task description
@@ -96,121 +147,78 @@ Before beginning this task, you MUST:
 - Implementation details
 
 **Reference Documents:**
-- Path to dependency tasking documents
-- Related architecture documents
-- Relevant code files
+- Path to relevant documents
+- Related code files
 
 **Acceptance Criteria:**
 - [ ] Criterion 1
 - [ ] Criterion 2
 - [ ] Criterion 3
 
-**Status Updates (Required):**
-- Update this section as you work:
-  - Mark status as "In Progress" when starting
-  - Update dependency statuses when checking
-  - Mark as "Complete" when finished
-  - Add notes about blockers or dependency changes
-
-**Status:** [x] Complete
-**Completed By:** [Agent Name]
-**Completed On:** [Date]
-**Notes:** 
-- Dependency Task A.B verified complete on [date]
-- Implementation completed with Senior Engineer review
-- All acceptance criteria met
-
----
-
-## Collaboration Points
-
-### With [Role Name] ([Agent Name])
-- Task coordination details
-- Integration points
-- Handoff requirements
+**Completion Record:**
+```
+Status: [x] Complete
+Completed By: [Role Name] - [Agent ID]
+Completed On: [Date]
+Notes:
+- Implementation notes
+- Any issues encountered
+```
 
 ---
 
 ## Status Update Obligations
 
-**YOU MUST:**
-1. ✅ Update task status in this document as work progresses
-2. ✅ Update dependency statuses before starting dependent work
-3. ✅ Mark role status in the Role Assignment section when claiming a role
-4. ✅ Update progress summary sections regularly
-5. ✅ Document blockers and dependency status changes
-6. ✅ Verify dependencies are complete before proceeding
+**As the agent who claimed a role, YOU MUST:**
+1. Update task status in this document as work progresses
+2. Check and update dependency statuses before starting dependent work
+3. Update the Role Assignment table when you complete all your tasks
+4. Update progress summary sections regularly
+5. Document blockers and wait for dependencies when blocked
 
 **Update Frequency:**
-- At start of work: Mark role/task as "In Progress"
-- Before starting dependent tasks: Verify and update dependency statuses
-- During work: Update notes if blockers occur
-- On completion: Mark as "Complete" with completion notes
-- Daily: Update progress summary
+- When claiming role: Mark role as "In Progress" with your ID
+- When starting a task: Mark task as "In Progress"
+- When blocked: Mark task as "Blocked", document why, WAIT
+- When completing a task: Mark as "Complete" with notes
+- When all tasks done: Update role status to "Complete"
 
 ---
 
-## Design Principles / Implementation Guidelines
+## Coordination with Other Roles
 
-[Role-specific guidelines, principles, or constraints]
+### Waiting for Dependencies
 
----
+If your task depends on another role's work:
+1. Check the dependency's source document for current status
+2. If incomplete, mark your task as "Blocked"
+3. **DO NOT PROCEED** - wait for the dependency to be marked complete
+4. Periodically re-check the dependency status
+5. Resume work only after dependency shows "Complete"
 
-## Key Dependencies
+### Handoff Protocol
 
-### External
-- Library dependencies and versions
-
-### Internal
-- Other crates/modules required
-- Integration points
-
----
-
-## Architecture Compliance
-
-[Architecture compliance requirements]
-
----
-
-## Security Requirements
-
-[Security requirements specific to these tasks]
-
----
-
-## Success Criteria
-
-### Functional
-- [ ] Criterion 1
-- [ ] Criterion 2
-
-### Technical
-- [ ] Criterion 1
-- [ ] Criterion 2
-
-### Quality
-- [ ] Criterion 1
-- [ ] Criterion 2
+When completing work that other roles depend on:
+1. Mark your task as "Complete" with detailed notes
+2. Update any shared documents or code
+3. Ensure acceptance criteria are met
+4. Other agents will check this document before starting their dependent work
 
 ---
 
 ## Questions or Blockers?
 
-**Contact:**
-- Senior Engineer (Jordan Rivera) - Technical questions, code reviews
-- System Architect (Alex Chen) - Architecture questions
-- [Other relevant contacts]
+**Contact Points (via tasking documents):**
+- Senior Engineer tasks: `AGENT_TASKS/SENIOR_ENGINEER_SPRINTX.md`
+- Architecture questions: `AGENT_TASKS/SYSTEM_ARCHITECT_SPRINTX.md`
 
 **Reference Documents:**
-- Detailed tasking: `SPRINT_X_TASKING.md`
 - Architecture: `Phase3_Architecture.md`
+- Team coordination: `AI_DEVELOPMENT_GUIDE.md`
 
 ---
 
-**Good luck! Update your status as you progress.**
-
-**Document Version:** 1.0  
-**Created:** [Date]  
-**Status:** Ready for Implementation
+**Document Version:** 3.0
+**Created:** [Date]
+**Status:** Ready for Role Assignment
 

@@ -55,6 +55,8 @@ pub fn render_settings_panel(ui: &mut Ui, app: &mut ConverterApp) {
 
     ui.add_space(10.0);
 
+    let mut should_browse_dir = false;
+
     if let Some(ref mut settings) = app.settings {
         // General settings
         ui.collapsing("General", |ui| {
@@ -64,17 +66,19 @@ pub fn render_settings_panel(ui: &mut Ui, app: &mut ConverterApp) {
             ui.horizontal(|ui| {
                 ui.label("Default Output Directory:");
                 if let Some(ref dir) = settings.default_output_directory {
-                    ui.label(
-                        dir.to_string_lossy()
-                            .chars()
-                            .take(50)
-                            .collect::<String>(),
-                    );
+                    ui.label(dir.to_string_lossy().chars().take(50).collect::<String>());
                 } else {
-                    ui.label(RichText::new("(Use source file directory)").italics().color(egui::Color32::GRAY));
+                    ui.label(
+                        RichText::new("(Use source file directory)")
+                            .italics()
+                            .color(egui::Color32::GRAY),
+                    );
                 }
-                if ui.button("Browse...").clicked() {
-                    // TODO: Open directory picker
+                if ui.button("Browse...")
+                    .on_hover_text("Select the default directory for converted files")
+                    .clicked()
+                {
+                    should_browse_dir = true;
                 }
             });
 
@@ -82,7 +86,8 @@ pub fn render_settings_panel(ui: &mut Ui, app: &mut ConverterApp) {
 
             // Default quality
             ui.horizontal(|ui| {
-                ui.label("Default Quality:");
+                ui.label("Default Quality:")
+                    .on_hover_text("Default image quality setting for lossy formats (1-100). Higher values = better quality but larger files.");
                 let mut quality = settings.default_quality;
                 let response = ui.add(egui::Slider::new(&mut quality, 1..=100));
                 ui.label(format!("{}", quality));
@@ -96,7 +101,8 @@ pub fn render_settings_panel(ui: &mut Ui, app: &mut ConverterApp) {
 
             // Show advanced options
             let mut show_advanced = settings.show_advanced_options;
-            let response = ui.checkbox(&mut show_advanced, "Show Advanced Options by Default");
+            let response = ui.checkbox(&mut show_advanced, "Show Advanced Options by Default")
+                .on_hover_text("Automatically expand the Advanced Options section when a file is selected");
             if response.changed() {
                 settings.show_advanced_options = show_advanced;
                 app.settings_auto_save.mark_changed();
@@ -111,7 +117,8 @@ pub fn render_settings_panel(ui: &mut Ui, app: &mut ConverterApp) {
 
             // Conversion history
             let mut history_enabled = settings.conversion_history_enabled;
-            let response = ui.checkbox(&mut history_enabled, "Enable Conversion History");
+            let response = ui.checkbox(&mut history_enabled, "Enable Conversion History")
+                .on_hover_text("Track conversion history for easy access to previously converted files");
             if response.changed() {
                 settings.conversion_history_enabled = history_enabled;
                 app.settings_auto_save.mark_changed();
@@ -120,7 +127,8 @@ pub fn render_settings_panel(ui: &mut Ui, app: &mut ConverterApp) {
             ui.add_space(5.0);
 
             ui.horizontal(|ui| {
-                ui.label("Max History Entries:");
+                ui.label("Max History Entries:")
+                    .on_hover_text("Maximum number of conversion history entries to keep. Older entries are automatically removed.");
                 let mut max_entries = settings.max_history_entries;
                 let response = ui.add(egui::Slider::new(&mut max_entries, 10..=1000));
                 ui.label(format!("{}", max_entries));
@@ -151,7 +159,11 @@ pub fn render_settings_panel(ui: &mut Ui, app: &mut ConverterApp) {
         // Action buttons
         ui.horizontal(|ui| {
             // Manual save button (still available as backup)
-            if ui.button("Save").clicked() {
+            if ui
+                .button("Save")
+                .on_hover_text("Manually save settings to disk (settings are also auto-saved)")
+                .clicked()
+            {
                 if let Some(ref settings) = app.settings {
                     app.settings_auto_save.set_saving();
                     if let Err(e) = settings.save() {
@@ -170,7 +182,13 @@ pub fn render_settings_panel(ui: &mut Ui, app: &mut ConverterApp) {
                 }
             }
 
-            if ui.button("Reset to Defaults").clicked() {
+            if ui
+                .button("Reset to Defaults")
+                .on_hover_text(
+                    "Reset all settings to their default values. This action cannot be undone.",
+                )
+                .clicked()
+            {
                 app.settings = Some(AppSettings::default());
                 app.settings_auto_save.mark_changed();
                 app.add_message(
@@ -180,7 +198,11 @@ pub fn render_settings_panel(ui: &mut Ui, app: &mut ConverterApp) {
             }
         });
     } else {
-        ui.label(RichText::new("Settings not loaded").italics().color(egui::Color32::GRAY));
+        ui.label(
+            RichText::new("Settings not loaded")
+                .italics()
+                .color(egui::Color32::GRAY),
+        );
         if ui.button("Load Settings").clicked() {
             match AppSettings::load() {
                 Ok(settings) => {
@@ -200,4 +222,3 @@ pub fn render_settings_panel(ui: &mut Ui, app: &mut ConverterApp) {
         }
     }
 }
-

@@ -41,6 +41,31 @@ pub struct BatchItem {
     pub error: Option<String>,
 }
 
+/// Priority level for batch processing
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub enum ProcessingPriority {
+    /// Low priority - processed last
+    ///
+    /// Note: This variant is kept for future UI integration (Sprint 10 Task 2.1).
+    /// It will be used when priority selection controls are added to the batch queue UI.
+    #[allow(dead_code)]
+    Low = 0,
+    /// Medium priority - processed after high priority
+    Medium = 1,
+    /// High priority - processed first
+    ///
+    /// Note: This variant is kept for future UI integration (Sprint 10 Task 2.1).
+    /// It will be used when priority selection controls are added to the batch queue UI.
+    #[allow(dead_code)]
+    High = 2,
+}
+
+impl Default for ProcessingPriority {
+    fn default() -> Self {
+        Self::Medium
+    }
+}
+
 /// Options for batch item conversion
 #[derive(Debug, Clone)]
 pub struct BatchItemOptions {
@@ -48,6 +73,8 @@ pub struct BatchItemOptions {
     pub quality: u8,
     /// Mesh conversion options (if applicable)
     pub mesh_options: Option<MeshOptions>,
+    /// Processing priority (High, Medium, Low)
+    pub priority: ProcessingPriority,
 }
 
 /// Mesh-specific conversion options
@@ -93,7 +120,6 @@ pub enum BatchItemStatus {
     /// Conversion failed
     Failed { error: String },
     /// Conversion was cancelled
-    #[allow(dead_code)] // Reserved for future cancel functionality
     Cancelled,
 }
 
@@ -302,15 +328,21 @@ impl BatchQueue {
     /// Get pending items (for parallel processing)
     ///
     /// Returns up to `limit` pending item IDs that are not currently processing.
+    /// Items are sorted by priority (High first, then Medium, then Low).
     pub fn get_pending_items(&self, limit: usize) -> Vec<Uuid> {
-        self.items
+        let mut pending: Vec<_> = self
+            .items
             .iter()
             .filter(|item| {
                 item.status == BatchItemStatus::Pending && !self.processing_ids.contains(&item.id)
             })
-            .take(limit)
-            .map(|item| item.id)
-            .collect()
+            .map(|item| (item.id, item.options.priority))
+            .collect();
+
+        // Sort by priority (High first, then Medium, then Low)
+        pending.sort_by(|a, b| b.1.cmp(&a.1));
+
+        pending.into_iter().take(limit).map(|(id, _)| id).collect()
     }
 
     /// Update overall progress based on completed/failed items
@@ -427,6 +459,7 @@ mod tests {
             BatchItemOptions {
                 quality: 90,
                 mesh_options: None,
+                priority: ProcessingPriority::Medium,
             },
         )
     }

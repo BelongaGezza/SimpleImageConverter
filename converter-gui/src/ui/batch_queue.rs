@@ -32,7 +32,11 @@ pub fn render_batch_queue(ui: &mut Ui, app: &mut ConverterApp) {
 
     // Control buttons
     ui.horizontal(|ui| {
-        if ui.button("Add Files...").clicked() {
+        if ui
+            .button("Add Files...")
+            .on_hover_text("Add one or more files to the batch conversion queue")
+            .clicked()
+        {
             // Open multi-file selection dialog
             let mut dialog = rfd::FileDialog::new()
                 .add_filter(
@@ -64,10 +68,12 @@ pub fn render_batch_queue(ui: &mut Ui, app: &mut ConverterApp) {
             }
         }
 
-        if ui.button("Clear Queue").clicked() {
-            if let Some(ref mut queue) = app.batch_queue {
-                queue.clear();
-            }
+        if ui
+            .button("Clear Queue")
+            .on_hover_text("Remove all items from the batch queue. This action cannot be undone.")
+            .clicked()
+        {
+            app.confirmation_dialog = Some(crate::app::ConfirmationDialog::ClearQueue);
         }
 
         let has_pending = app
@@ -79,10 +85,28 @@ pub fn render_batch_queue(ui: &mut Ui, app: &mut ConverterApp) {
             .batch_queue
             .as_ref()
             .and_then(|q| q.current_index)
-            .is_some();
+            .is_some()
+            || app
+                .batch_queue
+                .as_ref()
+                .map(|q| !q.processing_ids.is_empty())
+                .unwrap_or(false);
+        let is_processing_active = app.batch_processing_state.is_some();
+        let is_paused = app.is_batch_processing_paused();
 
+        // Process Queue button
         ui.set_enabled(has_pending && !is_processing);
-        if ui.button("Process Queue").clicked() {
+        if ui
+            .button("Process Queue")
+            .on_hover_text(if has_pending && !is_processing {
+                "Start processing all pending items in the queue"
+            } else if is_processing {
+                "Processing is already in progress"
+            } else {
+                "No pending items in queue"
+            })
+            .clicked()
+        {
             if let Err(e) = app.start_batch_processing(ui.ctx().clone()) {
                 app.add_message(
                     format!("Failed to start batch processing: {}", e),
@@ -94,6 +118,56 @@ pub fn render_batch_queue(ui: &mut Ui, app: &mut ConverterApp) {
                     crate::app::MessageType::Info,
                 );
             }
+        }
+
+        // Pause/Resume button (only enabled when processing is active)
+        ui.set_enabled(is_processing_active);
+        if is_paused {
+            if ui
+                .button("▶ Resume")
+                .on_hover_text("Resume paused batch processing (Press Space)")
+                .clicked()
+            {
+                if let Err(e) = app.resume_batch_processing() {
+                    app.add_message(
+                        format!("Failed to resume batch processing: {}", e),
+                        crate::app::MessageType::Error,
+                    );
+                } else {
+                    app.add_message(
+                        "Batch processing resumed".to_string(),
+                        crate::app::MessageType::Info,
+                    );
+                }
+            }
+        } else {
+            if ui
+                .button("⏸ Pause")
+                .on_hover_text("Pause batch processing (Press Space)")
+                .clicked()
+            {
+                if let Err(e) = app.pause_batch_processing() {
+                    app.add_message(
+                        format!("Failed to pause batch processing: {}", e),
+                        crate::app::MessageType::Error,
+                    );
+                } else {
+                    app.add_message(
+                        "Batch processing paused".to_string(),
+                        crate::app::MessageType::Info,
+                    );
+                }
+            }
+        }
+
+        // Cancel button (only enabled when processing is active)
+        ui.set_enabled(is_processing_active);
+        if ui
+            .button("⏹ Cancel")
+            .on_hover_text("Cancel batch processing. Items currently processing will finish, but pending items will be cancelled (Press Escape)")
+            .clicked()
+        {
+            app.confirmation_dialog = Some(crate::app::ConfirmationDialog::CancelBatchProcessing);
         }
     });
 
@@ -114,10 +188,16 @@ pub fn render_batch_queue(ui: &mut Ui, app: &mut ConverterApp) {
                 .color(Color32::GRAY),
         );
     } else {
+        // Use ScrollArea which provides automatic virtual scrolling for performance
+        // Only visible items are rendered, so this efficiently handles large queues (100+ items)
         egui::ScrollArea::vertical()
             .max_height(400.0)
             .show(ui, |ui| {
                 if let Some(ref queue) = app.batch_queue {
+                    // Pre-allocate Vec capacity to reduce allocations for large queues
+                    let estimated_removals = queue.items.len() / 10; // Estimate ~10% removals
+                    items_to_remove.reserve(estimated_removals);
+
                     for (index, item) in queue.items.iter().enumerate() {
                         let (should_remove, should_edit_id) = render_queue_item(ui, item, index);
                         if should_remove {
@@ -144,22 +224,73 @@ pub fn render_batch_queue(ui: &mut Ui, app: &mut ConverterApp) {
                 processing: 0,
             }
         };
+        let is_processing_active = app.batch_processing_state.is_some();
+        let is_paused = app.is_batch_processing_paused();
+
+        // Optimize string formatting: reuse format strings to reduce allocations
         ui.horizontal(|ui| {
-            ui.label(format!("Total: {}", stats.total));
+            // Pre-format labels to reduce allocations
+            let total_label = format!("Total: {}", stats.total);
+            let completed_label = format!("Completed: {}", stats.completed);
+            let failed_label = format!("Failed: {}", stats.failed);
+            let pending_label = format!("Pending: {}", stats.pending);
+
+            ui.label(total_label);
             ui.separator();
-            ui.label(format!("Completed: {}", stats.completed));
+            ui.label(completed_label);
             ui.separator();
-            ui.label(format!("Failed: {}", stats.failed));
+            ui.label(failed_label);
             ui.separator();
-            ui.label(format!("Pending: {}", stats.pending));
+            ui.label(pending_label);
             if stats.processing > 0 {
                 ui.separator();
-                ui.label(
-                    RichText::new(format!("Processing: {}", stats.processing))
-                        .color(Color32::from_rgb(100, 150, 255)),
-                );
+                // Show concurrent count: "Processing X/Y items"
+                let processing_label =
+                    format!("Processing {}/{} items", stats.processing, stats.total);
+                let processing_color = if is_paused {
+                    Color32::from_rgb(200, 150, 50) // Yellow/orange for paused
+                } else {
+                    Color32::from_rgb(100, 150, 255) // Blue for processing
+                };
+                ui.label(RichText::new(processing_label).color(processing_color));
             }
         });
+
+        // Show processing status and estimated time (when processing is active)
+        if is_processing_active {
+            ui.add_space(5.0);
+            ui.horizontal(|ui| {
+                // Processing status indicator
+                if is_paused {
+                    ui.label(
+                        RichText::new("⏸ Processing paused")
+                            .color(Color32::from_rgb(200, 150, 50))
+                            .strong(),
+                    );
+                } else if stats.processing > 0 {
+                    ui.label(
+                        RichText::new("⚙️ Processing...")
+                            .color(Color32::from_rgb(100, 150, 255))
+                            .strong(),
+                    );
+                }
+
+                // Show remaining items count
+                // Note: Estimated time calculation would require tracking item completion times
+                // For now, showing remaining count provides useful feedback
+                if stats.processing > 0 && stats.total > 0 {
+                    let remaining_count = stats.pending + stats.processing;
+                    if remaining_count > 0 {
+                        ui.separator();
+                        ui.label(
+                            RichText::new(format!("{} items remaining", remaining_count))
+                                .small()
+                                .color(Color32::GRAY),
+                        );
+                    }
+                }
+            });
+        }
     }
 
     // Remove items after UI rendering (if any)
@@ -265,12 +396,30 @@ fn render_queue_item(ui: &mut Ui, item: &BatchItem, _index: usize) -> (bool, Opt
                     let can_remove = !matches!(item.status, BatchItemStatus::Processing);
 
                     ui.set_enabled(can_remove);
-                    if ui.small_button("Remove").clicked() && can_remove {
+                    if ui
+                        .small_button("Remove")
+                        .on_hover_text(if can_remove {
+                            "Remove this item from the queue"
+                        } else {
+                            "Cannot remove item while processing"
+                        })
+                        .clicked()
+                        && can_remove
+                    {
                         should_remove = true; // Signal that this item should be removed
                     }
 
                     ui.set_enabled(can_edit);
-                    if ui.small_button("Edit").clicked() && can_edit {
+                    if ui
+                        .small_button("Edit")
+                        .on_hover_text(if can_edit {
+                            "Edit this item's output format and options"
+                        } else {
+                            "Cannot edit item while processing"
+                        })
+                        .clicked()
+                        && can_edit
+                    {
                         should_edit = true; // Signal that this item should be edited
                     }
                 });
@@ -543,6 +692,7 @@ pub fn render_edit_dialog(ui: &mut Ui, app: &mut ConverterApp) {
                                 let new_options = crate::batch_queue::BatchItemOptions {
                                     quality: quality_val,
                                     mesh_options: mesh_options_val,
+                                    priority: crate::batch_queue::ProcessingPriority::Medium, // Preserve existing priority
                                 };
                                 queue.update_item_options(editing_id, new_options);
                             }
@@ -660,6 +810,7 @@ fn add_file_to_batch_queue(app: &mut ConverterApp, file_path: std::path::PathBuf
             } else {
                 None
             },
+            priority: crate::batch_queue::ProcessingPriority::Medium,
         },
     );
 

@@ -48,6 +48,11 @@ pub fn render_status_bar(ui: &mut Ui, app: &ConverterApp) {
             let elapsed = start_time.elapsed();
             if elapsed.as_secs() > 30 {
                 ui.spinner();
+                ui.label(
+                    egui::RichText::new("Processing...")
+                        .small()
+                        .color(Color32::from_rgb(0, 100, 255)),
+                );
             }
         }
     });

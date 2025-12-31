@@ -101,138 +101,125 @@ impl ImageFormat for PngHandler {
 2. Add a test for the transparency edge case
 3. Consider extracting the validation logic to share with PNG handler"
 
-## Creating Tasking Documents
+---
 
-When creating task assignments for team agents, you must include:
+## Creating Tasking Documents (CRITICAL)
 
-### 1. Role Assignment Section (MANDATORY)
-Every tasking document MUST start with a **Role Assignment** section that enables new agents to:
-- Identify available roles
-- Claim a role by marking it as "in progress"
-- See which roles are already taken
-- Understand role responsibilities
+When creating task assignments for the team, you MUST use the **Role-Claiming Model**. This allows unassigned agents to claim available roles and adopt the appropriate persona.
 
-**Template for Role Assignment:**
+### How the Role-Claiming Model Works
+
+1. **Agents arrive untyped** - They don't know what role they'll play
+2. **Agents read the tasking** - They see the Role Assignment table
+3. **Agents claim an available role** - They pick one with Status = "Available"
+4. **Agents become that role** - They read the persona file and adopt that identity
+5. **Agents mark the role as taken** - Status changes to "In Progress"
+
+### Tasking Document Structure (MANDATORY)
+
+Every tasking document MUST include these sections:
+
+#### 1. Role Selection Section (FIRST - Before anything else)
+
+```markdown
+## CRITICAL: Role Selection (READ FIRST - STOP HERE UNTIL COMPLETE)
+
+**You are an unassigned agent. You MUST claim a role before proceeding.**
+
+### Step 1: Review Available Roles
+
+Look at the Role Assignment table below. Find a role where:
+- Status = `Available`
+- No agent is currently assigned
+
+### Step 2: Claim Your Role
+
+Once you find an available role:
+1. **Edit this document** to update that role's row:
+   - Change Status from `Available` to `In Progress`
+   - Add your session identifier to the "Assigned Agent" column
+2. **Read the persona file** listed in the "Persona File" column
+3. **Adopt that persona** for all remaining work on this tasking
+
+### Step 3: Become Your Role
+
+After claiming, you ARE that agent. Read the persona file and embody:
+- The agent's name and identity
+- Their expertise and communication style
+- Their decision-making authority
+- Their specific responsibilities
+
+**IMPORTANT:** If all roles show "In Progress" or "Complete", STOP. Do not proceed.
+```
+
+#### 2. Role Assignment Table (MANDATORY)
+
+**CRITICAL: Include the `Persona File` column so agents know which persona to adopt:**
+
 ```markdown
 ## Role Assignment
 
-**Purpose:** Agents should review this section first to identify available work. When taking a role, update the status to "in_progress" and include your agent identifier.
-
-### Available Roles
-
-| Role | Status | Assigned Agent | Tasks | Dependencies |
-|------|--------|----------------|-------|--------------|
-| Role Name (e.g., "UI Designer") | Available / In Progress / Complete | Agent identifier | Task list | Dependent tasks |
+| Role | Persona File | Status | Assigned Agent | Tasks | Dependencies |
+|------|--------------|--------|----------------|-------|--------------|
+| UI Designer (Jamie Chen) | `.agents/ui-designer.md` | Available | - | Tasks 3.2, 3.3 | None |
+| Junior Engineer 3D (Alex Rivera) | `.agents/junior-engineer-3d.md` | Available | - | Tasks 1.1, 2.1 | None |
+| Security Specialist (Casey Morgan) | `.agents/security-specialist.md` | Available | - | Task 4.2 | Tasks 3.1-3.3 |
 ```
 
-**Role Status Values:**
-- `Available` - Role is ready to be taken
-- `In Progress` - Role is currently assigned to an agent
-- `Complete` - All tasks for this role are finished
-- `Blocked` - Role is waiting on dependencies
+**The `Persona File` column is MANDATORY. Without it, agents cannot adopt the correct persona.**
 
-### 2. Task Dependency Tracking (MANDATORY)
-Each task MUST include:
-- **Dependencies Section:** Lists prerequisite tasks with their status
-- **Dependency Check Requirement:** Agents must verify dependencies are complete before starting
-- **Blocking Indicators:** Clear marking when a task is blocked by dependencies
+#### 3. Persona Reference Table (RECOMMENDED)
 
-**Template for Task Dependencies:**
+Include this for easy reference:
+
+```markdown
+## Agent Persona Reference
+
+| Role | Persona File | Key Expertise |
+|------|--------------|---------------|
+| System Architect | `.agents/system-architect.md` | Architecture, design decisions |
+| Senior Engineer | `.agents/senior-engineer.md` | Core implementation, code reviews |
+| Junior Engineer 2D | `.agents/junior-engineer-2d.md` | 2D image formats |
+| Junior Engineer 3D | `.agents/junior-engineer-3d.md` | 3D mesh formats |
+| Security Specialist | `.agents/security-specialist.md` | Security reviews |
+| Documentation Specialist | `.agents/documentation-specialist.md` | API docs, user guides |
+| Researcher | `.agents/researcher.md` | Ecosystem monitoring |
+| UI Designer | `.agents/ui-designer.md` | GUI design, egui |
+```
+
+### Task Assignment by Role
+
+Each task should specify which role is responsible:
+
 ```markdown
 #### Task X.Y: Task Name
-**Priority:** Critical / High / Medium  
-**Estimated:** X hours  
-**Status:** [ ] Not Started / [ ] In Progress / [x] Complete  
-**Assigned Role:** Role Name
-
-**Dependencies:**
-- ⏳ **Task A.B:** Dependency description - **Status:** [Status from source document]
-- ✅ **Task C.D:** Dependency description - **Status:** Complete
-
-**Dependency Check (REQUIRED before starting):**
-Before beginning this task, you MUST:
-1. Check status of all dependencies in their source tasking documents
-2. Verify all blocking dependencies are marked complete
-3. Update this section with current dependency statuses
-4. If dependencies are incomplete, mark this task as "Blocked" and wait
-
-**What to Do:**
-- Task description...
-
-**Reference Documents:**
-- Path to dependency tasking documents
-- Related architecture documents
+**Assigned Role:** UI Designer (Jamie Chen)
+**Status:** [ ] Not Started
+...
 ```
 
-### 3. Status Update Obligations (MANDATORY)
-All agents are REQUIRED to:
-- Update task status in the tasking document as work progresses
-- Update dependency statuses before starting dependent work
-- Mark role status in the Role Assignment section
-- Update progress summary sections
-- Document blockers and dependency status changes
+Only the agent who claimed that role should work on tasks assigned to their role.
 
-**Status Update Format:**
-```markdown
-**Status:** [x] Complete
-**Notes:** 
-- Dependency Task A.B verified complete on [date]
-- Implementation completed with Senior Engineer review
-- All acceptance criteria met
-```
+### Dependency Coordination
 
-### 4. Dependency Verification Workflow
-When an agent receives a tasking document:
+Tasks often depend on other roles' work. Include:
+- Clear dependency listings with source documents
+- Instructions to check dependency status before starting
+- "Blocked" status when dependencies are incomplete
+- Instructions to WAIT (not proceed) when blocked
 
-1. **Review Role Assignment Section:**
-   - Identify available roles
-   - Check if any role matches your capabilities
-   - Claim a role by updating status to "in_progress"
+### Template Location
 
-2. **Check All Task Dependencies:**
-   - For each task, locate dependency source documents
-   - Verify dependency status
-   - Update dependency status in your tasking document
-   - Proceed only if dependencies are complete
+Use `AGENT_TASKS/TASKING_TEMPLATE.md` as the base for all new tasking documents.
 
-3. **Update Status Regularly:**
-   - Mark tasks as "in_progress" when starting
-   - Update "complete" when finished
-   - Update dependency statuses when checking prerequisites
+### Why This Model Works
 
-4. **Handle Blocked Tasks:**
-   - Mark tasks as "blocked" if dependencies incomplete
-   - Monitor dependency documents for status updates
-   - Re-check dependencies before resuming blocked work
+- **Prevents role conflicts**: Only one agent can claim each role
+- **Clear persona adoption**: Agents know exactly which persona file to read
+- **Visible coordination**: The Role Assignment table shows who's working on what
+- **Proper blocking**: Agents with dependencies wait for completion
 
-### 5. Multi-Agent Coordination
-When creating taskings that require multiple agents:
-
-- Create a **master tasking document** with Role Assignment section
-- Reference specific role tasking documents (e.g., `AGENT_TASKS/ROLE_NAME_SPRINT.md`)
-- Ensure each role tasking document:
-  - Includes full Role Assignment section
-  - Lists all dependencies with source document paths
-  - Has clear status tracking for all tasks
-  - Includes progress summary at the top
-
-### 6. Agent Display Name Format
-To ensure agents display with their role name first in agent lists:
-- Name tasking files with role first: `AGENT_TASKS/ROLE_NAME_SPRINT.md`
-- Use format: `[Role Name] - [Agent Name]` in document headers
-- Example: `**Agent:** UI Designer (Jamie Chen)`
-- Include role name prominently in document title
-- Format: `**Agent:** [Role Name] ([Agent Name])`
-
-### 7. Tasking Template
-When creating new tasking documents, use the template:
-- **Template Location:** `AGENT_TASKS/TASKING_TEMPLATE.md`
-- The template includes all required sections:
-  - Role Assignment section with status tracking
-  - Dependency tracking per task
-  - Status update obligations
-  - Dependency verification workflow
-- Copy the template and customize for your sprint/tasks
+---
 
 ## Activation
 Use this agent when:

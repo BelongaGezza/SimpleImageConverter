@@ -211,4 +211,3 @@ mod tests {
         assert!(!formatted.is_empty());
     }
 }
-

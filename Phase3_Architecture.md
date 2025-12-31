@@ -125,10 +125,21 @@ converter-workspace/
     │   ├── main.rs
     │   ├── app.rs
     │   └── ui/
-    │       ├── image_tab.rs
-    │       └── mesh_tab.rs
+    │       ├── drop_zone.rs
+    │       ├── format_selector.rs
+    │       ├── options_panel.rs
+    │       ├── messages.rs
+    │       ├── status_bar.rs
+    │       ├── batch_queue.rs
+    │       ├── preview.rs
+    │       ├── settings_panel.rs
+    │       └── history_panel.rs
     └── assets/
         └── icons/
+    
+    **Note:** Actual GUI structure follows `GUI_DESIGN_AND_IMPLEMENTATION.md` 
+    rather than the tab-based structure shown above. The implementation uses 
+    component-based UI with drop zones, format selectors, and panels.
 ```
 
 ### 1.2 Workspace Cargo.toml

@@ -140,7 +140,13 @@ pub fn render_drop_zone(ui: &mut Ui, app: &mut ConverterApp) {
                 ui.add_space(10.0);
                 ui.label("or click to browse");
                 ui.add_space(10.0);
-                if ui.button("Browse Files...").clicked() {
+                if ui
+                    .button("Browse Files...")
+                    .on_hover_text(
+                        "Open file browser to select an image or mesh file (Keyboard: Ctrl+O)",
+                    )
+                    .clicked()
+                {
                     if let Some(file_path) = rfd::FileDialog::new()
                         .add_filter(
                             "Image Files",
@@ -164,6 +170,13 @@ pub fn render_drop_zone(ui: &mut Ui, app: &mut ConverterApp) {
             });
         }
     });
+}
+
+/// Handle file selection with validation and type detection
+///
+/// This function is public so it can be called from keyboard shortcuts
+pub fn handle_file_selection_internal(app: &mut ConverterApp, file_path: PathBuf) {
+    handle_file_selection(app, file_path);
 }
 
 /// Handle file selection with validation and type detection

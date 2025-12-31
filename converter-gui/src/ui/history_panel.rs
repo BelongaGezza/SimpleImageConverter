@@ -32,12 +32,16 @@ pub fn render_history_panel(ui: &mut Ui, app: &mut ConverterApp) {
                 .color(Color32::GRAY),
         );
     } else {
-        // Clear history button
+        // Clear history button with confirmation
         ui.horizontal(|ui| {
-            if ui.button("Clear History").clicked() {
-                if let Some(ref mut history) = app.history {
-                    history.clear();
-                }
+            if ui
+                .button("Clear History")
+                .on_hover_text(
+                    "Remove all entries from conversion history. This action cannot be undone.",
+                )
+                .clicked()
+            {
+                app.confirmation_dialog = Some(crate::app::ConfirmationDialog::ClearHistory);
             }
         });
 
@@ -166,10 +170,22 @@ fn render_history_entry(ui: &mut Ui, entry: &ConversionEntry, _index: usize) -> 
                     // Add padding to the right of buttons (left side in RTL layout)
                     ui.add_space(10.0);
 
-                    if entry.success && ui.small_button("Open Output").clicked() {
-                        should_open = true; // Signal that output should be opened
+                    if entry.success {
+                        if ui
+                            .small_button("Open Output")
+                            .on_hover_text(
+                                "Open the converted output file in the default application",
+                            )
+                            .clicked()
+                        {
+                            should_open = true; // Signal that output should be opened
+                        }
                     }
-                    if ui.small_button("Remove").clicked() {
+                    if ui
+                        .small_button("Remove")
+                        .on_hover_text("Remove this entry from conversion history")
+                        .clicked()
+                    {
                         should_remove = true; // Signal that this entry should be removed
                     }
                 });

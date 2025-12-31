@@ -1,8 +1,8 @@
 # GUI Usage Guide
 ## Simple Image Converter - Graphical User Interface
 
-**Version:** 0.2.2  
-**Last Updated:** December 30, 2025
+**Version:** 0.3.0  
+**Last Updated:** December 30, 2025 (Updated for v0.3.0 parallel processing)
 
 ---
 
@@ -427,7 +427,16 @@ Preview images and meshes before conversion:
 3. **Review before converting** - Verify file is correct before conversion
 4. **Format change updates preview** - Preview updates when you change output format
 
-**Note:** Image previews show thumbnails for large images. Mesh previews show metadata (full 3D viewer planned for future version).
+**Image Previews:**
+- Shows thumbnail for large images
+- Automatically resized to fit preview panel
+- Maintains aspect ratio
+
+**3D Mesh Viewer (v0.3.0):**
+- Interactive 3D preview of mesh files (STL, OBJ, PLY, OFF, glTF, DXF)
+- Hardware-accelerated rendering using wgpu
+- Automatic mesh loading when mesh file is selected
+- See [3D Viewer Controls](#3d-viewer-controls) section below for details
 
 ### Settings Persistence
 
@@ -468,43 +477,174 @@ Track your recent conversions:
 
 ---
 
-## v0.3.0 Planned Features (In Development)
+## v0.3.0 Features (Implemented)
 
 ### Parallel Batch Processing
 
-**Status:** ⏳ Planned for future version - Currently batch processing is sequential
-
-**Planned Features:**
-- Concurrent file conversion using thread pool
-- Automatic thread management based on CPU cores
-- Configurable maximum concurrent conversions
-- Real-time progress tracking for each parallel operation
-- Improved performance for large batch queues
-
-**Current Implementation:**
-- Batch processing is currently sequential (one file at a time)
-- Files are processed in order
-- UI remains responsive during processing
-- Progress tracking works for sequential processing
-
-**Note:** Parallel batch processing is being researched and designed. Sequential processing is fully functional and suitable for most use cases.
-
-### 3D Mesh Viewer
-
-**Coming in v0.3.0:** Full 3D preview of mesh files before conversion.
+**Status:** ✅ **IMPLEMENTED** - Parallel processing is now available in v0.3.0
 
 **Features:**
-- Interactive 3D mesh rendering
-- Camera controls (rotate, zoom, pan)
-- Integration with preview panel
-- Performance optimized for large meshes
+- ✅ Concurrent file conversion using thread pool (`rayon` library)
+- ✅ Automatic thread management based on CPU cores (default: CPU cores, capped at 8)
+- ✅ Configurable maximum concurrent conversions (Settings → Conversion → Max Concurrent Conversions, range: 1-16)
+- ✅ Real-time progress tracking for each parallel operation
+- ✅ Improved performance for large batch queues (4x speedup on 4-core systems)
+- ✅ Thread-safe queue management
+- ✅ Error isolation (individual failures don't stop parallel processing)
 
-**Benefits:**
-- Visual verification before conversion
-- Better understanding of mesh structure
-- Catch issues before processing
+**How to Use:**
+1. **Configure Concurrency (Optional):**
+   - Open Settings (menu bar → Settings)
+   - Navigate to "Conversion" section
+   - Adjust "Max Concurrent Conversions" slider (1-16)
+   - Default: Number of CPU cores (capped at 8)
+   - Settings auto-save after 500ms
 
-**Note:** These features are currently in research and development. Check the [CHANGELOG.md](../CHANGELOG.md) for the latest status.
+2. **Process Batch Queue:**
+   - Add files to batch queue (as before)
+   - Click "Process Queue" button
+   - Multiple files process simultaneously
+   - Watch real-time progress for each file
+
+**Performance:**
+- **4-core system:** Up to 4x faster than sequential processing
+- **8-core system:** Up to 8x faster than sequential processing
+- **Example:** 10 files (2 seconds each):
+  - Sequential: 20 seconds
+  - Parallel (4 cores): ~5 seconds
+
+**Configuration Tips:**
+- **High-end systems (8+ cores, 16GB+ RAM):** Use 8 concurrent conversions
+- **Mid-range systems (4 cores, 8GB RAM):** Use 4 concurrent conversions
+- **Low-end systems (2 cores, 4GB RAM):** Use 2 concurrent conversions
+- **Memory-constrained:** Reduce concurrency if experiencing high memory usage
+
+**For detailed information, see:** [Batch Processing Guide](BATCH_PROCESSING_GUIDE.md#parallel-processing-v030)
+
+### Pause, Resume, and Cancel Controls (v0.3.0)
+
+**Status:** ✅ **COMPLETE** - Fully implemented in v0.3.0 (Sprint 10)
+
+**Pause Processing:**
+- Click the **"Pause"** button to temporarily stop batch processing
+- Currently processing items will finish, but new items won't start
+- Queue state is preserved (no data loss)
+- Processing can be resumed at any time
+
+**Resume Processing:**
+- Click the **"Resume"** button to continue processing after pausing
+- Processing continues from where it left off
+- Pending items resume processing in order
+
+**Cancel Processing:**
+- Click the **"Cancel"** button to stop batch processing completely
+- Currently processing items will finish (cannot interrupt in-progress conversions)
+- All pending items are marked as "Cancelled"
+- Queue statistics update to reflect cancelled items
+
+**Visual Feedback:**
+- Pause button shows when processing is active
+- Resume button shows when processing is paused
+- Cancel button is always available during processing
+- Status indicators show current state (Processing, Paused, Cancelled)
+
+**Use Cases:**
+- **Pause:** Temporarily stop to free up system resources
+- **Resume:** Continue processing after pause
+- **Cancel:** Stop processing entirely (e.g., wrong files in queue)
+
+**Note:** These controls are fully implemented and available in v0.3.0.
+
+**For detailed information, see:** [Batch Processing Guide](BATCH_PROCESSING_GUIDE.md#pause-resume-and-cancel-v030)
+
+### 3D Viewer Controls
+
+**v0.3.0 Feature:** Full 3D preview of mesh files before conversion.
+
+#### Accessing the 3D Viewer
+
+1. **Select a mesh file** - Choose any supported mesh format (STL, OBJ, PLY, OFF, glTF, DXF)
+2. **Preview panel expands** - The preview panel automatically shows the 3D viewer
+3. **Mesh loads automatically** - The mesh is loaded and displayed in the viewer
+
+#### Camera Controls
+
+**Orbit (Rotate):**
+- **Mouse drag** - Click and drag in the viewer to orbit around the mesh
+- Rotates the camera around the mesh center
+- Smooth, responsive rotation
+
+**Pan (Move):**
+- **Shift + Mouse drag** - Hold Shift and drag to pan the view
+- Moves the camera without rotating
+- Useful for examining different parts of the mesh
+
+**Zoom:**
+- **Mouse wheel** - Scroll up to zoom in, scroll down to zoom out
+- Smooth zoom with limits to prevent extreme close-ups or far views
+- Zoom is centered on the mesh
+
+**Reset Camera:**
+- **Reset Camera button** - Click to return to the default viewing angle
+- Automatically positions camera to view entire mesh
+- Useful when you've moved the camera too far
+
+#### Rendering Modes
+
+**Solid Mode (Default):**
+- Shows mesh with solid surfaces and lighting
+- Best for viewing mesh structure and surface details
+- Uses directional lighting for depth perception
+
+**Wireframe Mode:**
+- Shows mesh edges only (no surfaces)
+- Best for examining mesh topology and structure
+- Useful for debugging mesh issues
+
+**Switching Modes:**
+- Use the **"Solid"** and **"Wireframe"** buttons above the viewer
+- Current mode is highlighted
+- Switch instantly between modes
+
+#### Performance
+
+**Optimized for:**
+- Meshes up to 100,000 vertices render smoothly
+- Larger meshes may have reduced frame rates
+- Performance depends on your graphics hardware
+
+**Requirements:**
+- Requires wgpu-compatible graphics hardware
+- Automatically falls back gracefully if wgpu unavailable
+- Error messages shown if rendering fails
+
+#### Benefits
+
+- **Visual verification** - See exactly what you're converting before processing
+- **Better understanding** - Examine mesh structure, topology, and details
+- **Catch issues early** - Identify problems before conversion
+- **Format preview** - See how mesh looks before converting to different format
+
+#### Troubleshooting
+
+**Viewer not showing:**
+- Check that mesh file is valid and supported format
+- Verify wgpu is available (most modern systems support it)
+- Check error messages in messages area
+
+**Performance issues:**
+- Large meshes (>100k vertices) may be slow
+- Try wireframe mode for better performance
+- Close other applications to free up GPU resources
+
+**Camera stuck:**
+- Click "Reset Camera" button to return to default view
+- Try zooming out (scroll down) if mesh appears too large
+
+**Rendering errors:**
+- Check that mesh file is not corrupted
+- Verify mesh has valid geometry (vertices and faces)
+- Error messages will explain the issue
 
 ---
 

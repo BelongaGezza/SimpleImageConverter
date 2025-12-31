@@ -22,8 +22,10 @@ pub fn render_options_panel(ui: &mut Ui, app: &mut ConverterApp) {
 
         // Output filename
         ui.horizontal(|ui| {
-            ui.label("Output Filename:");
-            ui.text_edit_singleline(&mut app.output_filename);
+            ui.label("Output Filename:")
+                .on_hover_text("The name of the output file. The extension will be updated automatically when you change the format.");
+            ui.text_edit_singleline(&mut app.output_filename)
+                .on_hover_text("Edit the output filename. The extension will be updated automatically when you change the format.");
         });
         ui.add_space(5.0);
 
@@ -43,7 +45,11 @@ pub fn render_options_panel(ui: &mut Ui, app: &mut ConverterApp) {
             };
             ui.label(&dir_display);
 
-            if ui.button("Browse...").clicked() {
+            if ui
+                .button("Browse...")
+                .on_hover_text("Select the output directory where converted files will be saved")
+                .clicked()
+            {
                 if let Some(selected_dir) = rfd::FileDialog::new().pick_folder() {
                     // Security: Validate the selected directory using proper directory validation
                     if validate_directory_path(&selected_dir).is_ok() {
@@ -67,8 +73,10 @@ pub fn render_options_panel(ui: &mut Ui, app: &mut ConverterApp) {
         if let Some(OutputFormat::Image(format)) = app.output_format {
             if format_supports_quality(format) {
                 ui.horizontal(|ui| {
-                    ui.label(format!("Quality (1-100): {}", app.quality));
-                    ui.add(egui::Slider::new(&mut app.quality, 1..=100));
+                    ui.label(format!("Quality (1-100): {}", app.quality))
+                        .on_hover_text("Image quality setting. Higher values = better quality but larger file size. Lower values = smaller files but reduced quality.");
+                    ui.add(egui::Slider::new(&mut app.quality, 1..=100))
+                        .on_hover_text("Adjust image quality (1-100). Higher = better quality, larger files. Lower = smaller files, reduced quality.");
                 });
                 ui.add_space(10.0);
             }
@@ -81,10 +89,12 @@ pub fn render_options_panel(ui: &mut Ui, app: &mut ConverterApp) {
             ui.add_space(5.0);
 
             // Transform options (radio buttons)
-            ui.label("Coordinate System Transform:");
+            ui.label("Coordinate System Transform:")
+                .on_hover_text("Transform the mesh coordinate system during conversion. Useful when converting between different 3D software formats.");
             ui.horizontal(|ui| {
                 if ui
                     .radio_value(&mut app.mesh_transform, None, "None")
+                    .on_hover_text("No coordinate system transformation")
                     .clicked()
                 {
                     app.mesh_transform = None;
@@ -95,6 +105,7 @@ pub fn render_options_panel(ui: &mut Ui, app: &mut ConverterApp) {
                         Some((CoordinateSystem::ZUp, CoordinateSystem::YUp)),
                         "Z-up → Y-up",
                     )
+                    .on_hover_text("Transform from Z-up to Y-up coordinate system")
                     .clicked()
                 {
                     app.mesh_transform = Some((CoordinateSystem::ZUp, CoordinateSystem::YUp));
@@ -105,6 +116,7 @@ pub fn render_options_panel(ui: &mut Ui, app: &mut ConverterApp) {
                         Some((CoordinateSystem::YUp, CoordinateSystem::ZUp)),
                         "Y-up → Z-up",
                     )
+                    .on_hover_text("Transform from Y-up to Z-up coordinate system")
                     .clicked()
                 {
                     app.mesh_transform = Some((CoordinateSystem::YUp, CoordinateSystem::ZUp));
@@ -113,11 +125,13 @@ pub fn render_options_panel(ui: &mut Ui, app: &mut ConverterApp) {
             ui.add_space(5.0);
 
             // Recalculate normals checkbox
-            ui.checkbox(&mut app.mesh_recalculate_normals, "Recalculate Normals");
+            ui.checkbox(&mut app.mesh_recalculate_normals, "Recalculate Normals")
+                .on_hover_text("Recalculate vertex normals for the mesh. This may improve rendering quality.");
             ui.add_space(5.0);
 
             // Validate checkbox
-            ui.checkbox(&mut app.mesh_validate, "Validate Mesh");
+            ui.checkbox(&mut app.mesh_validate, "Validate Mesh")
+                .on_hover_text("Validate mesh integrity before conversion. This checks for common mesh errors.");
             ui.add_space(10.0);
         }
 
@@ -127,16 +141,20 @@ pub fn render_options_panel(ui: &mut Ui, app: &mut ConverterApp) {
 
             // Max file size
             ui.horizontal(|ui| {
-                ui.label("Max File Size (MB):");
-                ui.add(egui::Slider::new(&mut app.max_file_size_mb, 1..=1024));
+                ui.label("Max File Size (MB):")
+                    .on_hover_text("Maximum file size limit in megabytes. Files larger than this will be rejected for security.");
+                ui.add(egui::Slider::new(&mut app.max_file_size_mb, 1..=1024))
+                    .on_hover_text("Adjust maximum file size limit (1-1024 MB)");
                 ui.label(format!("{} MB", app.max_file_size_mb));
             });
 
             // Max dimension (images only)
             if let Some(crate::app::FileType::Image) = app.detected_file_type {
                 ui.horizontal(|ui| {
-                    ui.label("Max Dimension (pixels):");
-                    ui.add(egui::Slider::new(&mut app.max_dimension, 1000..=65535));
+                    ui.label("Max Dimension (pixels):")
+                        .on_hover_text("Maximum image dimension in pixels. Images larger than this will be rejected.");
+                    ui.add(egui::Slider::new(&mut app.max_dimension, 1000..=65535))
+                        .on_hover_text("Adjust maximum image dimension (1000-65535 pixels)");
                     ui.label(format!("{} px", app.max_dimension));
                 });
             }
@@ -144,14 +162,18 @@ pub fn render_options_panel(ui: &mut Ui, app: &mut ConverterApp) {
             // Max vertices/faces (meshes only)
             if let Some(crate::app::FileType::Mesh) = app.detected_file_type {
                 ui.horizontal(|ui| {
-                    ui.label("Max Vertices:");
-                    ui.add(egui::Slider::new(&mut app.max_vertices, 1000..=10_000_000));
+                    ui.label("Max Vertices:")
+                        .on_hover_text("Maximum number of vertices allowed in mesh files. Meshes with more vertices will be rejected.");
+                    ui.add(egui::Slider::new(&mut app.max_vertices, 1000..=10_000_000))
+                        .on_hover_text("Adjust maximum vertex count (1000-10,000,000)");
                     ui.label(format!("{}", app.max_vertices));
                 });
 
                 ui.horizontal(|ui| {
-                    ui.label("Max Faces:");
-                    ui.add(egui::Slider::new(&mut app.max_faces, 1000..=10_000_000));
+                    ui.label("Max Faces:")
+                        .on_hover_text("Maximum number of faces allowed in mesh files. Meshes with more faces will be rejected.");
+                    ui.add(egui::Slider::new(&mut app.max_faces, 1000..=10_000_000))
+                        .on_hover_text("Adjust maximum face count (1000-10,000,000)");
                     ui.label(format!("{}", app.max_faces));
                 });
             }

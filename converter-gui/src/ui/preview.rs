@@ -24,9 +24,12 @@ use std::sync::{Arc, Mutex};
 ///
 /// This cache stores preview thumbnails in memory to avoid reloading
 /// images when switching between files or changing formats.
+/// Uses LRU (Least Recently Used) eviction policy for optimal cache performance.
 pub struct PreviewCache {
     /// Map from file path to cached preview data
     cache: HashMap<PathBuf, Arc<PreviewData>>,
+    /// Access order tracking for LRU eviction (most recently used at the end)
+    access_order: Vec<PathBuf>,
     /// Maximum number of cached entries (to prevent memory bloat)
     max_entries: usize,
 }
@@ -50,6 +53,7 @@ impl PreviewCache {
     pub fn new() -> Self {
         Self {
             cache: HashMap::new(),
+            access_order: Vec::new(),
             max_entries: 50, // Cache up to 50 previews
         }
     }
@@ -59,31 +63,64 @@ impl PreviewCache {
     pub fn with_max_entries(max_entries: usize) -> Self {
         Self {
             cache: HashMap::new(),
+            access_order: Vec::new(),
             max_entries,
         }
     }
 
     /// Get a preview from the cache, or None if not cached
-    pub fn get(&self, path: &Path) -> Option<Arc<PreviewData>> {
-        self.cache.get(path).cloned()
+    ///
+    /// Updates the access order to mark this item as most recently used (LRU).
+    pub fn get(&mut self, path: &Path) -> Option<Arc<PreviewData>> {
+        if let Some(preview) = self.cache.get(path).cloned() {
+            // Update access order: move to end (most recently used)
+            let path_buf = path.to_path_buf();
+            if let Some(pos) = self.access_order.iter().position(|p| p == &path_buf) {
+                self.access_order.remove(pos);
+            }
+            self.access_order.push(path_buf);
+            Some(preview)
+        } else {
+            None
+        }
     }
 
     /// Store a preview in the cache
+    ///
+    /// Uses LRU eviction: removes least recently used items when cache is full.
     pub fn insert(&mut self, path: PathBuf, preview: Arc<PreviewData>) {
-        // Remove oldest entries if cache is full
-        while self.cache.len() >= self.max_entries && !self.cache.is_empty() {
-            // Remove first entry (simple FIFO - could be improved with LRU)
-            if let Some(key) = self.cache.keys().next().cloned() {
-                self.cache.remove(&key);
+        // Check if this path already exists (update case)
+        let is_update = self.cache.contains_key(&path);
+
+        if !is_update {
+            // Remove least recently used entries if cache is full
+            while self.cache.len() >= self.max_entries && !self.cache.is_empty() {
+                // Remove first entry in access_order (least recently used)
+                if let Some(lru_path) = self.access_order.first().cloned() {
+                    self.cache.remove(&lru_path);
+                    self.access_order.remove(0);
+                } else {
+                    break; // Safety: avoid infinite loop
+                }
+            }
+        } else {
+            // Update case: remove from access order to re-add at end
+            if let Some(pos) = self.access_order.iter().position(|p| p == &path) {
+                self.access_order.remove(pos);
             }
         }
-        self.cache.insert(path, preview);
+
+        // Insert/update the cache entry
+        self.cache.insert(path.clone(), preview);
+        // Add to end of access order (most recently used)
+        self.access_order.push(path);
     }
 
     /// Clear the cache
     #[allow(dead_code)] // Reserved for future cache management
     pub fn clear(&mut self) {
         self.cache.clear();
+        self.access_order.clear();
     }
 }
 
@@ -154,8 +191,7 @@ pub fn generate_image_preview(
     limits: &ResourceLimits,
 ) -> std::result::Result<PreviewData, PreviewError> {
     // Validate file path (security check)
-    validate_file_path(image_path)
-        .map_err(|_| PreviewError::InvalidPath)?;
+    validate_file_path(image_path).map_err(|_| PreviewError::InvalidPath)?;
 
     // Load image using image crate
     let dynamic_image = image::open(image_path)
@@ -164,31 +200,28 @@ pub fn generate_image_preview(
     let (original_width, original_height) = dynamic_image.dimensions();
 
     // Check image dimensions against resource limits
-    if original_width > limits.max_image_dimension
-        || original_height > limits.max_image_dimension
-    {
+    if original_width > limits.max_image_dimension || original_height > limits.max_image_dimension {
         return Err(PreviewError::ImageTooLarge);
     }
 
     // Generate thumbnail if image is larger than max dimensions
-    let (preview_width, preview_height, thumbnail_image) = if original_width > max_width
-        || original_height > max_height
-    {
-        // Calculate thumbnail dimensions maintaining aspect ratio
-        let width_ratio = max_width as f32 / original_width as f32;
-        let height_ratio = max_height as f32 / original_height as f32;
-        let ratio = width_ratio.min(height_ratio);
+    let (preview_width, preview_height, thumbnail_image) =
+        if original_width > max_width || original_height > max_height {
+            // Calculate thumbnail dimensions maintaining aspect ratio
+            let width_ratio = max_width as f32 / original_width as f32;
+            let height_ratio = max_height as f32 / original_height as f32;
+            let ratio = width_ratio.min(height_ratio);
 
-        let thumb_width = (original_width as f32 * ratio) as u32;
-        let thumb_height = (original_height as f32 * ratio) as u32;
+            let thumb_width = (original_width as f32 * ratio) as u32;
+            let thumb_height = (original_height as f32 * ratio) as u32;
 
-        // Resize image
-        let resized = dynamic_image.thumbnail(thumb_width, thumb_height);
-        (thumb_width, thumb_height, resized)
-    } else {
-        // Use original image
-        (original_width, original_height, dynamic_image)
-    };
+            // Resize image
+            let resized = dynamic_image.thumbnail(thumb_width, thumb_height);
+            (thumb_width, thumb_height, resized)
+        } else {
+            // Use original image
+            (original_width, original_height, dynamic_image)
+        };
 
     // Convert to RGBA8 for egui::ColorImage
     let rgba8_image = thumbnail_image.to_rgba8();
@@ -198,7 +231,8 @@ pub fn generate_image_preview(
     // Create egui::ColorImage from RGBA bytes
     // ColorImage expects pixels in row-major order, which matches image crate format
     // Size is [width, height] as an array
-    let color_image = ColorImage::from_rgba_unmultiplied([width as usize, height as usize], &pixels);
+    let color_image =
+        ColorImage::from_rgba_unmultiplied([width as usize, height as usize], &pixels);
 
     Ok(PreviewData {
         image: color_image,
@@ -212,7 +246,7 @@ pub fn generate_image_preview(
 /// Get or generate a cached preview for an image
 ///
 /// This function checks the cache first, and if not found, generates
-/// a new preview and caches it.
+/// a new preview and caches it. Uses LRU cache eviction for optimal performance.
 ///
 /// # Arguments
 ///
@@ -232,9 +266,9 @@ pub fn get_or_generate_preview(
     limits: &ResourceLimits,
     cache: &Arc<Mutex<PreviewCache>>,
 ) -> std::result::Result<Arc<PreviewData>, PreviewError> {
-    // Check cache first
+    // Check cache first (this updates LRU access order)
     {
-        let cache_guard = cache.lock().unwrap();
+        let mut cache_guard = cache.lock().unwrap();
         if let Some(cached) = cache_guard.get(image_path) {
             return Ok(cached);
         }
@@ -269,6 +303,54 @@ mod tests {
     fn test_preview_cache_with_max_entries() {
         let cache = PreviewCache::with_max_entries(100);
         assert_eq!(cache.max_entries, 100);
+    }
+
+    #[test]
+    fn test_preview_cache_lru_eviction() {
+        use egui::ColorImage;
+        use std::sync::Arc;
+
+        let mut cache = PreviewCache::with_max_entries(3);
+
+        // Create dummy preview data
+        let create_preview = |path: &str| -> (PathBuf, Arc<PreviewData>) {
+            let path_buf = PathBuf::from(path);
+            let color_img = ColorImage::new([1, 1], egui::Color32::BLACK);
+            let preview = Arc::new(PreviewData {
+                image: color_img,
+                original_width: 100,
+                original_height: 100,
+                preview_width: 100,
+                preview_height: 100,
+            });
+            (path_buf, preview)
+        };
+
+        // Insert 3 items
+        let (path1, preview1) = create_preview("test1.png");
+        let (path2, preview2) = create_preview("test2.png");
+        let (path3, preview3) = create_preview("test3.png");
+
+        cache.insert(path1.clone(), preview1);
+        cache.insert(path2.clone(), preview2);
+        cache.insert(path3.clone(), preview3);
+
+        assert_eq!(cache.cache.len(), 3);
+
+        // Access path1 to make it most recently used
+        let _ = cache.get(&path1);
+
+        // Insert 4th item - should evict path2 (least recently used, since path1 was accessed)
+        let (path4, preview4) = create_preview("test4.png");
+        cache.insert(path4.clone(), preview4);
+
+        assert_eq!(cache.cache.len(), 3);
+        // path2 should be evicted
+        assert!(cache.get(&path2).is_none());
+        // path1, path3, path4 should still be in cache
+        assert!(cache.get(&path1).is_some());
+        assert!(cache.get(&path3).is_some());
+        assert!(cache.get(&path4).is_some());
     }
 
     // Note: Full integration tests would require actual image files
@@ -332,8 +414,7 @@ pub fn get_mesh_metadata(
     limits: &ResourceLimits,
 ) -> std::result::Result<MeshMetadata, PreviewError> {
     // Validate input file path (security check)
-    validate_file_path(mesh_path)
-        .map_err(|_| PreviewError::InvalidPath)?;
+    validate_file_path(mesh_path).map_err(|_| PreviewError::InvalidPath)?;
 
     // Read input file with size validation (DoS prevention)
     let input_data = std::fs::read(mesh_path)
@@ -359,7 +440,8 @@ pub fn get_mesh_metadata(
         .map_err(|e| PreviewError::FileReadError(format!("Failed to get mesh reader: {}", e)))?;
 
     // Read mesh to extract metadata
-    let mesh = reader.read(&input_data)
+    let mesh = reader
+        .read(&input_data)
         .map_err(|e| PreviewError::FileReadError(format!("Failed to read mesh: {}", e)))?;
 
     // Extract metadata
@@ -396,4 +478,3 @@ mod mesh_metadata_tests {
     // Note: Full integration tests would require actual mesh files
     // These are handled in the mesh-core crate's integration tests
 }
-

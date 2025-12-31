@@ -48,20 +48,26 @@ fn render_image_formats(ui: &mut Ui, app: &mut ConverterApp) {
         }
     }
 
-    // Render radio buttons
+    // Render radio buttons with improved spacing
     for format in &formats {
         let format_name = get_image_format_name(*format);
+        let tooltip = format!(
+            "Convert to {} format. Click to select this output format. The output filename will be updated automatically.",
+            format_name
+        );
 
-        if ui
+        let response = ui
             .radio_value(
                 &mut app.output_format,
                 Some(OutputFormat::Image(*format)),
                 format_name,
             )
-            .changed()
-        {
+            .on_hover_text(tooltip);
+
+        if response.changed() {
             update_output_filename(app);
         }
+        ui.add_space(2.0); // Add small spacing between radio buttons
     }
 }
 
@@ -77,20 +83,26 @@ fn render_mesh_formats(ui: &mut Ui, app: &mut ConverterApp) {
         }
     }
 
-    // Render radio buttons
+    // Render radio buttons with improved spacing
     for format in &formats {
         let format_name = get_mesh_format_name(*format);
+        let tooltip = format!(
+            "Convert to {} format. Click to select this output format. The output filename will be updated automatically.",
+            format_name
+        );
 
-        if ui
+        let response = ui
             .radio_value(
                 &mut app.output_format,
                 Some(OutputFormat::Mesh(*format)),
                 format_name,
             )
-            .changed()
-        {
+            .on_hover_text(tooltip);
+
+        if response.changed() {
             update_output_filename(app);
         }
+        ui.add_space(2.0); // Add small spacing between radio buttons
     }
 }
 

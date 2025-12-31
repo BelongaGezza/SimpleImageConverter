@@ -21,6 +21,14 @@
 - Performance optimization opportunities identified
 - See sections below for detailed findings
 
+**Sprint 10 Research Completed:** December 30, 2025
+- opencascade-rs documentation verified and compiled (Task 1.1 support)
+- OCCT installation guide reviewed and confirmed complete
+- Build complexity and binary size impact documented
+- Limitations and known issues documented
+- STEP format reference updated with opencascade-rs information
+- See RESEARCHER_TASK1.1_SUPPORT_SUMMARY.md for details
+
 **Active Dependencies:**
 - ✅ `anyhow` v1.0 - Error handling (latest: 1.0.100)
 - ✅ `thiserror` v1.0 - Error types (⚠️ v2.0.17 available - defer upgrade)
@@ -49,6 +57,8 @@
 **Optional CAD Dependencies:**
 - ✅ `ruststep` v0.4.0 - STEP file parsing (feature-gated, ap203 feature)
 - ✅ `truck-*` v0.3.0-0.4.0 - STEP geometry processing (feature-gated)
+- ✅ `opencascade` v0.2.0 - OCCT Rust bindings (feature-gated, step-opencascade feature)
+- ✅ `opencascade-sys` v0.2.0 - OCCT FFI bindings (feature-gated, step-opencascade feature)
 
 ---
 
@@ -67,6 +77,7 @@
 | 2025-12-30 | **SPRINT 8** | Preview rendering researched - image thumbnails recommended, mesh preview simplified | Researcher |
 | 2025-12-30 | **SPRINT 8** | Performance optimization opportunities documented - sequential batch processing for v0.2.2 | Researcher |
 | 2025-12-30 | **SPRINT 8** | egui/eframe monitoring updated - 0.27.2 stable, 0.33.3 available (upgrade planned for v0.3.0) | Researcher |
+| 2025-12-30 | **SPRINT 10** | opencascade-rs documentation verified and compiled (Task 1.1 support) - OCCT installation guide complete, limitations documented, STEP reference updated | Researcher |
 
 ---
 
@@ -413,6 +424,76 @@ let tessellated = shell.triangulation(tolerance)?;
 - May not handle all STEP AP variants
 
 **Decision Note:** See `ARCHITECT_REVIEW_STEP_IMPLEMENTATION.md` for architecture decision on FACETED_BREP approach
+
+#### opencascade (v0.2.0) & opencascade-sys (v0.2.0) - OCCT Rust Bindings
+**License:** MIT OR Apache-2.0  
+**Status:** ✅ Active (Sprint 9 prototype complete, Sprint 10 full implementation)  
+**Current Usage:** Active in mesh-core with `step-opencascade` feature (optional)  
+**Repository:** https://github.com/bschwind/opencascade-rs
+
+**Components:**
+- opencascade (v0.2.0): High-level Rust wrapper for OCCT
+- opencascade-sys (v0.2.0): Low-level FFI bindings to OCCT
+
+**Requirements:**
+- **OpenCASCADE Technology (OCCT) 7.7+** must be installed on system
+- CMake 3.18+
+- C++17 compiler (GCC 7+, Clang 5+, or MSVC 2019+)
+- Platform-specific libraries (X11, OpenGL on Linux)
+
+**Key APIs:**
+```rust
+use opencascade::prelude::*;
+
+// Read STEP file
+let mut reader = STEPControl_Reader::default();
+reader.read_file("model.step")?;
+
+// Transfer root entities
+reader.transfer_root(1);
+let shape = reader.one_shape();
+
+// Tessellate
+let mut mesher = BRepMesh_IncrementalMesh::new(&shape, 0.01);
+mesher.perform();
+```
+
+**⚠️ CRITICAL REQUIREMENTS:**
+- **OCCT Installation Required:** Cannot use without OCCT installed
+- **Build Complexity:** High - requires C++ toolchain and OCCT
+- **Binary Size Impact:** +10-15 MB (dynamic) or +90-140 MB (static)
+- **Build Time:** 10-30 minutes first build (opencascade-sys compilation)
+
+**Current Status:**
+- ✅ Prototype implementation complete (Sprint 9)
+- ✅ Documentation complete (installation guide, limitations, troubleshooting)
+- 🟡 Full implementation in progress (Sprint 10)
+- ⚠️ Testing deferred until OCCT available
+
+**Gotchas:**
+- OCCT must be installed before building (no auto-detection)
+- Platform-specific installation paths vary
+- Runtime library dependencies must be in library path
+- Temporary file handling required (OCCT expects file paths, not bytes)
+- Tessellation quality configurable via deflection parameter
+
+**Best Practices:**
+```rust
+// Feature-gate all opencascade-rs code
+#[cfg(feature = "step-opencascade")]
+use mesh_core::formats::step_opencascade;
+
+// Use fallback strategy (try FACETED_BREP first, then opencascade-rs)
+// See mesh-core/src/formats/step.rs for integration pattern
+```
+
+**Documentation:**
+- Installation: `docs/OCCT_INSTALLATION.md`
+- Limitations: `docs/OPENCASCADE_RS_LIMITATIONS.md`
+- STEP Reference: `docs/STEP_FORMAT_REFERENCE.md` (opencascade-rs section)
+- Research: `RESEARCH_OPENCASCADE_RS_SPRINT9.md`
+
+**Decision Note:** See `ARCHITECT_REVIEW_STEP_IMPLEMENTATION.md` for architecture decision on hybrid approach (FACETED_BREP + opencascade-rs)
 
 ### Serialization
 
