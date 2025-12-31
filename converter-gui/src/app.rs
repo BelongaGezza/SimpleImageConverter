@@ -452,7 +452,7 @@ impl SettingsAutoSave {
 }
 
 impl eframe::App for ConverterApp {
-    fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         // Performance: egui automatically optimizes redraws - only updates when necessary
         // (mouse movement, window resize, or explicit request_repaint() calls)
 
@@ -830,9 +830,9 @@ impl eframe::App for ConverterApp {
                                             {
                                                 // Try to show 3D viewer if available
                                                 if let Some(ref viewer_arc) = self.viewer_3d {
-                                                    let mut viewer = viewer_arc.lock().unwrap();
-                                                    
-                                                    // Load mesh if not already loaded or if file changed
+                                                    // Handle mutex lock error gracefully
+                                                    if let Ok(mut viewer) = viewer_arc.lock() {
+                                                        // Load mesh if not already loaded or if file changed
                                                     let should_load = match &self.viewer_3d_loaded_file {
                                                         Some(loaded_path) if loaded_path == source_file => {
                                                             // Same file already loaded, no need to reload
@@ -943,6 +943,14 @@ impl eframe::App for ConverterApp {
                                                             ui.label(format!("UVs: {}", if metadata.has_uvs { "Yes" } else { "No" }));
                                                         }
                                                     }
+                                                } else {
+                                                    // Mutex lock failed - show error and fallback
+                                                    ui.label("Viewer unavailable: internal error");
+                                                    self.add_message(
+                                                        "Failed to access 3D viewer due to internal error".to_string(),
+                                                        crate::app::MessageType::Error,
+                                                    );
+                                                }
                                                 } else {
                                                     // Fallback: show mesh metadata
                                                     let limits = ResourceLimits::default();
@@ -1219,6 +1227,11 @@ impl ConverterApp {
     /// // app.start_conversion(ctx)?;
     /// ```
     pub fn start_conversion(&mut self, ctx: egui::Context) -> Result<(), String> {
+        // Prevent multiple concurrent conversions
+        if matches!(self.status, Status::Converting { .. }) {
+            return Err("Conversion already in progress.".to_string());
+        }
+
         // Validate required state
         let source_file = self
             .source_file
@@ -1858,17 +1871,17 @@ impl ConverterApp {
         }
 
         // Enter: Start conversion (if file and format selected)
-        if pressed_keys.contains(&egui::Key::Enter) {
-            if self.source_file.is_some()
-                && self.output_format.is_some()
-                && !matches!(self.status, Status::Converting { .. })
-            {
-                if let Err(e) = self.start_conversion(ctx.clone()) {
-                    self.add_message(
-                        format!("Could not start conversion: {}", e),
-                        MessageType::Error,
-                    );
-                }
+        // Use key_pressed() instead of keys_down to prevent key repeat
+        if ctx.input(|i| i.key_pressed(egui::Key::Enter))
+            && self.source_file.is_some()
+            && self.output_format.is_some()
+            && !matches!(self.status, Status::Converting { .. })
+        {
+            if let Err(e) = self.start_conversion(ctx.clone()) {
+                self.add_message(
+                    format!("Could not start conversion: {}", e),
+                    MessageType::Error,
+                );
             }
         }
     }

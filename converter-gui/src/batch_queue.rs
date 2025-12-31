@@ -60,6 +60,7 @@ pub enum ProcessingPriority {
     High = 2,
 }
 
+#[allow(clippy::derivable_impls)] // Manual impl needed because default is Medium, not first variant (Low)
 impl Default for ProcessingPriority {
     fn default() -> Self {
         Self::Medium

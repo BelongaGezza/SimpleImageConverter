@@ -14,14 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Documentation complete (Sprint 10)
 - Full B-Rep support with curved surfaces (planned for future release)
 
-**3D Mesh Viewer:**
-- ✅ **COMPLETE in v0.3.0** - Full 3D preview functionality implemented (Sprint 10_A)
-- ✅ wgpu-based rendering implemented
-- ✅ Camera controls and rendering modes functional
-- ✅ Integration testing complete
-
-**Parallel Processing UI Controls:**
-- ✅ **COMPLETE in v0.3.0** - Pause/resume/cancel controls implemented (Sprint 10)
+**Future Enhancements:**
+- Full STEP B-Rep support (opencascade-rs integration planned)
 
 ---
 
@@ -108,6 +102,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ✅ Security reviewed and approved by Security Specialist
 - ✅ Integration testing completed
 - ✅ Performance benchmarks documented
+- ✅ **RELEASED** - December 30, 2025
 
 ---
 

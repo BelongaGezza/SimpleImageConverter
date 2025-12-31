@@ -10,8 +10,8 @@ Two separate CLI tools written in Rust:
 
 **Status:** ✅ Active Development (Private Repository)
 
-**Current Version:** 0.3.0 (Released - December 30, 2025)  
-**Next Version:** 0.3.1 (Planned - UI Enhancements)
+**Current Version:** 0.2.2 (Released - December 30, 2025)  
+**Next Version:** 0.3.0 (In Development - Feature Completion)
 
 ## ✨ Features
 
@@ -306,11 +306,11 @@ cargo build --release --target x86_64-pc-windows-gnu
 - [x] Integration testing ✅ **COMPLETE**
 - [x] Security review ✅ **COMPLETE**
 
-**Sprint 10: v0.3.0 Feature Completion** 🟡 **IN PROGRESS**
+**Sprint 10: v0.3.0 Feature Completion** ✅ **COMPLETE**
 - [x] opencascade-rs testing and documentation ✅ **COMPLETE**
 - [x] 3D mesh viewer full implementation ✅ **COMPLETE** (Sprint 10_A)
 - [x] Parallel processing UI controls (pause/resume/cancel) ✅ **COMPLETE**
-- [ ] Integration testing (Sprint 10_A - in progress)
+- [x] Integration testing ✅ **COMPLETE** (Sprint 10_A)
 
 **Sprint 7-8: STEP + CAD** ✅ COMPLETE (v0.2.0)
 - [x] STEP FACETED_BREP extraction (v0.2.0)
@@ -398,7 +398,7 @@ This repository is currently **private** during initial development. Once mature
   - Feature-gated STEP support (`--features step`)
   - Comprehensive STEP documentation
   - 192 tests passing (all test suites)
-- [x] **v0.3.0** - Advanced Features ✅ **RELEASED** (December 30, 2025)
+- [ ] **v0.3.0** - Advanced Features 🟡 **IN DEVELOPMENT**
   - ✅ Parallel batch processing (concurrent file conversion) - **IMPLEMENTED**
     - Thread pool using `rayon` library
     - 4x speedup on 4-core systems
@@ -455,6 +455,6 @@ For questions or issues during private development phase, contact the repository
 ---
 
 **Last Updated:** December 30, 2025  
-**Status:** ✅ v0.2.1 Released (December 30, 2025) - GUI application available! Drag-and-drop interface for easy file conversion.
+**Status:** ✅ v0.2.2 Released (December 30, 2025) - GUI application available! Drag-and-drop interface for easy file conversion. v0.3.0 in development.
 
 **Note:** v0.2.0 includes STEP format support (FACETED_BREP only). Full B-Rep support with curved surfaces planned for v0.3.0. See Release Roadmap section above.

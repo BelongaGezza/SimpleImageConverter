@@ -136,10 +136,37 @@ impl MeshWriter for StlFormat {
 
         // Write each triangle
         for (face_idx, face) in mesh.faces.iter().enumerate() {
-            // Get the three vertices for this face
-            let v0 = &mesh.vertices[face.indices[0]];
-            let v1 = &mesh.vertices[face.indices[1]];
-            let v2 = &mesh.vertices[face.indices[2]];
+            // Get the three vertices for this face with explicit bounds checking
+            // (Defense-in-depth: validation already occurred above, but explicit checks
+            // provide better error messages and prevent issues if code is refactored)
+            let v0_idx = face.indices[0];
+            let v1_idx = face.indices[1];
+            let v2_idx = face.indices[2];
+
+            let v0 = mesh.vertices.get(v0_idx).ok_or_else(|| {
+                ConversionError::InvalidInput(format!(
+                    "Invalid vertex index {} for face {} (max: {})",
+                    v0_idx,
+                    face_idx,
+                    mesh.vertices.len().saturating_sub(1)
+                ))
+            })?;
+            let v1 = mesh.vertices.get(v1_idx).ok_or_else(|| {
+                ConversionError::InvalidInput(format!(
+                    "Invalid vertex index {} for face {} (max: {})",
+                    v1_idx,
+                    face_idx,
+                    mesh.vertices.len().saturating_sub(1)
+                ))
+            })?;
+            let v2 = mesh.vertices.get(v2_idx).ok_or_else(|| {
+                ConversionError::InvalidInput(format!(
+                    "Invalid vertex index {} for face {} (max: {})",
+                    v2_idx,
+                    face_idx,
+                    mesh.vertices.len().saturating_sub(1)
+                ))
+            })?;
 
             // Get or calculate normal
             // STL format stores one normal per face

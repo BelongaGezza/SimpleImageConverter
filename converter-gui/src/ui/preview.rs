@@ -268,7 +268,9 @@ pub fn get_or_generate_preview(
 ) -> std::result::Result<Arc<PreviewData>, PreviewError> {
     // Check cache first (this updates LRU access order)
     {
-        let mut cache_guard = cache.lock().unwrap();
+        let mut cache_guard = cache.lock().map_err(|e| {
+            PreviewError::GenerationError(format!("Failed to acquire cache lock: {}", e))
+        })?;
         if let Some(cached) = cache_guard.get(image_path) {
             return Ok(cached);
         }
@@ -281,7 +283,9 @@ pub fn get_or_generate_preview(
     let path_buf = image_path.to_path_buf();
     let preview_arc = Arc::new(preview);
     {
-        let mut cache_guard = cache.lock().unwrap();
+        let mut cache_guard = cache.lock().map_err(|e| {
+            PreviewError::GenerationError(format!("Failed to acquire cache lock: {}", e))
+        })?;
         // Insert the Arc (multiple references are fine)
         cache_guard.insert(path_buf, Arc::clone(&preview_arc));
     }
