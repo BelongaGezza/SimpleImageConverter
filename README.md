@@ -10,8 +10,8 @@ Two separate CLI tools written in Rust:
 
 **Status:** ✅ Active Development (Private Repository)
 
-**Current Version:** 0.2.2 (Released - December 30, 2025)  
-**Next Version:** 0.3.0 (In Development - Feature Completion)
+**Current Version:** 0.3.0 (Released - December 30, 2025)  
+**Next Version:** v1.0.0 (In Planning - Release Preparation)
 
 ## ✨ Features
 
@@ -40,17 +40,17 @@ Two separate CLI tools written in Rust:
 #### GUI Application (Recommended for Most Users)
 
 **Windows 11:**
-1. Download `simpleimageconverter-gui-v0.2.2-windows-x64.zip` from [Releases](https://github.com/BelongaGezza/SimpleImageConverter/releases)
+1. Download `simpleimageconverter-gui-v0.3.0-windows-x64.zip` from [Releases](https://github.com/BelongaGezza/SimpleImageConverter/releases)
 2. Extract to a location of your choice (e.g., `C:\Tools\SimpleImageConverter`)
 3. Run `converter-gui.exe`
 
 **macOS:**
-1. Download `simpleimageconverter-gui-v0.2.2-macos-x64.tar.gz` from [Releases](https://github.com/BelongaGezza/SimpleImageConverter/releases)
+1. Download `simpleimageconverter-gui-v0.3.0-macos-x64.tar.gz` from [Releases](https://github.com/BelongaGezza/SimpleImageConverter/releases)
 2. Extract: `tar -xzf simpleimageconverter-gui-*.tar.gz`
 3. Run `converter-gui`
 
 **Linux (Ubuntu 24.04+):**
-1. Download `simpleimageconverter-gui-v0.2.2-linux-x64.tar.gz` from [Releases](https://github.com/BelongaGezza/SimpleImageConverter/releases)
+1. Download `simpleimageconverter-gui-v0.3.0-linux-x64.tar.gz` from [Releases](https://github.com/BelongaGezza/SimpleImageConverter/releases)
 2. Extract: `tar -xzf simpleimageconverter-gui-*.tar.gz`
 3. Run `converter-gui`
 
@@ -107,7 +107,7 @@ The GUI provides an intuitive drag-and-drop interface for file conversion:
 - **v0.2.2:** Batch processing, preview functionality, settings persistence, conversion history
 - **v0.3.0:** Parallel batch processing (4x speedup on 4-core systems), settings auto-save, queue item editing
 - **v0.3.0:** Pause/resume/cancel controls for batch processing
-- **v0.3.0:** Interactive 3D mesh viewer with camera controls and rendering modes
+- **v0.3.0:** Interactive 3D mesh viewer with camera controls and rendering modes (hardware-accelerated)
 
 #### Option 2: Build from Source
 
@@ -312,6 +312,14 @@ cargo build --release --target x86_64-pc-windows-gnu
 - [x] Parallel processing UI controls (pause/resume/cancel) ✅ **COMPLETE**
 - [x] Integration testing ✅ **COMPLETE** (Sprint 10_A)
 
+**Sprint 11: GUI Polish & Quality Improvements** 🟡 **IN PROGRESS**
+- [ ] UI consistency and visual polish
+- [ ] Keyboard shortcuts implementation
+- [ ] Help system implementation
+- [ ] Performance optimization and benchmarks
+- [ ] Error message improvements
+- [ ] Documentation completion
+
 **Sprint 7-8: STEP + CAD** ✅ COMPLETE (v0.2.0)
 - [x] STEP FACETED_BREP extraction (v0.2.0)
 - [x] STEP read support (feature-gated)
@@ -398,17 +406,20 @@ This repository is currently **private** during initial development. Once mature
   - Feature-gated STEP support (`--features step`)
   - Comprehensive STEP documentation
   - 192 tests passing (all test suites)
-- [ ] **v0.3.0** - Advanced Features 🟡 **IN DEVELOPMENT**
-  - ✅ Parallel batch processing (concurrent file conversion) - **IMPLEMENTED**
+- [x] **v0.3.0** - Advanced Features ✅ **RELEASED** (December 30, 2025)
+  - ✅ Parallel batch processing (concurrent file conversion) - **COMPLETE**
     - Thread pool using `rayon` library
     - 4x speedup on 4-core systems
     - Configurable concurrency limits (1-16)
     - Thread-safe queue management
-  - ✅ Settings auto-save on change - **IMPLEMENTED**
-  - ✅ Queue item editing - **IMPLEMENTED**
-  - ✅ Pause/resume/cancel controls (Sprint 10 - complete)
-  - 🟡 Full STEP B-Rep support (opencascade-rs integration - documentation complete, implementation planned)
-  - ✅ 3D mesh viewer (full implementation - Sprint 10_A - complete)
+  - ✅ Settings auto-save on change - **COMPLETE**
+  - ✅ Queue item editing - **COMPLETE**
+  - ✅ Pause/resume/cancel controls - **COMPLETE**
+  - ✅ 3D mesh viewer (full implementation) - **COMPLETE**
+    - Hardware-accelerated rendering (wgpu)
+    - Camera controls (orbit, pan, zoom)
+    - Rendering modes (solid/wireframe)
+  - ⏳ Full STEP B-Rep support (opencascade-rs integration - deferred to v1.1.0)
 - [x] **v0.2.1** - GUI release ✅ **RELEASED** (December 30, 2025)
   - Graphical user interface with egui framework
   - Drag-and-drop file support
@@ -455,6 +466,6 @@ For questions or issues during private development phase, contact the repository
 ---
 
 **Last Updated:** December 30, 2025  
-**Status:** ✅ v0.2.2 Released (December 30, 2025) - GUI application available! Drag-and-drop interface for easy file conversion. v0.3.0 in development.
+**Status:** ✅ v0.3.0 Released (December 30, 2025) - Parallel batch processing, 3D mesh viewer, and enhanced GUI features now available! Preparing for v1.0.0 release.
 
 **Note:** v0.2.0 includes STEP format support (FACETED_BREP only). Full B-Rep support with curved surfaces planned for v0.3.0. See Release Roadmap section above.

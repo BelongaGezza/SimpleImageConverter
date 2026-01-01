@@ -1,17 +1,41 @@
 # Project Roadmap
 ## Simple Image Converter
 
-**Last Updated:** December 30, 2025 (v0.2.2 Released)
-**Current Version:** v0.2.2
-**Next Release:** v0.3.0 (Full STEP/CAD Support with opencascade-rs)
+**Last Updated:** December 30, 2025 (v0.3.0 Released, v1.0.0 Scope Defined)
+**Current Version:** v0.3.0
+**Next Release:** v1.0.0 (First Stable Release - Mid to Late January 2026)
 
 ---
 
-## 🎯 Current Phase: v0.3.0 - Feature Development
+## 🎯 v1.0.0 Scope Definition
+
+**Status:** ✅ **SCOPE DEFINED** (December 30, 2025)  
+**Reference:** `V1.0.0_SCOPE.md` - Complete scope definition  
+**Target Release:** Mid to Late January 2026
+
+### Included in v1.0.0
+
+- ✅ **Core Conversion Features:** All essential 2D image and 3D mesh formats
+- ✅ **GUI Application:** Complete, polished interface with all features
+- ✅ **Basic Packaging:** Portable archives (ZIP, TAR.GZ) for all platforms
+- ✅ **Documentation:** Comprehensive user and developer documentation
+- ✅ **Quality & Performance:** Optimized, tested, production-ready
+
+### Deferred to v1.1.0
+
+- ⏳ **Full STEP B-Rep Support:** opencascade-rs integration (NURBS, curved surfaces)
+- ⏳ **Installer Packages:** MSI (Windows), DMG (macOS), DEB (Linux)
+- ⏳ **Advanced Packaging:** Package manager distribution (winget, Homebrew, apt)
+
+**Rationale:** Focused scope enables timely v1.0.0 release with complete, polished, production-ready functionality. Deferred features have clear paths for v1.1.0 and beyond.
+
+---
+
+## 🎯 Current Phase: Sprint 11 - v1.0.0 Preparation
 
 ### Status Overview
 
-**Current Status:** ✅ **v0.2.2 RELEASED - v0.3.0 IN DEVELOPMENT (Sprint 9 Complete, Sprint 10 Ready)**
+**Current Status:** ✅ **v0.3.0 RELEASED - Sprint 11 IN PROGRESS (v1.0.0 Preparation - GUI Polish & Quality Improvements)**
 
 **Architectural Decision:** ✅ **APPROVED** - See `ARCHITECT_REVIEW_STEP_IMPLEMENTATION.md` for complete decision record.
 - **v0.2.0:** FACETED_BREP extraction (Pure Rust) - ✅ Approved
@@ -59,15 +83,24 @@
   - ✅ Final validation complete - See `RELEASE_VALIDATION_v0.2.0.md`
   - ✅ **Status:** ✅ **READY FOR RELEASE** - All checks pass
 
-**In Progress (v0.3.0 - Sprint 9 Complete):**
+**Completed (v0.3.0 - Sprint 9-10):**
 - ✅ Parallel batch processing implementation (Sprint 9)
 - ✅ Settings auto-save implementation (Sprint 9)
 - ✅ Queue item editing implementation (Sprint 9)
 - ✅ opencascade-rs research complete (Sprint 9)
-- ✅ 3D viewer research complete (Sprint 9)
-- 🟡 opencascade-rs prototype (structure ready, testing pending OCCT installation)
-- 🟡 3D viewer prototype (structure ready)
-- ⏳ Full implementation and integration (Sprint 10)
+- ✅ 3D viewer full implementation (Sprint 10_A)
+- ✅ Pause/resume/cancel controls (Sprint 10)
+- ✅ Integration testing (Sprint 10_A)
+- ✅ v0.3.0 release (December 30, 2025)
+
+**In Progress (Sprint 11 - v1.0.0 Preparation):**
+- ✅ UI consistency and visual polish (Task 1.1 - COMPLETE)
+- ✅ Keyboard shortcuts implementation (Task 1.2 - COMPLETE)
+- 🟡 Help system implementation (Task 1.3 - In Progress)
+- ✅ Performance optimization and benchmarks (Task 2.1 - COMPLETE)
+- ✅ Error message improvements (Task 2.2 - COMPLETE)
+- ✅ Documentation completion (Task 2.3 - COMPLETE)
+- ✅ v1.0.0 scope definition and release planning (Task 3.1 - COMPLETE)
 
 ---
 
@@ -401,18 +434,41 @@ FACETED_BREP
 
 ---
 
-## 🔮 Future Phases
+## 🔮 Future Releases
 
-### v0.3.0 - GUI Implementation
-- Desktop GUI using egui
-- Drag-and-drop file conversion
-- Real-time preview
-- See `GUI_DESIGN_AND_IMPLEMENTATION.md` for details
+### v1.0.0 - First Stable Release (Target: Mid to Late January 2026)
+- ✅ Core conversion features (all essential formats)
+- ✅ Complete GUI application (polished, production-ready)
+- ✅ Basic packaging (portable archives)
+- ✅ Comprehensive documentation
+- ✅ Quality improvements and performance optimization
+- **Reference:** `V1.0.0_SCOPE.md` - Complete scope definition
+- **Status:** Scope defined, Sprint 11 in progress
 
-### v0.4.0+ - Additional Formats
-- Additional 2D image formats
-- Additional 3D mesh formats
+### v1.1.0 - Full STEP Support (Planned)
+- Full STEP B-Rep support via opencascade-rs integration
+- NURBS surface tessellation
+- Curved surface support (cylinders, spheres, etc.)
+- Enhanced STEP entity coverage
+- **Status:** Research complete, implementation deferred from v1.0.0
+
+### v1.2.0 - Installer & Advanced Packaging (Planned)
+- MSI installer (Windows) via cargo-wix
+- DMG package (macOS) with code signing
+- DEB packages (Linux) via cargo-deb
+- Package manager distribution:
+  - Windows: winget
+  - macOS: Homebrew Cask
+  - Linux: apt (DEB packages)
+- **Status:** Strategy defined, implementation deferred from v1.0.0
+
+### v1.3.0+ - Additional Features (Future)
+- Additional image formats (TGA, ICO, DDS, HDR, OpenEXR, AVIF, PDF)
+- Additional mesh formats (IGES, 3MF)
 - Enhanced conversion options
+- Cloud integration
+- Web service API
+- Mobile applications (via Tauri)
 
 ---
 
@@ -433,6 +489,10 @@ FACETED_BREP
 - `PACKAGING_STRATEGY.md` - ✅ Complete packaging strategy (System Architect)
 - `SENIOR_ENGINEER_REVIEW_PACKAGING_STRATEGY.md` - ✅ Implementation review and approval
 - `PACKAGING_IMPLEMENTATION_SUMMARY.md` - Quick reference guide
+
+### v1.0.0 Release Planning
+- `V1.0.0_SCOPE.md` - ✅ v1.0.0 scope definition (December 30, 2025)
+- `V1.0.0_RELEASE_CHECKLIST.md` - ✅ Release checklist and preparation guide
 
 ### Planning & Research
 - `V0.2.0_PHASE_PLAN.md` - Full v0.2.0 phase plan

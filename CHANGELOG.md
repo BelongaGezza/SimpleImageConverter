@@ -7,15 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Sprint 11 - v1.0.0 Preparation (In Progress)
+
+**Error Message Improvements (Task 2.2):**
+- ✅ User-friendly error messages with actionable guidance
+- ✅ Context-aware error messages that adapt based on error type
+- ✅ Security-first error sanitization (no path or system information leakage)
+- ✅ Comprehensive error message mapping for all error types
+- ✅ Security review approved (see `SECURITY_REVIEW_TASK_2.2.md`)
+- ✅ All error messages follow consistent format and style
+
+**Key Features:**
+- Error messages include specific suggestions for resolution
+- I/O errors mapped to user-friendly, actionable messages
+- Resource limit errors include specific limits and guidance
+- Format errors provide clear guidance on supported formats
+- Path sanitization ensures no sensitive information exposure
+
 ### Planned for Future Releases
 
 **Full STEP B-Rep Support:**
 - opencascade-rs integration research complete
 - Documentation complete (Sprint 10)
-- Full B-Rep support with curved surfaces (planned for future release)
+- Full B-Rep support with curved surfaces (planned for v1.1.0)
 
 **Future Enhancements:**
-- Full STEP B-Rep support (opencascade-rs integration planned)
+- Full STEP B-Rep support (opencascade-rs integration planned for v1.1.0)
 
 ---
 

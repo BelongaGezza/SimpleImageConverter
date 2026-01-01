@@ -7,8 +7,9 @@
 
 use crate::app::ConverterApp;
 use crate::history::ConversionEntry;
+use crate::ui::style;
 use common::validation::validate_file_path;
-use egui::{Color32, RichText, Ui};
+use egui::{RichText, Ui};
 
 /// Render the conversion history UI panel
 ///
@@ -17,7 +18,7 @@ use egui::{Color32, RichText, Ui};
 pub fn render_history_panel(ui: &mut Ui, app: &mut ConverterApp) {
     ui.heading("Conversion History");
 
-    ui.add_space(10.0);
+    ui.add_space(style::spacing::STANDARD);
 
     let history_empty = app
         .history
@@ -29,7 +30,7 @@ pub fn render_history_panel(ui: &mut Ui, app: &mut ConverterApp) {
         ui.label(
             RichText::new("No conversion history")
                 .italics()
-                .color(Color32::GRAY),
+                .color(style::colors::ui::PLACEHOLDER_TEXT),
         );
     } else {
         // Clear history button with confirmation
@@ -45,7 +46,7 @@ pub fn render_history_panel(ui: &mut Ui, app: &mut ConverterApp) {
             }
         });
 
-        ui.add_space(10.0);
+        ui.add_space(style::spacing::STANDARD);
 
         // History entries list
         let mut entries_to_remove = Vec::new();
@@ -54,7 +55,7 @@ pub fn render_history_panel(ui: &mut Ui, app: &mut ConverterApp) {
 
         if let Some(ref history) = app.history {
             egui::ScrollArea::vertical()
-                .max_height(400.0)
+                .max_height(style::scroll::BATCH_QUEUE_MAX_HEIGHT)
                 .show(ui, |ui| {
                     for (index, entry) in history.entries.iter().enumerate() {
                         let (should_remove, should_open) = render_history_entry(ui, entry, index);
@@ -126,9 +127,9 @@ fn render_history_entry(ui: &mut Ui, entry: &ConversionEntry, _index: usize) -> 
             ui.horizontal(|ui| {
                 // Success/failure status indicator (not a checkbox - just shows status)
                 let (icon, color) = if entry.success {
-                    ("✓", Color32::from_rgb(50, 200, 50))
+                    (style::icons::SUCCESS, style::colors::message::SUCCESS)
                 } else {
-                    ("✗", Color32::from_rgb(200, 50, 50))
+                    (style::icons::ERROR, style::colors::message::ERROR)
                 };
                 // Use a label with tooltip to clarify this is a status indicator
                 ui.label(RichText::new(icon).size(16.0).color(color))
@@ -144,13 +145,13 @@ fn render_history_entry(ui: &mut Ui, entry: &ConversionEntry, _index: usize) -> 
                 ui.label(RichText::new(entry.output_format.clone()).small());
             });
 
-            ui.add_space(5.0);
+            ui.add_space(style::spacing::MEDIUM);
 
             // Timestamp
             ui.label(
                 RichText::new(entry.formatted_timestamp())
                     .small()
-                    .color(Color32::GRAY),
+                    .color(style::colors::ui::SECONDARY_TEXT),
             );
 
             // Error message if failed
@@ -159,7 +160,7 @@ fn render_history_entry(ui: &mut Ui, entry: &ConversionEntry, _index: usize) -> 
                     ui.label(
                         RichText::new(error)
                             .small()
-                            .color(Color32::from_rgb(200, 50, 50)),
+                            .color(style::colors::message::ERROR),
                     );
                 }
             }
@@ -168,7 +169,7 @@ fn render_history_entry(ui: &mut Ui, entry: &ConversionEntry, _index: usize) -> 
             ui.horizontal(|ui| {
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     // Add padding to the right of buttons (left side in RTL layout)
-                    ui.add_space(10.0);
+                    ui.add_space(style::spacing::STANDARD);
 
                     if entry.success {
                         if ui
@@ -193,6 +194,6 @@ fn render_history_entry(ui: &mut Ui, entry: &ConversionEntry, _index: usize) -> 
         });
     });
 
-    ui.add_space(5.0);
+    ui.add_space(style::spacing::MEDIUM);
     (should_remove, should_open)
 }

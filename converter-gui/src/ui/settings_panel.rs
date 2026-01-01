@@ -7,7 +7,8 @@
 
 use crate::app::{AutoSaveStatus, ConverterApp};
 use crate::settings::AppSettings;
-use egui::{Color32, RichText, Ui};
+use crate::ui::style;
+use egui::{RichText, Ui};
 
 /// Render the settings UI panel
 ///
@@ -25,7 +26,7 @@ pub fn render_settings_panel(ui: &mut Ui, app: &mut ConverterApp) {
                 ui.label(
                     RichText::new("Saving...")
                         .small()
-                        .color(Color32::GRAY)
+                        .color(style::colors::ui::SECONDARY_TEXT)
                         .italics(),
                 );
             }
@@ -33,34 +34,34 @@ pub fn render_settings_panel(ui: &mut Ui, app: &mut ConverterApp) {
                 ui.label(
                     RichText::new("Saving...")
                         .small()
-                        .color(Color32::from_rgb(100, 150, 255)),
+                        .color(style::colors::auto_save::SAVING),
                 );
             }
             AutoSaveStatus::Saved => {
                 ui.label(
                     RichText::new("✓ Saved")
                         .small()
-                        .color(Color32::from_rgb(50, 200, 50)),
+                        .color(style::colors::auto_save::SAVED),
                 );
             }
             AutoSaveStatus::Error => {
                 ui.label(
                     RichText::new("✗ Save failed")
                         .small()
-                        .color(Color32::from_rgb(200, 50, 50)),
+                        .color(style::colors::auto_save::ERROR),
                 );
             }
         }
     });
 
-    ui.add_space(10.0);
+    ui.add_space(style::spacing::STANDARD);
 
     let mut should_browse_dir = false;
 
     if let Some(ref mut settings) = app.settings {
         // General settings
         ui.collapsing("General", |ui| {
-            ui.add_space(5.0);
+            ui.add_space(style::spacing::MEDIUM);
 
             // Default output directory
             ui.horizontal(|ui| {
@@ -71,7 +72,7 @@ pub fn render_settings_panel(ui: &mut Ui, app: &mut ConverterApp) {
                     ui.label(
                         RichText::new("(Use source file directory)")
                             .italics()
-                            .color(egui::Color32::GRAY),
+                            .color(style::colors::ui::PLACEHOLDER_TEXT),
                     );
                 }
                 if ui.button("Browse...")
@@ -82,7 +83,7 @@ pub fn render_settings_panel(ui: &mut Ui, app: &mut ConverterApp) {
                 }
             });
 
-            ui.add_space(10.0);
+            ui.add_space(style::spacing::STANDARD);
 
             // Default quality
             ui.horizontal(|ui| {
@@ -97,7 +98,7 @@ pub fn render_settings_panel(ui: &mut Ui, app: &mut ConverterApp) {
                 }
             });
 
-            ui.add_space(10.0);
+            ui.add_space(style::spacing::STANDARD);
 
             // Show advanced options
             let mut show_advanced = settings.show_advanced_options;
@@ -109,11 +110,11 @@ pub fn render_settings_panel(ui: &mut Ui, app: &mut ConverterApp) {
             }
         });
 
-        ui.add_space(10.0);
+        ui.add_space(style::spacing::STANDARD);
 
         // Conversion settings
         ui.collapsing("Conversion", |ui| {
-            ui.add_space(5.0);
+            ui.add_space(style::spacing::MEDIUM);
 
             // Conversion history
             let mut history_enabled = settings.conversion_history_enabled;
@@ -124,7 +125,7 @@ pub fn render_settings_panel(ui: &mut Ui, app: &mut ConverterApp) {
                 app.settings_auto_save.mark_changed();
             }
 
-            ui.add_space(5.0);
+            ui.add_space(style::spacing::MEDIUM);
 
             ui.horizontal(|ui| {
                 ui.label("Max History Entries:")
@@ -139,22 +140,22 @@ pub fn render_settings_panel(ui: &mut Ui, app: &mut ConverterApp) {
             });
         });
 
-        ui.add_space(10.0);
+        ui.add_space(style::spacing::STANDARD);
 
         // Settings file location
         ui.collapsing("About", |ui| {
-            ui.add_space(5.0);
+            ui.add_space(style::spacing::MEDIUM);
             if let Ok(config_path) = AppSettings::config_path() {
                 ui.label("Settings File:");
                 ui.label(
                     RichText::new(config_path.to_string_lossy().to_string())
                         .small()
-                        .color(egui::Color32::GRAY),
+                        .color(style::colors::ui::SECONDARY_TEXT),
                 );
             }
         });
 
-        ui.add_space(20.0);
+        ui.add_space(style::spacing::LARGE);
 
         // Action buttons
         ui.horizontal(|ui| {

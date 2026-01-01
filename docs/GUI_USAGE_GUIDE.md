@@ -239,43 +239,125 @@ These formats appear in the input list but not in output options.
 
 ### Understanding Error Messages
 
-All error messages are designed to be **user-friendly** and **actionable**:
+All error messages are designed to be **user-friendly**, **actionable**, and **secure**. The error message system (implemented in v0.3.0) provides clear guidance without exposing sensitive system information.
 
-**Common Messages:**
+**Key Features:**
+- ✅ **User-friendly language** - No technical jargon
+- ✅ **Actionable guidance** - Each message includes suggestions for resolution
+- ✅ **Security-first** - No sensitive information (paths, usernames) exposed
+- ✅ **Context-aware** - Messages adapt based on error type and context
 
-- **"File type not supported."**
-  - Solution: Select a supported file format (see Format Selection section)
+### Common Error Messages
 
-- **"Can't read file. Check if file exists."**
-  - Solution: Verify file exists and you have read permissions
+**File Format Errors:**
 
-- **"File too large. Maximum size is 100 MB."**
-  - Solution: Use Advanced Options to increase limit (if appropriate)
+- **"File type not supported. Please use a supported image or mesh format."**
+  - Solution: Select a supported format (PNG, JPEG, BMP, GIF, WebP for images; STL, OBJ, PLY, OFF, DXF, glTF for meshes)
+  - See Format Selection section for complete list
 
-- **"Image too large. Maximum dimension is 65535 pixels."**
-  - Solution: Resize image before conversion, or increase limit in Advanced Options
+- **"File extension doesn't match file content. The file may be corrupted or have the wrong extension."**
+  - Solution: Verify the file is valid and has the correct extension
+  - Try renaming the file with the correct extension
 
-- **"Invalid file path."**
-  - Solution: Select a valid file path (avoid system directories)
+**File Access Errors:**
 
-- **"Conversion failed. Please try again."**
-  - Solution: Check file is not corrupted, try different format
+- **"File not found. Please check that the file exists and the path is correct."**
+  - Solution: Verify the file exists at the specified location
+  - Check that you have read permissions for the file
+
+- **"Permission denied. Please check file permissions or try running as administrator."**
+  - Solution: Check file permissions
+  - On Windows: Right-click file → Properties → Security tab
+  - On Linux/macOS: Check file permissions with `ls -l`
+
+- **"File already exists at the output location. Please choose a different filename or location."**
+  - Solution: Select a different output filename or location
+  - Or delete/rename the existing file first
+
+**Size and Resource Limit Errors:**
+
+- **"File size too large. Maximum size is 100 MB. Please use a smaller file or compress it first."**
+  - Solution: Compress the file or use a smaller version
+  - For images: Resize or reduce quality before conversion
+
+- **"Image dimensions too large. Maximum dimension is 65,535 pixels. Please use a smaller image or resize it before converting."**
+  - Solution: Resize the image using an image editor before conversion
+  - Or split the image into smaller sections
+
+- **"Mesh has too many vertices. Maximum is 10,000,000. Please use a mesh with fewer vertices or simplify the model."**
+  - Solution: Simplify the mesh using a 3D modeling tool
+  - Or use mesh decimation to reduce vertex count
+
+- **"Mesh has too many faces. Maximum is 10,000,000. Please use a mesh with fewer faces or simplify the model."**
+  - Solution: Simplify the mesh topology
+  - Use mesh optimization tools to reduce face count
+
+**Conversion Errors:**
+
+- **"File appears to be corrupted or invalid. Please verify the file is valid and try again."**
+  - Solution: Verify the file opens in other applications
+  - Try re-saving the file from the original application
+  - Check if the file was partially downloaded or transferred
+
+- **"Failed to write output file. Please check that you have write permissions and sufficient disk space."**
+  - Solution: Check available disk space
+  - Verify write permissions for the output directory
+  - Try saving to a different location
+
+- **"Conversion failed. Please check that the file is valid and try again. If the problem persists, the file format may not be fully supported."**
+  - Solution: Verify file is not corrupted
+  - Try converting to a different format
+  - Check if the file uses unsupported features
+
+**Validation Errors:**
+
+- **"Invalid file path. Please check that the path is valid and doesn't contain invalid characters."**
+  - Solution: Avoid special characters in file paths
+  - Don't use system directories (e.g., `C:\Windows\`)
+  - Use standard file naming conventions
+
+- **"Mesh validation failed. The mesh may have invalid geometry. Try enabling mesh validation options or check if the mesh file is valid."**
+  - Solution: Enable mesh validation in Advanced Options
+  - Try recalculating normals
+  - Verify mesh is valid in a 3D modeling application
+
+**Quality Setting Errors:**
+
+- **"Quality setting must be between 1 and 100. Please adjust the quality slider."**
+  - Solution: Use the quality slider to set a value between 1 and 100
+  - Higher values (85-100) = better quality, larger files
+  - Lower values (1-50) = smaller files, lower quality
 
 ### Message Types
 
 Messages are color-coded for easy identification:
 
-- **Info (Blue):** General information
-- **Warning (Yellow):** Non-critical issues (e.g., file will be overwritten)
-- **Error (Red):** Conversion failures
-- **Success (Green):** Successful conversions
+- **Info (Blue):** General information and status updates
+- **Warning (Yellow):** Non-critical issues (e.g., file will be overwritten, format limitations)
+- **Error (Red):** Conversion failures and critical issues
+- **Success (Green):** Successful conversions and operations
 
-### Path Sanitization
+### Security and Privacy
 
-For security, full file paths are never displayed:
-- User directories are removed
-- Long paths are truncated
-- Example: `C:\Users\JohnDoe\Documents\photo.jpg` → `Documents\photo.jpg`
+**Path Sanitization:**
+
+For security and privacy, full file paths are **never** displayed in error messages:
+
+- ✅ Only filenames are shown (not full directory paths)
+- ✅ User directories and usernames are never exposed
+- ✅ System paths are never revealed
+- ✅ Example: `C:\Users\JohnDoe\Documents\photo.jpg` → Only "photo.jpg" is shown
+
+**Information Minimization:**
+
+- Error messages contain only the information needed to resolve the issue
+- No technical system details are exposed
+- No internal error codes or stack traces shown to users
+- All messages are sanitized to prevent information disclosure
+
+**Security Review:**
+
+The error message system has been security-reviewed and approved (see `SECURITY_REVIEW_TASK_2.2.md`). All error messages follow security best practices to prevent information disclosure.
 
 ---
 
@@ -283,9 +365,29 @@ For security, full file paths are never displayed:
 
 ### Keyboard Shortcuts
 
-- **Tab:** Navigate between fields
-- **Enter/Space:** Activate buttons
-- **Arrow Keys:** Navigate radio buttons
+**File Operations:**
+- **Ctrl+O** (Cmd+O on macOS): Open file dialog to select a file for conversion
+- **Ctrl+S** (Cmd+S on macOS): Save settings (when settings panel is open)
+
+**Conversion:**
+- **Enter**: Start conversion (when file and format are selected)
+
+**Batch Processing:**
+- **Ctrl+Enter** (Cmd+Enter on macOS): Start batch processing (if queue has pending items)
+- **Ctrl+P** (Cmd+P on macOS): Pause/Resume batch processing
+- **Space**: Pause/Resume batch processing (when processing is active)
+- **Escape**: Cancel batch processing (when processing is active)
+
+**Queue Management:**
+- **Ctrl+A** (Cmd+A on macOS): Add files to batch queue (opens multi-file dialog)
+- **Ctrl+Shift+D** (Cmd+Shift+D on macOS): Clear batch queue (shows confirmation dialog)
+
+**Navigation:**
+- **Ctrl+,** (Cmd+, on macOS): Open/Close settings panel
+- **Ctrl+R** (Cmd+R on macOS): Reset/Clear current file selection and options
+- **Escape**: Close dialogs or cancel batch processing
+- **Tab**: Navigate between fields
+- **Arrow Keys**: Navigate radio buttons in format selection
 
 ### Best Practices
 
@@ -342,13 +444,57 @@ Progress indicator appears automatically for operations > 30 seconds.
 
 ### Getting Help
 
+#### Help Menu
+
+The application includes a Help menu in the menu bar with the following options:
+
+**Keyboard Shortcuts...**
+- Opens the help panel showing all available keyboard shortcuts
+- Includes shortcuts for file operations, conversion, batch processing, queue management, and navigation
+- Access via: Menu bar → Help → Keyboard Shortcuts...
+
+**About**
+- Displays application information including:
+  - Version number (currently v0.3.0)
+  - License information (MIT OR Apache-2.0)
+  - Copyright information
+  - Link to GitHub repository
+  - List of technologies used
+- Access via: Menu bar → Help → About
+
+#### Help Panel
+
+The help panel provides comprehensive assistance:
+
+**Keyboard Shortcuts Reference:**
+- Complete list of all keyboard shortcuts organized by category
+- Includes platform-specific notes (Ctrl vs Cmd)
+- Quick reference for common operations
+
+**Feature Overview:**
+- List of supported image formats
+- List of supported mesh formats
+- Key features summary
+
+**Troubleshooting Tips:**
+- Common issues and solutions
+- Step-by-step resolution guidance
+- Performance tips
+
+**Additional Resources:**
+- Link to GitHub repository
+- Documentation references
+
+#### Additional Help
+
 If you encounter issues not covered here:
 
 1. Check error messages in the messages area
 2. Verify file format is supported
 3. Check file is not corrupted
 4. Try converting to a different format
-5. Report issues through the project repository
+5. Access the Help menu for keyboard shortcuts and troubleshooting
+6. Report issues through the project repository
 
 ---
 

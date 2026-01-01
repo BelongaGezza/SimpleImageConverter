@@ -1,8 +1,8 @@
 # Format Support Matrix
 ## Simple Image Converter
 
-**Last Updated:** December 29, 2025  
-**Status:** v0.2.0 - Core formats complete, STEP FACETED_BREP support (feature-gated)
+**Last Updated:** December 30, 2025  
+**Status:** v0.3.0 - Core formats complete, STEP FACETED_BREP support (feature-gated), 3D viewer available
 
 ---
 
@@ -42,7 +42,7 @@
 | OFF | .off | ✅ | ✅ | Sprint 5 ✅ | Custom parser |
 | glTF | .gltf, .glb | ✅ | ✅ | Sprint 5 ✅ | Binary/text |
 | DXF | .dxf | ✅ | ✅ | Sprint 5 ✅ | 3D entities |
-| STEP | .step, .stp | ✅ | ❌ | Sprint 7-8 ✅ | **v0.2.0 RELEASED:** Read-only, feature-gated (`--features step`). **FACETED_BREP support only** (pre-tessellated geometry). STEP file parsing working (ruststep 0.4.0). Entity extraction framework complete. FACETED_BREP extraction implemented and tested. **Limitations:** Only supports FACETED_BREP entities (pre-tessellated). Full B-Rep with NURBS surfaces, cylinders, etc. planned for v0.3.0. See `docs/CAD_EXPORT_GUIDE.md` and `docs/STEP_FORMAT_REFERENCE.md` for details. |
+| STEP | .step, .stp | ✅ | ❌ | Sprint 7-8 ✅ | **v0.2.0 RELEASED:** Read-only, feature-gated (`--features step`). **FACETED_BREP support only** (pre-tessellated geometry). STEP file parsing working (ruststep 0.4.0). Entity extraction framework complete. FACETED_BREP extraction implemented and tested. **Limitations:** Only supports FACETED_BREP entities (pre-tessellated). Full B-Rep with NURBS surfaces, cylinders, etc. planned for v1.1.0 (opencascade-rs integration). See `docs/CAD_EXPORT_GUIDE.md` and `docs/STEP_FORMAT_REFERENCE.md` for details. |
 
 **Legend:**
 - ✅ Implemented

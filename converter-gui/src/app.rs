@@ -95,6 +95,12 @@ pub struct ConverterApp {
     /// Whether preview panel is expanded
     pub show_preview: bool,
 
+    /// Whether About dialog is visible
+    pub show_about_dialog: bool,
+
+    /// Whether Help panel is visible
+    pub show_help_panel: bool,
+
     /// Auto-save state for settings
     /// Tracks when settings were last changed and auto-save status
     pub settings_auto_save: SettingsAutoSave,
@@ -114,7 +120,7 @@ pub struct ConverterApp {
     /// 3D viewer state for mesh preview (only available with viewer-3d feature)
     #[cfg(feature = "viewer-3d")]
     pub viewer_3d: Option<Arc<Mutex<preview_3d::Viewer3D>>>,
-    
+
     /// Track which mesh file is currently loaded in the 3D viewer (for reload detection)
     #[cfg(feature = "viewer-3d")]
     pub viewer_3d_loaded_file: Option<PathBuf>,
@@ -372,6 +378,8 @@ impl Default for ConverterApp {
             ))),
             show_settings_panel: false,
             show_preview: true, // Preview expanded by default
+            show_about_dialog: false,
+            show_help_panel: false,
             settings_auto_save: SettingsAutoSave {
                 last_changed: None,
                 status: AutoSaveStatus::Idle,
@@ -678,11 +686,19 @@ impl eframe::App for ConverterApp {
 
                 ui.menu_button("Help", |ui| {
                     if ui
+                        .button("Keyboard Shortcuts...")
+                        .on_hover_text("Show keyboard shortcuts reference")
+                        .clicked()
+                    {
+                        self.show_help_panel = true;
+                        ui.close_menu();
+                    }
+                    if ui
                         .button("About")
                         .on_hover_text("Show information about Simple Image Converter")
                         .clicked()
                     {
-                        // TODO: Implement about dialog
+                        self.show_about_dialog = true;
                         ui.close_menu();
                     }
                     ui.separator();
@@ -1108,6 +1124,37 @@ impl eframe::App for ConverterApp {
 
         // Render confirmation dialogs
         self.render_confirmation_dialogs(ctx);
+
+        // Render About dialog
+        if self.show_about_dialog {
+            egui::Window::new("About Simple Image Converter")
+                .collapsible(false)
+                .resizable(false)
+                .default_width(500.0)
+                .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
+                .show(ctx, |ui| {
+                    ui::help_panel::render_about_dialog(ui);
+                    ui.add_space(crate::ui::style::spacing::STANDARD);
+                    ui.separator();
+                    ui.add_space(crate::ui::style::spacing::MEDIUM);
+                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                        if ui.button("Close").clicked() {
+                            self.show_about_dialog = false;
+                        }
+                    });
+                });
+        }
+
+        // Render Help panel
+        egui::Window::new("Help & Documentation")
+            .open(&mut self.show_help_panel)
+            .collapsible(true)
+            .resizable(true)
+            .default_width(700.0)
+            .default_height(600.0)
+            .show(ctx, |ui| {
+                ui::help_panel::render_help_panel(ui);
+            });
     }
 }
 
@@ -1862,17 +1909,141 @@ impl ConverterApp {
             self.reset();
         }
 
-        // Escape: Close dialogs or clear selection
-        if pressed_keys.contains(&egui::Key::Escape) {
-            // Close edit dialog if open
-            if self.editing_queue_item.is_some() {
-                self.editing_queue_item = None;
+        // Ctrl+, (comma): Open settings panel
+        if modifiers.ctrl && pressed_keys.contains(&egui::Key::Comma) {
+            self.show_settings_panel = !self.show_settings_panel;
+        }
+
+        // Ctrl+A: Add files to batch queue
+        // Note: This will override Ctrl+A in text fields, but that's acceptable for this use case
+        if modifiers.ctrl && pressed_keys.contains(&egui::Key::A) {
+            let mut dialog = rfd::FileDialog::new()
+                .add_filter(
+                    "Image Files",
+                    &[
+                        "png", "jpg", "jpeg", "bmp", "gif", "tiff", "tif", "webp", "svg",
+                    ],
+                )
+                .add_filter(
+                    "Mesh Files",
+                    &[
+                        "stl", "obj", "ply", "off", "gltf", "glb", "dxf", "step", "stp",
+                    ],
+                )
+                .add_filter("All Files", &["*"]);
+
+            // Set directory if available
+            if let Some(dir_str) = self.output_directory.to_str() {
+                if let Ok(dir_path) = std::path::PathBuf::from(dir_str).canonicalize() {
+                    dialog = dialog.set_directory(dir_path);
+                }
+            }
+
+            if let Some(selected_files) = dialog.pick_files() {
+                for file_path in selected_files {
+                    crate::ui::batch_queue::add_file_to_batch_queue(self, file_path);
+                }
             }
         }
 
-        // Enter: Start conversion (if file and format selected)
+        // Ctrl+Shift+D: Clear batch queue
+        if modifiers.ctrl && modifiers.shift && pressed_keys.contains(&egui::Key::D) {
+            if let Some(ref queue) = self.batch_queue {
+                if !queue.items.is_empty() {
+                    self.confirmation_dialog = Some(ConfirmationDialog::ClearQueue);
+                }
+            }
+        }
+
+        // Ctrl+Enter: Start batch processing
+        if modifiers.ctrl && ctx.input(|i| i.key_pressed(egui::Key::Enter)) {
+            if let Some(ref queue) = self.batch_queue {
+                if queue.has_pending() {
+                    if let Err(e) = self.start_batch_processing(ctx.clone()) {
+                        self.add_message(
+                            format!("Cannot start batch processing: {}. Please check that there are items in the queue.", e),
+                            MessageType::Error,
+                        );
+                    } else {
+                        self.add_message("Batch processing started".to_string(), MessageType::Info);
+                    }
+                }
+            }
+        }
+
+        // Ctrl+P: Pause/Resume batch processing
+        if modifiers.ctrl && ctx.input(|i| i.key_pressed(egui::Key::P)) {
+            let is_paused = self.is_batch_processing_paused();
+            if is_paused {
+                if let Err(e) = self.resume_batch_processing() {
+                    self.add_message(
+                        format!("Cannot resume batch processing: {}. Please start batch processing first.", e),
+                        MessageType::Error,
+                    );
+                } else {
+                    self.add_message("Batch processing resumed".to_string(), MessageType::Info);
+                }
+            } else {
+                if let Err(e) = self.pause_batch_processing() {
+                    self.add_message(
+                        format!("Cannot pause batch processing: {}. Please start batch processing first.", e),
+                        MessageType::Error,
+                    );
+                } else {
+                    self.add_message("Batch processing paused".to_string(), MessageType::Info);
+                }
+            }
+        }
+
+        // Space: Pause/Resume batch processing (when processing is active)
+        if ctx.input(|i| i.key_pressed(egui::Key::Space)) {
+            let is_processing_active = self.batch_processing_state.is_some();
+            if is_processing_active {
+                let is_paused = self.is_batch_processing_paused();
+                if is_paused {
+                    if let Err(e) = self.resume_batch_processing() {
+                        self.add_message(
+                            format!("Cannot resume batch processing: {}. Please start batch processing first.", e),
+                            MessageType::Error,
+                        );
+                    } else {
+                        self.add_message("Batch processing resumed".to_string(), MessageType::Info);
+                    }
+                } else {
+                    if let Err(e) = self.pause_batch_processing() {
+                        self.add_message(
+                            format!("Cannot pause batch processing: {}. Please start batch processing first.", e),
+                            MessageType::Error,
+                        );
+                    } else {
+                        self.add_message("Batch processing paused".to_string(), MessageType::Info);
+                    }
+                }
+            }
+        }
+
+        // Escape: Close dialogs or cancel batch processing
+        if ctx.input(|i| i.key_pressed(egui::Key::Escape)) {
+            // Close edit dialog if open
+            if self.editing_queue_item.is_some() {
+                self.editing_queue_item = None;
+            } else if self.batch_processing_state.is_some() {
+                // Cancel batch processing if active
+                if let Err(e) = self.cancel_batch_processing() {
+                    self.add_message(
+                        format!("Cannot cancel batch processing: {}. Please start batch processing first.", e),
+                        MessageType::Error,
+                    );
+                } else {
+                    self.add_message("Batch processing cancelled".to_string(), MessageType::Info);
+                }
+            }
+        }
+
+        // Enter: Start conversion (if file and format selected, and no batch processing)
         // Use key_pressed() instead of keys_down to prevent key repeat
         if ctx.input(|i| i.key_pressed(egui::Key::Enter))
+            && !modifiers.ctrl // Don't trigger if Ctrl+Enter (batch processing)
             && self.source_file.is_some()
             && self.output_format.is_some()
             && !matches!(self.status, Status::Converting { .. })
@@ -1967,7 +2138,7 @@ impl ConverterApp {
                         ConfirmationDialog::CancelBatchProcessing => {
                             if let Err(e) = self.cancel_batch_processing() {
                                 self.add_message(
-                                    format!("Failed to cancel batch processing: {}", e),
+                                    format!("Cannot cancel batch processing: {}. Please start batch processing first.", e),
                                     MessageType::Error,
                                 );
                             } else {

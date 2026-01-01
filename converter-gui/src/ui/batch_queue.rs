@@ -7,7 +7,8 @@
 
 use crate::app::{ConverterApp, OutputFormat};
 use crate::batch_queue::{BatchItem, BatchItemStatus};
-use egui::{Color32, RichText, Ui};
+use crate::ui::style;
+use egui::{RichText, Ui};
 use rfd;
 use std::path::PathBuf;
 
@@ -109,7 +110,7 @@ pub fn render_batch_queue(ui: &mut Ui, app: &mut ConverterApp) {
         {
             if let Err(e) = app.start_batch_processing(ui.ctx().clone()) {
                 app.add_message(
-                    format!("Failed to start batch processing: {}", e),
+                    format!("Cannot start batch processing: {}. Please check that there are items in the queue.", e),
                     crate::app::MessageType::Error,
                 );
             } else {
@@ -130,7 +131,7 @@ pub fn render_batch_queue(ui: &mut Ui, app: &mut ConverterApp) {
             {
                 if let Err(e) = app.resume_batch_processing() {
                     app.add_message(
-                        format!("Failed to resume batch processing: {}", e),
+                        format!("Cannot resume batch processing: {}. Please start batch processing first.", e),
                         crate::app::MessageType::Error,
                     );
                 } else {
@@ -148,7 +149,7 @@ pub fn render_batch_queue(ui: &mut Ui, app: &mut ConverterApp) {
             {
                 if let Err(e) = app.pause_batch_processing() {
                     app.add_message(
-                        format!("Failed to pause batch processing: {}", e),
+                        format!("Cannot pause batch processing: {}. Please start batch processing first.", e),
                         crate::app::MessageType::Error,
                     );
                 } else {
@@ -171,7 +172,7 @@ pub fn render_batch_queue(ui: &mut Ui, app: &mut ConverterApp) {
         }
     });
 
-    ui.add_space(10.0);
+    ui.add_space(style::spacing::STANDARD);
 
     // Queue items list
     let queue_empty = app
@@ -185,13 +186,13 @@ pub fn render_batch_queue(ui: &mut Ui, app: &mut ConverterApp) {
         ui.label(
             RichText::new("No files in queue")
                 .italics()
-                .color(Color32::GRAY),
+                .color(style::colors::ui::PLACEHOLDER_TEXT),
         );
     } else {
         // Use ScrollArea which provides automatic virtual scrolling for performance
         // Only visible items are rendered, so this efficiently handles large queues (100+ items)
         egui::ScrollArea::vertical()
-            .max_height(400.0)
+            .max_height(style::scroll::BATCH_QUEUE_MAX_HEIGHT)
             .show(ui, |ui| {
                 if let Some(ref queue) = app.batch_queue {
                     // Pre-allocate Vec capacity to reduce allocations for large queues
@@ -210,7 +211,7 @@ pub fn render_batch_queue(ui: &mut Ui, app: &mut ConverterApp) {
                 }
             });
 
-        ui.add_space(10.0);
+        ui.add_space(style::spacing::STANDARD);
 
         // Queue statistics
         let stats = if let Some(ref queue) = app.batch_queue {
@@ -248,9 +249,9 @@ pub fn render_batch_queue(ui: &mut Ui, app: &mut ConverterApp) {
                 let processing_label =
                     format!("Processing {}/{} items", stats.processing, stats.total);
                 let processing_color = if is_paused {
-                    Color32::from_rgb(200, 150, 50) // Yellow/orange for paused
+                    style::colors::batch_queue::PAUSED
                 } else {
-                    Color32::from_rgb(100, 150, 255) // Blue for processing
+                    style::colors::batch_queue::PROCESSING
                 };
                 ui.label(RichText::new(processing_label).color(processing_color));
             }
@@ -258,19 +259,19 @@ pub fn render_batch_queue(ui: &mut Ui, app: &mut ConverterApp) {
 
         // Show processing status and estimated time (when processing is active)
         if is_processing_active {
-            ui.add_space(5.0);
+            ui.add_space(style::spacing::MEDIUM);
             ui.horizontal(|ui| {
                 // Processing status indicator
                 if is_paused {
                     ui.label(
                         RichText::new("⏸ Processing paused")
-                            .color(Color32::from_rgb(200, 150, 50))
+                            .color(style::colors::batch_queue::PAUSED)
                             .strong(),
                     );
                 } else if stats.processing > 0 {
                     ui.label(
                         RichText::new("⚙️ Processing...")
-                            .color(Color32::from_rgb(100, 150, 255))
+                            .color(style::colors::batch_queue::PROCESSING)
                             .strong(),
                     );
                 }
@@ -285,7 +286,7 @@ pub fn render_batch_queue(ui: &mut Ui, app: &mut ConverterApp) {
                         ui.label(
                             RichText::new(format!("{} items remaining", remaining_count))
                                 .small()
-                                .color(Color32::GRAY),
+                                .color(style::colors::ui::SECONDARY_TEXT),
                         );
                     }
                 }
@@ -315,11 +316,15 @@ fn render_queue_item(ui: &mut Ui, item: &BatchItem, _index: usize) -> (bool, Opt
             ui.horizontal(|ui| {
                 // Status icon
                 let (icon, color) = match &item.status {
-                    BatchItemStatus::Pending => ("⏳", Color32::GRAY),
-                    BatchItemStatus::Processing => ("⚙️", Color32::from_rgb(100, 150, 255)),
-                    BatchItemStatus::Completed { .. } => ("✓", Color32::from_rgb(50, 200, 50)),
-                    BatchItemStatus::Failed { .. } => ("✗", Color32::from_rgb(200, 50, 50)),
-                    BatchItemStatus::Cancelled => ("⊘", Color32::GRAY),
+                    BatchItemStatus::Pending => ("⏳", style::colors::batch_queue::PENDING),
+                    BatchItemStatus::Processing => ("⚙️", style::colors::batch_queue::PROCESSING),
+                    BatchItemStatus::Completed { .. } => {
+                        (style::icons::SUCCESS, style::colors::batch_queue::COMPLETED)
+                    }
+                    BatchItemStatus::Failed { .. } => {
+                        (style::icons::ERROR, style::colors::batch_queue::FAILED)
+                    }
+                    BatchItemStatus::Cancelled => ("⊘", style::colors::batch_queue::CANCELLED),
                 };
                 ui.label(RichText::new(icon).size(16.0).color(color));
 
@@ -341,18 +346,21 @@ fn render_queue_item(ui: &mut Ui, item: &BatchItem, _index: usize) -> (bool, Opt
                 ui.label(format_name);
             });
 
-            ui.add_space(5.0);
+            ui.add_space(style::spacing::MEDIUM);
 
             // Status and progress
             ui.horizontal(|ui| {
                 match &item.status {
                     BatchItemStatus::Pending => {
-                        ui.label(RichText::new("Status: Pending").color(Color32::GRAY));
+                        ui.label(
+                            RichText::new("Status: Pending")
+                                .color(style::colors::batch_queue::PENDING),
+                        );
                     }
                     BatchItemStatus::Processing => {
                         ui.label(
                             RichText::new("Status: Processing...")
-                                .color(Color32::from_rgb(100, 150, 255)),
+                                .color(style::colors::batch_queue::PROCESSING),
                         );
                         // Progress bar
                         ui.add(egui::ProgressBar::new(item.progress).show_percentage());
@@ -360,29 +368,33 @@ fn render_queue_item(ui: &mut Ui, item: &BatchItem, _index: usize) -> (bool, Opt
                     BatchItemStatus::Completed { output_path } => {
                         ui.label(
                             RichText::new("Status: Completed")
-                                .color(Color32::from_rgb(50, 200, 50)),
+                                .color(style::colors::batch_queue::COMPLETED),
                         );
                         if let Some(output_name) = output_path.file_name().and_then(|n| n.to_str())
                         {
                             ui.label(
                                 RichText::new(format!("→ {}", output_name))
                                     .small()
-                                    .color(Color32::GRAY),
+                                    .color(style::colors::ui::SECONDARY_TEXT),
                             );
                         }
                     }
                     BatchItemStatus::Failed { error } => {
                         ui.label(
-                            RichText::new("Status: Failed").color(Color32::from_rgb(200, 50, 50)),
+                            RichText::new("Status: Failed")
+                                .color(style::colors::batch_queue::FAILED),
                         );
                         ui.label(
                             RichText::new(error)
                                 .small()
-                                .color(Color32::from_rgb(200, 50, 50)),
+                                .color(style::colors::batch_queue::FAILED),
                         );
                     }
                     BatchItemStatus::Cancelled => {
-                        ui.label(RichText::new("Status: Cancelled").color(Color32::GRAY));
+                        ui.label(
+                            RichText::new("Status: Cancelled")
+                                .color(style::colors::batch_queue::CANCELLED),
+                        );
                     }
                 }
             });
@@ -431,7 +443,7 @@ fn render_queue_item(ui: &mut Ui, item: &BatchItem, _index: usize) -> (bool, Opt
         });
     });
 
-    ui.add_space(5.0);
+    ui.add_space(style::spacing::MEDIUM);
     (false, None) // Don't remove or edit by default
 }
 
@@ -488,7 +500,7 @@ pub fn render_edit_dialog(ui: &mut Ui, app: &mut ConverterApp) {
                     ui.label(RichText::new(filename).strong());
                 });
 
-                ui.add_space(10.0);
+                ui.add_space(style::spacing::STANDARD);
 
                 // Output format selection
                 ui.label("Output Format:");
@@ -534,7 +546,7 @@ pub fn render_edit_dialog(ui: &mut Ui, app: &mut ConverterApp) {
                     }
                 };
 
-                ui.add_space(10.0);
+                ui.add_space(style::spacing::STANDARD);
 
                 // Output path
                 ui.label("Output Path:");
@@ -563,7 +575,7 @@ pub fn render_edit_dialog(ui: &mut Ui, app: &mut ConverterApp) {
                     }
                 });
 
-                ui.add_space(10.0);
+                ui.add_space(style::spacing::STANDARD);
 
                 // Quality (for image formats)
                 let mut quality = options.quality;
@@ -583,7 +595,7 @@ pub fn render_edit_dialog(ui: &mut Ui, app: &mut ConverterApp) {
                 let mut mesh_options = options.mesh_options.clone();
                 let mut mesh_options_changed = false;
                 if matches!(file_type, crate::app::FileType::Mesh) {
-                    ui.add_space(10.0);
+                    ui.add_space(style::spacing::STANDARD);
                     ui.separator();
                     ui.label("Mesh Options:");
 
@@ -604,7 +616,7 @@ pub fn render_edit_dialog(ui: &mut Ui, app: &mut ConverterApp) {
                     }
                 }
 
-                ui.add_space(20.0);
+                ui.add_space(style::spacing::LARGE);
 
                 // Dialog buttons - use a mutable flag to track actions outside closure
                 let mut should_cancel = false;
@@ -707,7 +719,10 @@ pub fn render_edit_dialog(ui: &mut Ui, app: &mut ConverterApp) {
                     } else if let Some(error_msg) = validation_error {
                         // Validation failed
                         app.add_message(
-                            format!("Invalid output path: {}", error_msg),
+                            format!(
+                                "Invalid output path: {}. Please choose a valid path.",
+                                error_msg
+                            ),
                             crate::app::MessageType::Error,
                         );
                     }
@@ -717,17 +732,15 @@ pub fn render_edit_dialog(ui: &mut Ui, app: &mut ConverterApp) {
 }
 
 /// Add a file to the batch queue with automatic format detection
-fn add_file_to_batch_queue(app: &mut ConverterApp, file_path: std::path::PathBuf) {
+pub fn add_file_to_batch_queue(app: &mut ConverterApp, file_path: std::path::PathBuf) {
     use common::validation::validate_file_path;
     use img_core::FormatRegistry as ImageFormatRegistry;
     use mesh_core::FormatRegistry as MeshFormatRegistry;
 
     // Validate file path (security)
     if let Err(e) = validate_file_path(&file_path) {
-        app.add_message(
-            format!("Invalid file path: {}", e),
-            crate::app::MessageType::Error,
-        );
+        use crate::error_messages::format_user_message;
+        app.add_message(format_user_message(&e), crate::app::MessageType::Error);
         return;
     }
 
@@ -737,8 +750,16 @@ fn add_file_to_batch_queue(app: &mut ConverterApp, file_path: std::path::PathBuf
     } else if MeshFormatRegistry::detect_from_path(&file_path).is_ok() {
         crate::app::FileType::Mesh
     } else {
+        // Get just the filename for the error message (sanitized)
+        let filename = file_path
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or("file");
         app.add_message(
-            format!("Unsupported file type: {}", file_path.display()),
+            format!(
+                "File type not supported: {}. Please use a supported image or mesh format.",
+                filename
+            ),
             crate::app::MessageType::Error,
         );
         return;
@@ -752,7 +773,8 @@ fn add_file_to_batch_queue(app: &mut ConverterApp, file_path: std::path::PathBuf
                 crate::app::OutputFormat::Image(*first_format)
             } else {
                 app.add_message(
-                    "No writable image formats available".to_string(),
+                    "No writable image formats available. Please check your installation."
+                        .to_string(),
                     crate::app::MessageType::Error,
                 );
                 return;
@@ -763,7 +785,8 @@ fn add_file_to_batch_queue(app: &mut ConverterApp, file_path: std::path::PathBuf
                 crate::app::OutputFormat::Mesh(*first_format)
             } else {
                 app.add_message(
-                    "No writable mesh formats available".to_string(),
+                    "No writable mesh formats available. Please check your installation."
+                        .to_string(),
                     crate::app::MessageType::Error,
                 );
                 return;
@@ -787,7 +810,8 @@ fn add_file_to_batch_queue(app: &mut ConverterApp, file_path: std::path::PathBuf
             .join(format!("{}.{}", stem, ext))
     } else {
         app.add_message(
-            "Cannot determine output filename".to_string(),
+            "Cannot determine output filename. Please ensure the file has a valid name."
+                .to_string(),
             crate::app::MessageType::Error,
         );
         return;

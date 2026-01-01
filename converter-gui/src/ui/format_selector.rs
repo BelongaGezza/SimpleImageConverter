@@ -67,7 +67,7 @@ fn render_image_formats(ui: &mut Ui, app: &mut ConverterApp) {
         if response.changed() {
             update_output_filename(app);
         }
-        ui.add_space(2.0); // Add small spacing between radio buttons
+        ui.add_space(crate::ui::style::spacing::SMALL); // Add small spacing between radio buttons
     }
 }
 
@@ -102,7 +102,7 @@ fn render_mesh_formats(ui: &mut Ui, app: &mut ConverterApp) {
         if response.changed() {
             update_output_filename(app);
         }
-        ui.add_space(2.0); // Add small spacing between radio buttons
+        ui.add_space(crate::ui::style::spacing::SMALL); // Add small spacing between radio buttons
     }
 }
 

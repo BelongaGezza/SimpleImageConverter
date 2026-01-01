@@ -1,8 +1,8 @@
 # Architecture Overview
 ## Simple Image Converter
 
-**Version:** 0.2.0  
-**Last Updated:** December 29, 2025
+**Version:** 0.3.0  
+**Last Updated:** December 30, 2025
 
 ---
 
@@ -246,7 +246,7 @@ STEP File (ASCII)
 Output File
 ```
 
-**Note:** For STEP files with curved surfaces, see v0.3.0 opencascade-rs integration plan.
+**Note:** For STEP files with curved surfaces, see v1.1.0 opencascade-rs integration plan (deferred from v0.3.0).
 
 ---
 
@@ -270,12 +270,59 @@ pub enum ConversionError {
 
 Errors are propagated using `?` operator and `Result<T>` types. Context is preserved through error messages and error chaining.
 
+### User-Friendly Error Messages (v0.3.0)
+
+The GUI application includes a comprehensive error message system (`converter-gui/src/error_messages.rs`) that converts technical errors into user-friendly, actionable messages:
+
+**Key Features:**
+- **User-friendly language** - No technical jargon, clear explanations
+- **Actionable guidance** - Each message includes specific suggestions for resolution
+- **Context-aware** - Messages adapt based on error type and content
+- **Consistent format** - All messages follow the same structure
+
+**Error Message Mapping:**
+
+The `format_user_message()` function maps `ConversionError` variants to user-friendly messages:
+- Pattern matching extracts safe information from error messages
+- I/O errors are mapped to specific, actionable messages
+- Resource limit errors include specific limits and suggestions
+- Format errors provide guidance on supported formats
+
+**Example:**
+```rust
+// Technical error
+ConversionError::ResourceLimitExceeded("Image dimension 100000 exceeds limit")
+
+// User-friendly message
+"Image dimensions exceed limit (65,535 pixels). Please use a smaller image or resize it before converting."
+```
+
 ### Error Sanitization
 
-User-facing error messages are sanitized to prevent information disclosure:
-- Full paths are replaced with filenames only
-- Internal details are omitted
-- File sizes and dimensions are shown but not exploitable details
+User-facing error messages are sanitized to prevent information disclosure (security-reviewed in Task 2.2):
+
+**Path Sanitization:**
+- Full paths are replaced with filenames only using `sanitize_path()`
+- User directories and usernames are never exposed
+- System paths are never revealed
+- Only filenames are shown in error messages
+
+**Information Minimization:**
+- Only necessary information is displayed
+- No technical system details exposed
+- No internal error codes or stack traces shown
+- Pattern matching prevents raw error string exposure
+
+**Security Review:**
+- ✅ Security review completed (see `SECURITY_REVIEW_TASK_2.2.md`)
+- ✅ Approved for production use
+- ✅ No critical or high-severity issues found
+- ✅ Defense in depth with multiple sanitization layers
+
+**Implementation:**
+- `common/src/validation.rs` - `sanitize_path()` function ensures path sanitization
+- `converter-gui/src/error_messages.rs` - User-friendly message formatting
+- All validation functions use `sanitize_path()` when creating errors
 
 ---
 
@@ -329,7 +376,7 @@ Performance benchmarks for:
 
 **Implementation Approach:** Hybrid phased strategy
 
-**v0.2.0: FACETED_BREP Extraction (Pure Rust)** ✅ COMPLETE
+**v0.2.0: FACETED_BREP Extraction (Pure Rust)** ✅ COMPLETE (Released December 29, 2025)
 - ✅ STEP file parsing (ruststep 0.4.0 with AP203 feature)
 - ✅ Entity extraction framework (Tables, IntoOwned)
 - ✅ Entity type identification (MANIFOLD_SOLID_BREP, CLOSED_SHELL, FACETED_BREP)
@@ -349,7 +396,7 @@ STEP File → ruststep::parser → Exchange → Tables::from_data_sections()
 - No support for curved surfaces (NURBS, cylinders, spheres)
 - Many CAD tools can export FACETED_BREP format
 
-**v0.3.0: opencascade-rs Integration (Planned)**
+**v1.1.0: opencascade-rs Integration (Planned - Deferred from v0.3.0)**
 - Full curved surface support via OpenCASCADE kernel
 - Feature-gated optional dependency
 - Can coexist with FACETED_BREP path
@@ -373,8 +420,9 @@ See `ARCHITECT_REVIEW_STEP_IMPLEMENTATION.md` for complete architecture decision
 
 ### 📅 Future Enhancements (Phase 4+)
 - **v0.2.0:** ✅ FACETED_BREP extraction and mesh conversion (COMPLETE - December 29, 2025)
-- **v0.3.0:** opencascade-rs integration for full STEP support (planned)
-- **v1.0.0:** GUI application (egui framework) (planned)
+- **v0.3.0:** ✅ Parallel batch processing, 3D viewer, GUI enhancements (COMPLETE - December 30, 2025)
+- **v1.0.0:** GUI polish, quality improvements, release preparation (in progress)
+- **v1.1.0:** opencascade-rs integration for full STEP support (planned)
 - **Future:** Batch processing improvements, plugin system
 
 ---

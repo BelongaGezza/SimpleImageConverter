@@ -13,7 +13,9 @@
 //! These tests verify that all features work together correctly.
 
 use converter_gui::app::{ConverterApp, FileType, OutputFormat};
-use converter_gui::batch_queue::{BatchItem, BatchItemOptions, BatchItemStatus, BatchQueue, ProcessingPriority};
+use converter_gui::batch_queue::{
+    BatchItem, BatchItemOptions, BatchItemStatus, BatchQueue, ProcessingPriority,
+};
 use converter_gui::settings::AppSettings;
 use img_core::ImageFormat;
 use std::path::PathBuf;
@@ -705,219 +707,293 @@ use std::thread;
 // Helper to create a simple test mesh
 #[cfg(feature = "viewer-3d")]
 fn create_test_mesh() -> Arc<Mesh> {
-        let vertices = vec![
-            Vertex { x: 0.0, y: 0.0, z: 0.0 },
-            Vertex { x: 1.0, y: 0.0, z: 0.0 },
-            Vertex { x: 1.0, y: 1.0, z: 0.0 },
-            Vertex { x: 0.0, y: 1.0, z: 0.0 },
-            Vertex { x: 0.0, y: 0.0, z: 1.0 },
-            Vertex { x: 1.0, y: 0.0, z: 1.0 },
-            Vertex { x: 1.0, y: 1.0, z: 1.0 },
-            Vertex { x: 0.0, y: 1.0, z: 1.0 },
-        ];
-        let faces = vec![
-            Face { indices: [0, 1, 2] },
-            Face { indices: [0, 2, 3] },
-            Face { indices: [4, 7, 6] },
-            Face { indices: [4, 6, 5] },
-            Face { indices: [0, 4, 5] },
-            Face { indices: [0, 5, 1] },
-            Face { indices: [2, 6, 7] },
-            Face { indices: [2, 7, 3] },
-            Face { indices: [0, 3, 7] },
-            Face { indices: [0, 7, 4] },
-            Face { indices: [1, 5, 6] },
-            Face { indices: [1, 6, 2] },
-        ];
-        Arc::new(Mesh {
-            vertices,
-            faces,
-            normals: Vec::new(),
-        })
+    let vertices = vec![
+        Vertex {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+        },
+        Vertex {
+            x: 1.0,
+            y: 0.0,
+            z: 0.0,
+        },
+        Vertex {
+            x: 1.0,
+            y: 1.0,
+            z: 0.0,
+        },
+        Vertex {
+            x: 0.0,
+            y: 1.0,
+            z: 0.0,
+        },
+        Vertex {
+            x: 0.0,
+            y: 0.0,
+            z: 1.0,
+        },
+        Vertex {
+            x: 1.0,
+            y: 0.0,
+            z: 1.0,
+        },
+        Vertex {
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+        },
+        Vertex {
+            x: 0.0,
+            y: 1.0,
+            z: 1.0,
+        },
+    ];
+    let faces = vec![
+        Face { indices: [0, 1, 2] },
+        Face { indices: [0, 2, 3] },
+        Face { indices: [4, 7, 6] },
+        Face { indices: [4, 6, 5] },
+        Face { indices: [0, 4, 5] },
+        Face { indices: [0, 5, 1] },
+        Face { indices: [2, 6, 7] },
+        Face { indices: [2, 7, 3] },
+        Face { indices: [0, 3, 7] },
+        Face { indices: [0, 7, 4] },
+        Face { indices: [1, 5, 6] },
+        Face { indices: [1, 6, 2] },
+    ];
+    Arc::new(Mesh {
+        vertices,
+        faces,
+        normals: Vec::new(),
+    })
 }
 
 #[test]
 fn test_3d_viewer_with_batch_processing_integration() {
-        // Test that 3D viewer state doesn't interfere with batch processing
-        let mut app = ConverterApp::default();
-        
-        // Initialize 3D viewer
-        #[cfg(feature = "viewer-3d")]
-        {
-            app.viewer_3d = Some(Arc::new(Mutex::new(Viewer3D::new())));
-        }
+    // Test that 3D viewer state doesn't interfere with batch processing
+    let mut app = ConverterApp::default();
 
-        // Create batch queue
-        let mut queue = BatchQueue::new();
-        let item = BatchItem::new(
-            PathBuf::from("test.png"),
-            FileType::Image,
-            OutputFormat::Image(ImageFormat::Jpeg),
-            PathBuf::from("test.jpg"),
-            BatchItemOptions {
-                quality: 90,
-                mesh_options: None,
-                priority: ProcessingPriority::Medium,
-            },
-        );
-        let _ = queue.add_item(item);
-        app.batch_queue = Some(queue);
+    // Initialize 3D viewer
+    #[cfg(feature = "viewer-3d")]
+    {
+        app.viewer_3d = Some(Arc::new(Mutex::new(Viewer3D::new())));
+    }
 
-        // Verify both can coexist
-        assert!(app.batch_queue.is_some());
-        #[cfg(feature = "viewer-3d")]
-        assert!(app.viewer_3d.is_some());
+    // Create batch queue
+    let mut queue = BatchQueue::new();
+    let item = BatchItem::new(
+        PathBuf::from("test.png"),
+        FileType::Image,
+        OutputFormat::Image(ImageFormat::Jpeg),
+        PathBuf::from("test.jpg"),
+        BatchItemOptions {
+            quality: 90,
+            mesh_options: None,
+            priority: ProcessingPriority::Medium,
+        },
+    );
+    let _ = queue.add_item(item);
+    app.batch_queue = Some(queue);
+
+    // Verify both can coexist
+    assert!(app.batch_queue.is_some());
+    #[cfg(feature = "viewer-3d")]
+    assert!(app.viewer_3d.is_some());
 }
 
 #[test]
 fn test_pause_resume_cancel_with_parallel_processing() {
-        // Test that pause/resume/cancel works correctly with parallel processing state
-        let app = ConverterApp::default();
-        
-        // Create batch processing state
-        let state = Arc::new(converter_gui::app::BatchProcessingState::new());
-        let state_clone = Arc::clone(&state);
+    // Test that pause/resume/cancel works correctly with parallel processing state
+    let app = ConverterApp::default();
 
-        // Test initial state
-        assert!(!state.is_paused());
-        assert!(!state.is_cancelled());
+    // Create batch processing state
+    let state = Arc::new(converter_gui::app::BatchProcessingState::new());
+    let state_clone = Arc::clone(&state);
 
-        // Test pause
-        state.pause();
-        assert!(state.is_paused());
-        assert!(!state.is_cancelled());
+    // Test initial state
+    assert!(!state.is_paused());
+    assert!(!state.is_cancelled());
 
-        // Test resume
-        state.resume();
-        assert!(!state.is_paused());
-        assert!(!state.is_cancelled());
+    // Test pause
+    state.pause();
+    assert!(state.is_paused());
+    assert!(!state.is_cancelled());
 
-        // Test cancel
-        state.cancel();
-        assert!(state.is_cancelled());
+    // Test resume
+    state.resume();
+    assert!(!state.is_paused());
+    assert!(!state.is_cancelled());
 
-        // Test reset
-        state.reset();
-        assert!(!state.is_paused());
-        assert!(!state.is_cancelled());
+    // Test cancel
+    state.cancel();
+    assert!(state.is_cancelled());
 
-        // Test thread safety - multiple threads accessing state
-        let handles: Vec<_> = (0..10)
-            .map(|_| {
-                let state = Arc::clone(&state_clone);
-                thread::spawn(move || {
-                    for _ in 0..100 {
-                        state.pause();
-                        state.resume();
-                    }
-                })
+    // Test reset
+    state.reset();
+    assert!(!state.is_paused());
+    assert!(!state.is_cancelled());
+
+    // Test thread safety - multiple threads accessing state
+    let handles: Vec<_> = (0..10)
+        .map(|_| {
+            let state = Arc::clone(&state_clone);
+            thread::spawn(move || {
+                for _ in 0..100 {
+                    state.pause();
+                    state.resume();
+                }
             })
-            .collect();
+        })
+        .collect();
 
-        for handle in handles {
-            handle.join().unwrap();
-        }
+    for handle in handles {
+        handle.join().unwrap();
+    }
 
-        // State should be in a valid state after concurrent access
-        // (may be paused or resumed, but should not be corrupted)
-        let final_paused = state_clone.is_paused();
-        let final_cancelled = state_clone.is_cancelled();
-        
-        // Reset to known state
-        state_clone.reset();
-        assert!(!state_clone.is_paused());
-        assert!(!state_clone.is_cancelled());
+    // State should be in a valid state after concurrent access
+    // (may be paused or resumed, but should not be corrupted)
+    let final_paused = state_clone.is_paused();
+    let final_cancelled = state_clone.is_cancelled();
+
+    // Reset to known state
+    state_clone.reset();
+    assert!(!state_clone.is_paused());
+    assert!(!state_clone.is_cancelled());
 }
 
 #[test]
 fn test_batch_processing_state_thread_safety() {
-        // Test that BatchProcessingState is thread-safe under concurrent access
-        let state = Arc::new(converter_gui::app::BatchProcessingState::new());
-        
-        let num_threads = 8;
-        let operations_per_thread = 1000;
+    // Test that BatchProcessingState is thread-safe under concurrent access
+    let state = Arc::new(converter_gui::app::BatchProcessingState::new());
 
-        let handles: Vec<_> = (0..num_threads)
-            .map(|_| {
-                let state = Arc::clone(&state);
-                thread::spawn(move || {
-                    for i in 0..operations_per_thread {
-                        match i % 4 {
-                            0 => state.pause(),
-                            1 => state.resume(),
-                            2 => state.cancel(),
-                            3 => state.reset(),
-                            _ => unreachable!(),
-                        }
+    let num_threads = 8;
+    let operations_per_thread = 1000;
+
+    let handles: Vec<_> = (0..num_threads)
+        .map(|_| {
+            let state = Arc::clone(&state);
+            thread::spawn(move || {
+                for i in 0..operations_per_thread {
+                    match i % 4 {
+                        0 => state.pause(),
+                        1 => state.resume(),
+                        2 => state.cancel(),
+                        3 => state.reset(),
+                        _ => unreachable!(),
                     }
-                })
+                }
             })
-            .collect();
+        })
+        .collect();
 
-        for handle in handles {
-            handle.join().unwrap();
-        }
+    for handle in handles {
+        handle.join().unwrap();
+    }
 
-        // State should be in a valid state (not corrupted)
-        // Reset to known state
-        state.reset();
-        assert!(!state.is_paused());
-        assert!(!state.is_cancelled());
+    // State should be in a valid state (not corrupted)
+    // Reset to known state
+    state.reset();
+    assert!(!state.is_paused());
+    assert!(!state.is_cancelled());
 }
 
 #[test]
 fn test_error_handling_across_features() {
-        // Test that errors in one feature don't break others
-        let mut app = ConverterApp::default();
+    // Test that errors in one feature don't break others
+    let mut app = ConverterApp::default();
 
-        // Test 1: Invalid batch item doesn't break queue
-        let mut queue = BatchQueue::new();
-        let invalid_item = BatchItem::new(
-            PathBuf::from("nonexistent.png"),
-            FileType::Image,
-            OutputFormat::Image(ImageFormat::Jpeg),
-            PathBuf::from("output.jpg"),
-            BatchItemOptions {
-                quality: 90,
-                mesh_options: None,
-                priority: ProcessingPriority::Medium,
-            },
-        );
-        let _ = queue.add_item(invalid_item);
-        app.batch_queue = Some(queue);
+    // Test 1: Invalid batch item doesn't break queue
+    let mut queue = BatchQueue::new();
+    let invalid_item = BatchItem::new(
+        PathBuf::from("nonexistent.png"),
+        FileType::Image,
+        OutputFormat::Image(ImageFormat::Jpeg),
+        PathBuf::from("output.jpg"),
+        BatchItemOptions {
+            quality: 90,
+            mesh_options: None,
+            priority: ProcessingPriority::Medium,
+        },
+    );
+    let _ = queue.add_item(invalid_item);
+    app.batch_queue = Some(queue);
 
-        // Queue should still be valid
-        assert!(app.batch_queue.is_some());
-        let queue = app.batch_queue.as_ref().unwrap();
-        assert_eq!(queue.items.len(), 1);
+    // Queue should still be valid
+    assert!(app.batch_queue.is_some());
+    let queue = app.batch_queue.as_ref().unwrap();
+    assert_eq!(queue.items.len(), 1);
 
-        // Test 2: Settings error doesn't break app
-        app.settings_auto_save.set_error();
-        // App should still function
-        assert!(app.batch_queue.is_some());
+    // Test 2: Settings error doesn't break app
+    app.settings_auto_save.set_error();
+    // App should still function
+    assert!(app.batch_queue.is_some());
 
-        // Test 3: 3D viewer error doesn't break app
-        #[cfg(feature = "viewer-3d")]
-        {
-            app.viewer_3d = Some(Arc::new(Mutex::new(Viewer3D::new())));
-            // Viewer should be initialized even if mesh loading fails later
-            assert!(app.viewer_3d.is_some());
-        }
+    // Test 3: 3D viewer error doesn't break app
+    #[cfg(feature = "viewer-3d")]
+    {
+        app.viewer_3d = Some(Arc::new(Mutex::new(Viewer3D::new())));
+        // Viewer should be initialized even if mesh loading fails later
+        assert!(app.viewer_3d.is_some());
+    }
 }
 
 #[test]
 fn test_end_to_end_workflow_with_all_features() {
-        // Test a complete workflow using all features together
-        let mut app = ConverterApp::default();
-        let temp_dir = TempDir::new().unwrap();
+    // Test a complete workflow using all features together
+    let mut app = ConverterApp::default();
+    let temp_dir = TempDir::new().unwrap();
 
-        // Step 1: Create batch queue
-        let mut queue = BatchQueue::new();
+    // Step 1: Create batch queue
+    let mut queue = BatchQueue::new();
+    let item = BatchItem::new(
+        create_test_png_file(temp_dir.path(), "test.png"),
+        FileType::Image,
+        OutputFormat::Image(ImageFormat::Jpeg),
+        temp_dir.path().join("test.jpg"),
+        BatchItemOptions {
+            quality: 90,
+            mesh_options: None,
+            priority: ProcessingPriority::Medium,
+        },
+    );
+    let _ = queue.add_item(item);
+    app.batch_queue = Some(queue);
+
+    // Step 2: Initialize batch processing state
+    let state = Arc::new(converter_gui::app::BatchProcessingState::new());
+    app.batch_processing_state = Some(state);
+
+    // Step 3: Settings auto-save
+    app.settings_auto_save.mark_changed();
+    assert!(matches!(
+        app.settings_auto_save.status,
+        converter_gui::app::AutoSaveStatus::Pending
+    ));
+
+    // Step 4: Verify all features coexist
+    assert!(app.batch_queue.is_some());
+    assert!(app.batch_processing_state.is_some());
+    assert!(matches!(
+        app.settings_auto_save.status,
+        converter_gui::app::AutoSaveStatus::Pending
+    ));
+}
+
+#[test]
+fn test_performance_batch_queue_with_many_items() {
+    // Test that batch queue performance is acceptable with many items
+    let mut queue = BatchQueue::new();
+    let num_items = 1000;
+
+    let start = Instant::now();
+    for i in 0..num_items {
         let item = BatchItem::new(
-            create_test_png_file(temp_dir.path(), "test.png"),
+            PathBuf::from(format!("test{}.png", i)),
             FileType::Image,
             OutputFormat::Image(ImageFormat::Jpeg),
-            temp_dir.path().join("test.jpg"),
+            PathBuf::from(format!("test{}.jpg", i)),
             BatchItemOptions {
                 quality: 90,
                 mesh_options: None,
@@ -925,269 +1001,230 @@ fn test_end_to_end_workflow_with_all_features() {
             },
         );
         let _ = queue.add_item(item);
-        app.batch_queue = Some(queue);
+    }
+    let add_time = start.elapsed();
 
-        // Step 2: Initialize batch processing state
-        let state = Arc::new(converter_gui::app::BatchProcessingState::new());
-        app.batch_processing_state = Some(state);
+    // Adding 1000 items should be fast (< 100ms)
+    assert!(
+        add_time < Duration::from_millis(100),
+        "Adding 1000 items took too long: {:?}",
+        add_time
+    );
 
-        // Step 3: Settings auto-save
-        app.settings_auto_save.mark_changed();
-        assert!(matches!(
-            app.settings_auto_save.status,
-            converter_gui::app::AutoSaveStatus::Pending
-        ));
-
-        // Step 4: Verify all features coexist
-        assert!(app.batch_queue.is_some());
-        assert!(app.batch_processing_state.is_some());
-        assert!(matches!(
-            app.settings_auto_save.status,
-            converter_gui::app::AutoSaveStatus::Pending
-        ));
-}
-
-#[test]
-fn test_performance_batch_queue_with_many_items() {
-        // Test that batch queue performance is acceptable with many items
-        let mut queue = BatchQueue::new();
-        let num_items = 1000;
-
-        let start = Instant::now();
-        for i in 0..num_items {
-            let item = BatchItem::new(
-                PathBuf::from(format!("test{}.png", i)),
-                FileType::Image,
-                OutputFormat::Image(ImageFormat::Jpeg),
-                PathBuf::from(format!("test{}.jpg", i)),
-                BatchItemOptions {
-                    quality: 90,
-                    mesh_options: None,
-                    priority: ProcessingPriority::Medium,
-                },
-            );
-            let _ = queue.add_item(item);
-        }
-        let add_time = start.elapsed();
-
-        // Adding 1000 items should be fast (< 100ms)
-        assert!(
-            add_time < Duration::from_millis(100),
-            "Adding 1000 items took too long: {:?}",
-            add_time
-        );
-
-        // Statistics should be fast
-        let start = Instant::now();
-        let stats = queue.statistics();
-        let stats_time = start.elapsed();
-        assert_eq!(stats.total, num_items);
-        assert!(
-            stats_time < Duration::from_millis(10),
-            "Statistics calculation took too long: {:?}",
-            stats_time
-        );
+    // Statistics should be fast
+    let start = Instant::now();
+    let stats = queue.statistics();
+    let stats_time = start.elapsed();
+    assert_eq!(stats.total, num_items);
+    assert!(
+        stats_time < Duration::from_millis(10),
+        "Statistics calculation took too long: {:?}",
+        stats_time
+    );
 }
 
 #[test]
 fn test_memory_efficiency_batch_queue() {
-        // Test that batch queue doesn't leak memory
-        let mut queue = BatchQueue::new();
-        let num_items = 100;
+    // Test that batch queue doesn't leak memory
+    let mut queue = BatchQueue::new();
+    let num_items = 100;
 
-        // Add items
-        let mut item_ids = Vec::new();
-        for i in 0..num_items {
-            let item = BatchItem::new(
-                PathBuf::from(format!("test{}.png", i)),
-                FileType::Image,
-                OutputFormat::Image(ImageFormat::Jpeg),
-                PathBuf::from(format!("test{}.jpg", i)),
-                BatchItemOptions {
-                    quality: 90,
-                    mesh_options: None,
-                    priority: ProcessingPriority::Medium,
-                },
-            );
-            item_ids.push(item.id);
-            let _ = queue.add_item(item);
-        }
+    // Add items
+    let mut item_ids = Vec::new();
+    for i in 0..num_items {
+        let item = BatchItem::new(
+            PathBuf::from(format!("test{}.png", i)),
+            FileType::Image,
+            OutputFormat::Image(ImageFormat::Jpeg),
+            PathBuf::from(format!("test{}.jpg", i)),
+            BatchItemOptions {
+                quality: 90,
+                mesh_options: None,
+                priority: ProcessingPriority::Medium,
+            },
+        );
+        item_ids.push(item.id);
+        let _ = queue.add_item(item);
+    }
 
-        assert_eq!(queue.items.len(), num_items);
+    assert_eq!(queue.items.len(), num_items);
 
-        // Remove half
-        for id in item_ids.iter().take(50) {
-            queue.remove_item(*id);
-        }
+    // Remove half
+    for id in item_ids.iter().take(50) {
+        queue.remove_item(*id);
+    }
 
-        assert_eq!(queue.items.len(), 50);
+    assert_eq!(queue.items.len(), 50);
 
-        // Clear remaining
-        queue.clear();
-        assert_eq!(queue.items.len(), 0);
+    // Clear remaining
+    queue.clear();
+    assert_eq!(queue.items.len(), 0);
 }
 
 #[test]
 fn test_no_regressions_existing_functionality() {
-        // Test that existing functionality still works
-        let mut app = ConverterApp::default();
+    // Test that existing functionality still works
+    let mut app = ConverterApp::default();
 
-        // Test file type detection
-        app.detected_file_type = Some(FileType::Image);
-        assert_eq!(app.detected_file_type, Some(FileType::Image));
+    // Test file type detection
+    app.detected_file_type = Some(FileType::Image);
+    assert_eq!(app.detected_file_type, Some(FileType::Image));
 
-        // Test format selection
-        app.output_format = Some(OutputFormat::Image(ImageFormat::Png));
-        assert!(matches!(
-            app.output_format,
-            Some(OutputFormat::Image(ImageFormat::Png))
-        ));
+    // Test format selection
+    app.output_format = Some(OutputFormat::Image(ImageFormat::Png));
+    assert!(matches!(
+        app.output_format,
+        Some(OutputFormat::Image(ImageFormat::Png))
+    ));
 
-        // Test status
-        app.status = converter_gui::app::Status::Ready;
-        assert!(matches!(app.status, converter_gui::app::Status::Ready));
+    // Test status
+    app.status = converter_gui::app::Status::Ready;
+    assert!(matches!(app.status, converter_gui::app::Status::Ready));
 
-        // Test messages
-        app.add_message("Test message".to_string(), converter_gui::app::MessageType::Success);
-        assert_eq!(app.messages.len(), 1);
+    // Test messages
+    app.add_message(
+        "Test message".to_string(),
+        converter_gui::app::MessageType::Success,
+    );
+    assert_eq!(app.messages.len(), 1);
 }
 
 #[test]
 #[cfg(feature = "viewer-3d")]
 fn test_3d_viewer_mesh_loading_integration() {
-        #[cfg(feature = "viewer-3d")]
-        {
-            let mut viewer = Viewer3D::new();
-            let mesh = create_test_mesh();
+    #[cfg(feature = "viewer-3d")]
+    {
+        let mut viewer = Viewer3D::new();
+        let mesh = create_test_mesh();
 
-            // Test mesh loading
-            viewer.set_mesh(Arc::clone(&mesh));
-            
-            // Verify mesh is set
-            // Note: We can't directly access mesh field, but we can test through public API
-            // Reset camera should work if mesh is loaded
-            viewer.reset_camera();
-            
-            // Test render mode switching
-            viewer.set_render_mode(RenderMode::Solid);
-            assert_eq!(viewer.render_mode(), RenderMode::Solid);
-            
-            viewer.set_render_mode(RenderMode::Wireframe);
-            assert_eq!(viewer.render_mode(), RenderMode::Wireframe);
-        }
+        // Test mesh loading
+        viewer.set_mesh(Arc::clone(&mesh));
+
+        // Verify mesh is set
+        // Note: We can't directly access mesh field, but we can test through public API
+        // Reset camera should work if mesh is loaded
+        viewer.reset_camera();
+
+        // Test render mode switching
+        viewer.set_render_mode(RenderMode::Solid);
+        assert_eq!(viewer.render_mode(), RenderMode::Solid);
+
+        viewer.set_render_mode(RenderMode::Wireframe);
+        assert_eq!(viewer.render_mode(), RenderMode::Wireframe);
     }
+}
 
-    #[test]
-    fn test_parallel_processing_with_pause_resume() {
-        // Test that parallel processing respects pause/resume state
-        let state = Arc::new(converter_gui::app::BatchProcessingState::new());
+#[test]
+fn test_parallel_processing_with_pause_resume() {
+    // Test that parallel processing respects pause/resume state
+    let state = Arc::new(converter_gui::app::BatchProcessingState::new());
 
-        // Simulate processing loop checking pause state
-        let processing_state = Arc::clone(&state);
-        let processing_handle = thread::spawn(move || {
-            let mut iterations = 0;
-            while iterations < 100 {
-                // Check if paused
-                if processing_state.is_paused() {
-                    // Wait while paused (simulate processing loop)
-                    thread::sleep(Duration::from_millis(10));
-                } else {
-                    iterations += 1;
-                    thread::sleep(Duration::from_millis(1));
-                }
-                
-                // Check for cancellation
-                if processing_state.is_cancelled() {
-                    break;
-                }
+    // Simulate processing loop checking pause state
+    let processing_state = Arc::clone(&state);
+    let processing_handle = thread::spawn(move || {
+        let mut iterations = 0;
+        while iterations < 100 {
+            // Check if paused
+            if processing_state.is_paused() {
+                // Wait while paused (simulate processing loop)
+                thread::sleep(Duration::from_millis(10));
+            } else {
+                iterations += 1;
+                thread::sleep(Duration::from_millis(1));
             }
-            iterations
-        });
 
-        // Pause after a short delay
-        thread::sleep(Duration::from_millis(50));
-        state.pause();
-        thread::sleep(Duration::from_millis(50));
-        state.resume();
+            // Check for cancellation
+            if processing_state.is_cancelled() {
+                break;
+            }
+        }
+        iterations
+    });
 
-        // Let processing continue
-        thread::sleep(Duration::from_millis(50));
+    // Pause after a short delay
+    thread::sleep(Duration::from_millis(50));
+    state.pause();
+    thread::sleep(Duration::from_millis(50));
+    state.resume();
 
-        // Cancel
-        state.cancel();
+    // Let processing continue
+    thread::sleep(Duration::from_millis(50));
 
-        let iterations = processing_handle.join().unwrap();
-        
-        // Should have processed some iterations before cancellation
-        assert!(iterations > 0);
-        assert!(iterations < 100); // Should have stopped due to cancellation
+    // Cancel
+    state.cancel();
+
+    let iterations = processing_handle.join().unwrap();
+
+    // Should have processed some iterations before cancellation
+    assert!(iterations > 0);
+    assert!(iterations < 100); // Should have stopped due to cancellation
 }
 
 #[test]
 fn test_settings_auto_save_with_batch_processing() {
-        // Test that settings auto-save works alongside batch processing
-        let mut app = ConverterApp::default();
+    // Test that settings auto-save works alongside batch processing
+    let mut app = ConverterApp::default();
 
-        // Initialize batch queue
-        let mut queue = BatchQueue::new();
-        let item = BatchItem::new(
-            PathBuf::from("test.png"),
-            FileType::Image,
-            OutputFormat::Image(ImageFormat::Jpeg),
-            PathBuf::from("test.jpg"),
-            BatchItemOptions {
-                quality: 90,
-                mesh_options: None,
-                priority: ProcessingPriority::Medium,
-            },
-        );
-        let _ = queue.add_item(item);
-        app.batch_queue = Some(queue);
+    // Initialize batch queue
+    let mut queue = BatchQueue::new();
+    let item = BatchItem::new(
+        PathBuf::from("test.png"),
+        FileType::Image,
+        OutputFormat::Image(ImageFormat::Jpeg),
+        PathBuf::from("test.jpg"),
+        BatchItemOptions {
+            quality: 90,
+            mesh_options: None,
+            priority: ProcessingPriority::Medium,
+        },
+    );
+    let _ = queue.add_item(item);
+    app.batch_queue = Some(queue);
 
-        // Mark settings as changed
-        app.settings_auto_save.mark_changed();
-        assert!(matches!(
-            app.settings_auto_save.status,
-            converter_gui::app::AutoSaveStatus::Pending
-        ));
+    // Mark settings as changed
+    app.settings_auto_save.mark_changed();
+    assert!(matches!(
+        app.settings_auto_save.status,
+        converter_gui::app::AutoSaveStatus::Pending
+    ));
 
-        // Batch queue should still be accessible
-        assert!(app.batch_queue.is_some());
-        let queue = app.batch_queue.as_ref().unwrap();
-        assert_eq!(queue.items.len(), 1);
+    // Batch queue should still be accessible
+    assert!(app.batch_queue.is_some());
+    let queue = app.batch_queue.as_ref().unwrap();
+    assert_eq!(queue.items.len(), 1);
 }
 
 #[test]
 fn test_queue_item_editing_with_parallel_processing_state() {
-        // Test that queue item editing works with parallel processing state
-        let mut queue = BatchQueue::new();
-        let state = Arc::new(converter_gui::app::BatchProcessingState::new());
+    // Test that queue item editing works with parallel processing state
+    let mut queue = BatchQueue::new();
+    let state = Arc::new(converter_gui::app::BatchProcessingState::new());
 
-        let item = BatchItem::new(
-            PathBuf::from("test.png"),
-            FileType::Image,
-            OutputFormat::Image(ImageFormat::Jpeg),
-            PathBuf::from("test.jpg"),
-            BatchItemOptions {
-                quality: 90,
-                mesh_options: None,
-                priority: ProcessingPriority::Medium,
-            },
-        );
-        let item_id = item.id;
-        let _ = queue.add_item(item);
+    let item = BatchItem::new(
+        PathBuf::from("test.png"),
+        FileType::Image,
+        OutputFormat::Image(ImageFormat::Jpeg),
+        PathBuf::from("test.jpg"),
+        BatchItemOptions {
+            quality: 90,
+            mesh_options: None,
+            priority: ProcessingPriority::Medium,
+        },
+    );
+    let item_id = item.id;
+    let _ = queue.add_item(item);
 
-        // Edit item while processing state exists
-        assert!(queue.update_item_format(item_id, OutputFormat::Image(ImageFormat::Png)));
+    // Edit item while processing state exists
+    assert!(queue.update_item_format(item_id, OutputFormat::Image(ImageFormat::Png)));
 
-        // Processing state should not interfere
-        assert!(!state.is_paused());
-        assert!(!state.is_cancelled());
+    // Processing state should not interfere
+    assert!(!state.is_paused());
+    assert!(!state.is_cancelled());
 
-        // Verify edit persisted
-        let edited = queue.get_item(item_id).unwrap();
-        assert!(matches!(
-            edited.output_format,
-            OutputFormat::Image(ImageFormat::Png)
-        ));
+    // Verify edit persisted
+    let edited = queue.get_item(item_id).unwrap();
+    assert!(matches!(
+        edited.output_format,
+        OutputFormat::Image(ImageFormat::Png)
+    ));
 }

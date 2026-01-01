@@ -4,9 +4,10 @@
 //! File drop zone component for drag-and-drop file selection
 
 use crate::app::{ConverterApp, FileType, InputFormat};
+use crate::ui::style;
 use common::error::ConversionError;
 use common::validation::validate_file_path;
-use egui::{Color32, Sense, Stroke, Ui};
+use egui::{Sense, Stroke, Ui};
 use img_core::FormatRegistry as ImageFormatRegistry;
 use mesh_core::FormatRegistry as MeshFormatRegistry;
 use std::path::PathBuf;
@@ -64,30 +65,34 @@ pub fn render_drop_zone(ui: &mut Ui, app: &mut ConverterApp) {
     let (bg_color, border_color, border_width) = if app.source_file.is_some() {
         // File selected - green border
         (
-            Color32::from_rgb(240, 255, 240),
-            Color32::from_rgb(0, 200, 0),
-            2.0,
+            style::colors::ui::DROP_ZONE_SELECTED_BG,
+            style::colors::ui::DROP_ZONE_SELECTED_BORDER,
+            style::border::STANDARD,
         )
     } else if is_drag_over {
         // Drag over - blue border
         (
-            Color32::from_rgb(240, 248, 255),
-            Color32::from_rgb(0, 100, 255),
-            2.0,
+            style::colors::ui::DROP_ZONE_DRAG_BG,
+            style::colors::ui::DROP_ZONE_DRAG_BORDER,
+            style::border::STANDARD,
         )
     } else {
-        // Empty - light gray with dashed border
+        // Empty - light gray with thin border
         (
-            Color32::from_rgb(245, 245, 245),
-            Color32::from_rgb(200, 200, 200),
-            1.0,
+            style::colors::ui::DROP_ZONE_EMPTY_BG,
+            style::colors::ui::DROP_ZONE_EMPTY_BORDER,
+            style::border::THIN,
         )
     };
 
     // Draw drop zone background and border
-    ui.painter().rect_filled(drop_zone_rect, 4.0, bg_color);
     ui.painter()
-        .rect_stroke(drop_zone_rect, 4.0, Stroke::new(border_width, border_color));
+        .rect_filled(drop_zone_rect, style::corner_radius::STANDARD, bg_color);
+    ui.painter().rect_stroke(
+        drop_zone_rect,
+        style::corner_radius::STANDARD,
+        Stroke::new(border_width, border_color),
+    );
 
     // Handle click on drop zone
     if response.clicked() {
@@ -119,7 +124,7 @@ pub fn render_drop_zone(ui: &mut Ui, app: &mut ConverterApp) {
         if app.source_file.is_some() {
             // Compact display when file selected
             ui.horizontal(|ui| {
-                ui.add_space(10.0);
+                ui.add_space(style::spacing::STANDARD);
                 ui.label(egui::RichText::new("📁").size(24.0));
                 ui.vertical(|ui| {
                     ui.label(egui::RichText::new("File Selected").strong());
@@ -135,11 +140,11 @@ pub fn render_drop_zone(ui: &mut Ui, app: &mut ConverterApp) {
         } else {
             // Full display when empty
             ui.vertical_centered(|ui| {
-                ui.add_space(20.0);
+                ui.add_space(style::spacing::LARGE);
                 ui.heading("📁 Drag & Drop File Here");
-                ui.add_space(10.0);
+                ui.add_space(style::spacing::STANDARD);
                 ui.label("or click to browse");
-                ui.add_space(10.0);
+                ui.add_space(style::spacing::STANDARD);
                 if ui
                     .button("Browse Files...")
                     .on_hover_text(
@@ -166,7 +171,7 @@ pub fn render_drop_zone(ui: &mut Ui, app: &mut ConverterApp) {
                         handle_file_selection(app, file_path);
                     }
                 }
-                ui.add_space(20.0);
+                ui.add_space(style::spacing::LARGE);
             });
         }
     });

@@ -805,8 +805,8 @@ FACETED_BREP
 ```
 
 **Implementation Notes:**
-- **v0.2.0 Support:** FACETED_BREP only (pre-tessellated geometry)
-- **v0.3.0 Planned:** Full B-Rep support (NURBS surfaces, cylinders, etc.)
+- **v0.2.0 Support:** FACETED_BREP only (pre-tessellated geometry) ✅ COMPLETE
+- **v1.1.0 Planned:** Full B-Rep support (NURBS surfaces, cylinders, etc.) - deferred from v0.3.0
 - **Advantage:** Faces are already triangulated, making conversion to mesh easier
 - **Requirement:** Users must export STEP files with tessellation enabled
 
@@ -1448,16 +1448,18 @@ This reference document provides comprehensive information for implementing STEP
 
 ---
 
-## opencascade-rs Integration (v0.3.0)
+## opencascade-rs Integration (v1.1.0 - Planned)
 
 ### Overview
 
-Starting with v0.3.0, SimpleImageConverter supports full STEP B-Rep reading using `opencascade-rs`, which provides Rust bindings to OpenCASCADE Technology (OCCT). This enables support for MANIFOLD_SOLID_BREP entities with curved surfaces (NURBS, cylinders, spheres, etc.) that cannot be handled by the pure Rust FACETED_BREP extraction.
+Starting with v1.1.0 (planned), SimpleImageConverter will support full STEP B-Rep reading using `opencascade-rs`, which provides Rust bindings to OpenCASCADE Technology (OCCT). This will enable support for MANIFOLD_SOLID_BREP entities with curved surfaces (NURBS, cylinders, spheres, etc.) that cannot be handled by the pure Rust FACETED_BREP extraction.
+
+**Note:** Full B-Rep support was originally planned for v0.3.0 but has been deferred to v1.1.0 to focus on GUI polish and quality improvements for the v1.0.0 release.
 
 ### Implementation Status
 
-**Current Status:** ✅ **PROTOTYPE COMPLETE** (Sprint 9)  
-**Full Implementation:** 🟡 **IN PROGRESS** (Sprint 10)
+**Current Status:** ✅ **RESEARCH COMPLETE** (Sprint 9)  
+**Full Implementation:** ⏳ **PLANNED FOR v1.1.0** (deferred from v0.3.0)
 
 **Location:** `mesh-core/src/formats/step_opencascade.rs`
 

@@ -5,6 +5,7 @@
 
 use crate::app::{ConverterApp, FileType, OutputFormat};
 use crate::format_helpers::format_supports_quality;
+use crate::ui::style;
 use common::validation::validate_directory_path;
 use egui::Ui;
 use mesh_core::CoordinateSystem;
@@ -27,7 +28,7 @@ pub fn render_options_panel(ui: &mut Ui, app: &mut ConverterApp) {
             ui.text_edit_singleline(&mut app.output_filename)
                 .on_hover_text("Edit the output filename. The extension will be updated automatically when you change the format.");
         });
-        ui.add_space(5.0);
+        ui.add_space(style::spacing::MEDIUM);
 
         // Output location
         ui.horizontal(|ui| {
@@ -67,7 +68,7 @@ pub fn render_options_panel(ui: &mut Ui, app: &mut ConverterApp) {
                 }
             }
         });
-        ui.add_space(10.0);
+        ui.add_space(style::spacing::STANDARD);
 
         // Quality slider (only for lossy image formats)
         if let Some(OutputFormat::Image(format)) = app.output_format {
@@ -78,7 +79,7 @@ pub fn render_options_panel(ui: &mut Ui, app: &mut ConverterApp) {
                     ui.add(egui::Slider::new(&mut app.quality, 1..=100))
                         .on_hover_text("Adjust image quality (1-100). Higher = better quality, larger files. Lower = smaller files, reduced quality.");
                 });
-                ui.add_space(10.0);
+                ui.add_space(style::spacing::STANDARD);
             }
         }
 
@@ -86,7 +87,7 @@ pub fn render_options_panel(ui: &mut Ui, app: &mut ConverterApp) {
         if let Some(FileType::Mesh) = app.detected_file_type {
             ui.separator();
             ui.heading("Mesh Options:");
-            ui.add_space(5.0);
+            ui.add_space(style::spacing::MEDIUM);
 
             // Transform options (radio buttons)
             ui.label("Coordinate System Transform:")
@@ -122,22 +123,22 @@ pub fn render_options_panel(ui: &mut Ui, app: &mut ConverterApp) {
                     app.mesh_transform = Some((CoordinateSystem::YUp, CoordinateSystem::ZUp));
                 }
             });
-            ui.add_space(5.0);
+            ui.add_space(style::spacing::MEDIUM);
 
             // Recalculate normals checkbox
             ui.checkbox(&mut app.mesh_recalculate_normals, "Recalculate Normals")
                 .on_hover_text("Recalculate vertex normals for the mesh. This may improve rendering quality.");
-            ui.add_space(5.0);
+            ui.add_space(style::spacing::MEDIUM);
 
             // Validate checkbox
             ui.checkbox(&mut app.mesh_validate, "Validate Mesh")
                 .on_hover_text("Validate mesh integrity before conversion. This checks for common mesh errors.");
-            ui.add_space(10.0);
+            ui.add_space(style::spacing::STANDARD);
         }
 
         // Advanced options (collapsible)
         ui.collapsing("Advanced Options", |ui| {
-            ui.add_space(5.0);
+            ui.add_space(style::spacing::MEDIUM);
 
             // Max file size
             ui.horizontal(|ui| {

@@ -4,7 +4,8 @@
 //! Status bar component
 
 use crate::app::{ConverterApp, Status};
-use egui::{Color32, Ui};
+use crate::ui::style;
+use egui::Ui;
 
 /// Render status bar
 ///
@@ -18,16 +19,19 @@ pub fn render_status_bar(ui: &mut Ui, app: &ConverterApp) {
         ui.separator();
 
         let (status_text, status_color) = match &app.status {
-            Status::Ready => ("Ready".to_string(), Color32::GRAY),
+            Status::Ready => ("Ready".to_string(), style::colors::status::READY),
             Status::Converting { start_time } => {
                 let elapsed = start_time.elapsed();
                 if elapsed.as_secs() > 30 {
                     (
                         format!("Converting... ({} seconds)", elapsed.as_secs()),
-                        Color32::from_rgb(0, 100, 255),
+                        style::colors::status::CONVERTING,
                     )
                 } else {
-                    ("Converting...".to_string(), Color32::from_rgb(0, 100, 255))
+                    (
+                        "Converting...".to_string(),
+                        style::colors::status::CONVERTING,
+                    )
                 }
             }
             Status::Success { output_path } => {
@@ -35,10 +39,10 @@ pub fn render_status_bar(ui: &mut Ui, app: &ConverterApp) {
                 let path_display = sanitize_path_for_display(output_path);
                 (
                     format!("Conversion complete: {}", path_display),
-                    Color32::from_rgb(0, 200, 0),
+                    style::colors::status::SUCCESS,
                 )
             }
-            Status::Error { message } => (message.clone(), Color32::from_rgb(255, 0, 0)),
+            Status::Error { message } => (message.clone(), style::colors::status::ERROR),
         };
 
         ui.label(egui::RichText::new(&status_text).color(status_color));
@@ -51,7 +55,7 @@ pub fn render_status_bar(ui: &mut Ui, app: &ConverterApp) {
                 ui.label(
                     egui::RichText::new("Processing...")
                         .small()
-                        .color(Color32::from_rgb(0, 100, 255)),
+                        .color(style::colors::status::CONVERTING),
                 );
             }
         }

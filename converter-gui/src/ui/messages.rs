@@ -4,7 +4,8 @@
 //! Messages display component
 
 use crate::app::{ConverterApp, MessageType};
-use egui::{Color32, ScrollArea, Ui};
+use crate::ui::style;
+use egui::{ScrollArea, Ui};
 
 /// Render messages area
 ///
@@ -22,48 +23,48 @@ pub fn render_messages(ui: &mut Ui, app: &ConverterApp) {
                     ui.label(
                         egui::RichText::new(format!("{} messages", app.messages.len()))
                             .small()
-                            .color(Color32::GRAY),
+                            .color(style::colors::ui::SECONDARY_TEXT),
                     );
                 });
             }
         });
 
-        ui.add_space(5.0);
+        ui.add_space(style::spacing::MEDIUM);
 
         if app.messages.is_empty() {
             ui.label(
                 egui::RichText::new("No messages")
                     .italics()
-                    .color(Color32::GRAY)
+                    .color(style::colors::ui::PLACEHOLDER_TEXT)
                     .small(),
             );
         } else {
             ScrollArea::vertical()
-                .max_height(150.0)
+                .max_height(style::scroll::MESSAGES_MAX_HEIGHT)
                 .auto_shrink([false; 2])
                 .show(ui, |ui| {
                     ui.vertical(|ui| {
                         // Show messages in reverse order (newest first)
                         for message in app.messages.iter().rev() {
                             let color = match message.message_type {
-                                MessageType::Info => Color32::from_rgb(0, 100, 255),
-                                MessageType::Warning => Color32::from_rgb(255, 200, 0),
-                                MessageType::Error => Color32::from_rgb(255, 0, 0),
-                                MessageType::Success => Color32::from_rgb(0, 200, 0),
+                                MessageType::Info => style::colors::message::INFO,
+                                MessageType::Warning => style::colors::message::WARNING,
+                                MessageType::Error => style::colors::message::ERROR,
+                                MessageType::Success => style::colors::message::SUCCESS,
                             };
 
                             let icon = match message.message_type {
-                                MessageType::Info => "ℹ",
-                                MessageType::Warning => "⚠",
-                                MessageType::Error => "✗",
-                                MessageType::Success => "✓",
+                                MessageType::Info => style::icons::INFO,
+                                MessageType::Warning => style::icons::WARNING,
+                                MessageType::Error => style::icons::ERROR,
+                                MessageType::Success => style::icons::SUCCESS,
                             };
 
                             ui.horizontal(|ui| {
                                 ui.label(egui::RichText::new(icon).size(16.0).color(color));
                                 ui.label(egui::RichText::new(&message.text).color(color));
                             });
-                            ui.add_space(3.0);
+                            ui.add_space(style::spacing::SMALL);
                         }
                     });
                 });

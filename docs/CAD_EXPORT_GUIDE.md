@@ -1,8 +1,8 @@
 # CAD Export Guide - STEP with FACETED_BREP
 ## How to Export STEP Files Compatible with Simple Image Converter v0.2.0
 
-**Last Updated:** December 29, 2025  
-**Status:** v0.2.0 - FACETED_BREP Support  
+**Last Updated:** December 30, 2025  
+**Status:** v0.3.0 - FACETED_BREP Support (Full B-Rep planned for v1.1.0)  
 **Target Audience:** CAD Users
 
 ---
@@ -13,8 +13,8 @@ Simple Image Converter v0.2.0 supports **FACETED_BREP** entities in STEP files. 
 
 **Important:** 
 - ✅ **Supported:** FACETED_BREP (pre-tessellated geometry)
-- ❌ **Not Supported (v0.2.0):** Full B-Rep with NURBS surfaces, cylinders, spheres, etc.
-- 📅 **Planned (v0.3.0):** Full B-Rep support
+- ❌ **Not Supported (v0.3.0):** Full B-Rep with NURBS surfaces, cylinders, spheres, etc.
+- 📅 **Planned (v1.1.0):** Full B-Rep support (opencascade-rs integration)
 
 **If your STEP file contains curved surfaces (NURBS, cylinders, etc.), you must export with tessellation enabled.**
 
@@ -252,14 +252,14 @@ Open the STEP file in a text editor and search for:
 
 ---
 
-## Future Support (v0.3.0)
+## Future Support (v1.1.0)
 
 **Planned Features:**
 - ✅ Full B-Rep support (NURBS surfaces, cylinders, spheres, etc.)
 - ✅ Automatic tessellation during conversion
 - ✅ Support for MANIFOLD_SOLID_BREP with parametric surfaces
 
-**Until v0.3.0:**
+**Until v1.1.0:**
 - Export with FACETED_BREP tessellation enabled
 - Follow this guide for CAD software-specific instructions
 
@@ -276,7 +276,7 @@ Open the STEP file in a text editor and search for:
 
 ## Summary
 
-**For v0.2.0:**
+**For v0.3.0:**
 1. ✅ Export STEP files with **tessellation enabled**
 2. ✅ Ensure **FACETED_BREP** entities are created
 3. ✅ Use medium to high tessellation quality
@@ -291,7 +291,7 @@ Open the STEP file in a text editor and search for:
 
 ---
 
-**Last Updated:** December 29, 2025  
+**Last Updated:** December 30, 2025  
 **Maintained By:** Sam Parker (Junior Engineer, 2D Formats)  
 **For:** CAD Users and Implementation Team
 

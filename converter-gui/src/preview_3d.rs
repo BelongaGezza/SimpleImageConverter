@@ -23,11 +23,11 @@ use bytemuck::{Pod, Zeroable};
 #[cfg(feature = "viewer-3d")]
 use mesh_core::Mesh;
 #[cfg(feature = "viewer-3d")]
+use pollster::block_on;
+#[cfg(feature = "viewer-3d")]
 use std::sync::Arc;
 #[cfg(feature = "viewer-3d")]
 use wgpu::util::DeviceExt;
-#[cfg(feature = "viewer-3d")]
-use pollster::block_on;
 
 /// Vertex data for wgpu rendering
 #[cfg(feature = "viewer-3d")]
@@ -640,20 +640,22 @@ impl Viewer3D {
             compatible_surface: None, // Headless rendering
             force_fallback_adapter: false,
         }))
-        .map_err(|e| Viewer3DError::InitializationFailed(format!("Failed to request adapter: {:?}", e)))?;
+        .map_err(|e| {
+            Viewer3DError::InitializationFailed(format!("Failed to request adapter: {:?}", e))
+        })?;
 
         // Request device and queue
         // Note: In wgpu 28, request_device takes only one argument (no trace_path)
-        let (device, queue) = block_on(adapter.request_device(
-            &wgpu::DeviceDescriptor {
-                label: Some("3D Viewer Device"),
-                required_features: wgpu::Features::empty(),
-                required_limits: wgpu::Limits::downlevel_webgl2_defaults()
-                    .using_resolution(adapter.limits()),
-                ..Default::default()
-            },
-        ))
-        .map_err(|e| Viewer3DError::InitializationFailed(format!("Device request failed: {}", e)))?;
+        let (device, queue) = block_on(adapter.request_device(&wgpu::DeviceDescriptor {
+            label: Some("3D Viewer Device"),
+            required_features: wgpu::Features::empty(),
+            required_limits:
+                wgpu::Limits::downlevel_webgl2_defaults().using_resolution(adapter.limits()),
+            ..Default::default()
+        }))
+        .map_err(|e| {
+            Viewer3DError::InitializationFailed(format!("Device request failed: {}", e))
+        })?;
 
         self.wgpu_instance = Some(instance);
         self.device = Some(Arc::new(device));
@@ -694,7 +696,7 @@ impl Viewer3D {
         // This is a simplified version that shows mesh info
         ui.painter()
             .rect_filled(rect, 0.0, egui::Color32::from_rgb(40, 40, 40));
-        
+
         if let Some(ref mesh) = self.mesh {
             let info_text = format!(
                 "3D Mesh Loaded\nVertices: {}\nFaces: {}\n(Full wgpu rendering in progress)",
@@ -758,7 +760,8 @@ impl Viewer3D {
         }
 
         // Initialize wgpu if needed
-        let needs_wgpu_init = self.wgpu_instance.is_none() || self.device.is_none() || self.queue.is_none();
+        let needs_wgpu_init =
+            self.wgpu_instance.is_none() || self.device.is_none() || self.queue.is_none();
         if needs_wgpu_init {
             if let Err(e) = self.initialize_wgpu() {
                 // Fallback: draw placeholder if wgpu initialization fails
@@ -803,13 +806,8 @@ impl Viewer3D {
         let device_clone = self.device.clone();
         let queue_clone = self.queue.clone();
         if let (Some(ref device), Some(ref queue)) = (device_clone, queue_clone) {
-            if let Err(e) = self.render_to_texture_and_display(
-                ui,
-                rect,
-                target_size,
-                device,
-                queue,
-            ) {
+            if let Err(e) = self.render_to_texture_and_display(ui, rect, target_size, device, queue)
+            {
                 // Fallback on render error
                 ui.painter()
                     .rect_filled(rect, 0.0, egui::Color32::from_rgb(40, 40, 40));
