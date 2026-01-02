@@ -659,6 +659,25 @@ impl eframe::App for ConverterApp {
                         ui.close_menu();
                     }
                     ui.separator();
+                    let save_button = if self.show_settings_panel {
+                        ui.button("Save Settings")
+                            .on_hover_text("Save current settings to disk (Keyboard: Ctrl+S, requires settings panel to be open)")
+                    } else {
+                        ui.add_enabled(false, egui::Button::new("Save Settings"))
+                            .on_hover_text("Open settings panel first (Edit → Preferences)")
+                    };
+                    if save_button.clicked() {
+                        if let Err(e) = self.save_settings() {
+                            self.add_message(
+                                format!("Failed to save settings: {}", e),
+                                MessageType::Error,
+                            );
+                        } else {
+                            self.add_message("Settings saved".to_string(), MessageType::Success);
+                        }
+                        ui.close_menu();
+                    }
+                    ui.separator();
                     if ui
                         .button("Exit")
                         .on_hover_text("Exit the application. Settings will be saved automatically.")
@@ -680,6 +699,11 @@ impl eframe::App for ConverterApp {
                     {
                         // Toggle settings panel visibility
                         self.show_settings_panel = !self.show_settings_panel;
+                        if self.show_settings_panel {
+                            self.add_message("Settings panel opened".to_string(), MessageType::Info);
+                        } else {
+                            self.add_message("Settings panel closed".to_string(), MessageType::Info);
+                        }
                         ui.close_menu();
                     }
                 });
@@ -859,7 +883,7 @@ impl eframe::App for ConverterApp {
                                                             true
                                                         }
                                                     };
-                                                    
+
                                                     if should_load {
                                                         // Load mesh for 3D viewer
                                                         let limits = ResourceLimits::default();
@@ -905,7 +929,7 @@ impl eframe::App for ConverterApp {
                                                             }
                                                         }
                                                     }
-                                                    
+
                                                     // Render mode controls
                                                     ui.horizontal(|ui| {
                                                         ui.label("Render Mode:");
@@ -921,26 +945,26 @@ impl eframe::App for ConverterApp {
                                                         ).clicked() {
                                                             viewer.set_render_mode(preview_3d::RenderMode::Wireframe);
                                                         }
-                                                        
+
                                                         ui.add_space(10.0);
-                                                        
+
                                                         // Camera reset button
                                                         if ui.button("Reset Camera").clicked() {
                                                             viewer.reset_camera();
                                                         }
                                                     });
-                                                    
+
                                                     ui.add_space(5.0);
-                                                    
+
                                                     // Allocate space for 3D viewer
                                                     let viewer_size = egui::Vec2::new(
                                                         ui.available_width(),
                                                         400.0_f32.min(ui.available_height() * 0.6)
                                                     );
-                                                    
+
                                                     // Render 3D viewer
                                                     let _response = viewer.render(ui, viewer_size, frame);
-                                                    
+
                                                     // Show mesh info below viewer (if mesh is loaded)
                                                     if viewer.has_mesh() {
                                                         // Get mesh metadata for display
@@ -987,7 +1011,7 @@ impl eframe::App for ConverterApp {
                                                     }
                                                 }
                                             } // Close cfg(feature = "viewer-3d") block
-                                            
+
                                             #[cfg(not(feature = "viewer-3d"))]
                                             {
                                                 // Show mesh metadata preview (fallback when viewer-3d feature not enabled)
@@ -1909,11 +1933,6 @@ impl ConverterApp {
             self.reset();
         }
 
-        // Ctrl+, (comma): Open settings panel
-        if modifiers.ctrl && pressed_keys.contains(&egui::Key::Comma) {
-            self.show_settings_panel = !self.show_settings_panel;
-        }
-
         // Ctrl+A: Add files to batch queue
         // Note: This will override Ctrl+A in text fields, but that's acceptable for this use case
         if modifiers.ctrl && pressed_keys.contains(&egui::Key::A) {
@@ -1983,15 +2002,16 @@ impl ConverterApp {
                 } else {
                     self.add_message("Batch processing resumed".to_string(), MessageType::Info);
                 }
+            } else if let Err(e) = self.pause_batch_processing() {
+                self.add_message(
+                    format!(
+                        "Cannot pause batch processing: {}. Please start batch processing first.",
+                        e
+                    ),
+                    MessageType::Error,
+                );
             } else {
-                if let Err(e) = self.pause_batch_processing() {
-                    self.add_message(
-                        format!("Cannot pause batch processing: {}. Please start batch processing first.", e),
-                        MessageType::Error,
-                    );
-                } else {
-                    self.add_message("Batch processing paused".to_string(), MessageType::Info);
-                }
+                self.add_message("Batch processing paused".to_string(), MessageType::Info);
             }
         }
 
@@ -2009,15 +2029,13 @@ impl ConverterApp {
                     } else {
                         self.add_message("Batch processing resumed".to_string(), MessageType::Info);
                     }
+                } else if let Err(e) = self.pause_batch_processing() {
+                    self.add_message(
+                        format!("Cannot pause batch processing: {}. Please start batch processing first.", e),
+                        MessageType::Error,
+                    );
                 } else {
-                    if let Err(e) = self.pause_batch_processing() {
-                        self.add_message(
-                            format!("Cannot pause batch processing: {}. Please start batch processing first.", e),
-                            MessageType::Error,
-                        );
-                    } else {
-                        self.add_message("Batch processing paused".to_string(), MessageType::Info);
-                    }
+                    self.add_message("Batch processing paused".to_string(), MessageType::Info);
                 }
             }
         }

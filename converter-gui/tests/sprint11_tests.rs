@@ -9,14 +9,15 @@
 //! - Help system implementation (Task 1.3)
 //! - Error message improvements (Task 2.2)
 
+use common::error::ConversionError;
 use converter_gui::app::ConverterApp;
 use converter_gui::error_messages::format_user_message;
 use converter_gui::ui::help_panel;
 use converter_gui::ui::style;
-use common::error::ConversionError;
 use std::io;
 
 #[test]
+#[allow(clippy::assertions_on_constants)]
 fn test_ui_style_constants_consistency() {
     // Test that style constants are consistent and valid
     // Spacing should be ordered
@@ -44,10 +45,16 @@ fn test_ui_style_colors_are_distinct() {
     // Test that color constants are distinct where they should be
     // Message colors
     assert_ne!(style::colors::message::INFO, style::colors::message::ERROR);
-    assert_ne!(style::colors::message::WARNING, style::colors::message::SUCCESS);
+    assert_ne!(
+        style::colors::message::WARNING,
+        style::colors::message::SUCCESS
+    );
 
     // Status colors
-    assert_ne!(style::colors::status::READY, style::colors::status::CONVERTING);
+    assert_ne!(
+        style::colors::status::READY,
+        style::colors::status::CONVERTING
+    );
     assert_ne!(style::colors::status::SUCCESS, style::colors::status::ERROR);
 
     // Batch queue colors
@@ -134,9 +141,8 @@ fn test_error_messages_consistent_format() {
 #[test]
 fn test_error_messages_actionable() {
     // Test that error messages provide actionable guidance
-    let error = ConversionError::ResourceLimitExceeded(
-        "Image dimension 100000 exceeds limit".to_string(),
-    );
+    let error =
+        ConversionError::ResourceLimitExceeded("Image dimension 100000 exceeds limit".to_string());
     let message = format_user_message(&error);
     // Should mention the limit
     assert!(message.contains("65,535"));
@@ -157,12 +163,12 @@ fn test_keyboard_shortcuts_function_exists() {
     // Full testing requires egui context which is complex to mock
     // This test verifies the function is accessible
     let app = ConverterApp::default();
-    
+
     // Function should exist and be callable
     // Note: We can't actually call it without egui context, but we can verify
     // the app structure supports it
     assert!(app.source_file.is_none()); // Verify app is initialized
-    
+
     // The function is private, so we test indirectly through app structure
     // If app compiles and initializes, the function exists
 }
@@ -171,15 +177,15 @@ fn test_keyboard_shortcuts_function_exists() {
 fn test_app_help_panel_state() {
     // Test that app has help panel state
     let mut app = ConverterApp::default();
-    
+
     // Help panel should start as not visible
     assert!(!app.show_help_panel);
     assert!(!app.show_about_dialog);
-    
+
     // Should be able to toggle
     app.show_help_panel = true;
     assert!(app.show_help_panel);
-    
+
     app.show_about_dialog = true;
     assert!(app.show_about_dialog);
 }
@@ -190,7 +196,7 @@ fn test_style_constants_used_in_help_panel() {
     // This is an indirect test - we verify constants are accessible
     let _spacing = style::spacing::LARGE;
     let _color = style::colors::ui::SECONDARY_TEXT;
-    
+
     // If this compiles, help panel can use style constants
     // (help_panel.rs already uses them, verified by compilation)
 }
@@ -203,11 +209,11 @@ fn test_error_messages_no_path_leakage() {
         "/home/user/secret/path/to/file.png",
     ));
     let message = format_user_message(&error);
-    
+
     // Should not contain full path
     assert!(!message.contains("/home/user/secret"));
     assert!(!message.contains("secret"));
-    
+
     // Should be generic
     assert!(message.contains("not found") || message.contains("exists"));
 }
@@ -254,7 +260,7 @@ fn test_ui_style_icon_constants() {
     assert!(!style::icons::WARNING.is_empty());
     assert!(!style::icons::ERROR.is_empty());
     assert!(!style::icons::SUCCESS.is_empty());
-    
+
     // Icons should be reasonable length (Unicode characters may be multiple bytes)
     // INFO is "ℹ" which is 3 bytes in UTF-8, WARNING is "⚠" which is 3 bytes
     assert!(style::icons::INFO.len() <= 4);
@@ -270,7 +276,7 @@ fn test_error_messages_context_preserved() {
         "Format mismatch: extension suggests Png but magic bytes indicate Jpeg".to_string(),
     );
     let message = format_user_message(&error);
-    
+
     // Should mention extension mismatch (helpful context)
     assert!(message.contains("extension") || message.contains("format"));
     // Should not expose technical details like "magic bytes"
@@ -278,4 +284,3 @@ fn test_error_messages_context_preserved() {
     // Should suggest verification
     assert!(message.contains("verify") || message.contains("check"));
 }
-

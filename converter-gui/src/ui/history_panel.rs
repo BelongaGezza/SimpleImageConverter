@@ -171,16 +171,15 @@ fn render_history_entry(ui: &mut Ui, entry: &ConversionEntry, _index: usize) -> 
                     // Add padding to the right of buttons (left side in RTL layout)
                     ui.add_space(style::spacing::STANDARD);
 
-                    if entry.success {
-                        if ui
+                    if entry.success
+                        && ui
                             .small_button("Open Output")
                             .on_hover_text(
                                 "Open the converted output file in the default application",
                             )
                             .clicked()
-                        {
-                            should_open = true; // Signal that output should be opened
-                        }
+                    {
+                        should_open = true; // Signal that output should be opened
                     }
                     if ui
                         .small_button("Remove")

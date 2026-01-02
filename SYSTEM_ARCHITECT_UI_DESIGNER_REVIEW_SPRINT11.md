@@ -94,7 +94,7 @@ The UI Designer has completed all three assigned Sprint 11 tasks with high quali
      - ✅ File operations (Ctrl+O, Ctrl+S)
      - ✅ Batch processing (Ctrl+Enter, Ctrl+P, Space, Esc)
      - ✅ Queue management (Ctrl+A, Ctrl+Shift+D)
-     - ✅ Settings (Ctrl+,)
+     - ✅ Settings (Edit → Preferences)
      - ✅ Navigation (Enter for conversion)
    - Proper modifier handling (Ctrl vs Cmd handled by egui automatically)
    - Good error handling with user-friendly messages

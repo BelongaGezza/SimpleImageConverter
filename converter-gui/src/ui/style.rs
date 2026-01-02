@@ -23,6 +23,7 @@ pub mod spacing {
     pub const LARGE: f32 = 20.0;
 
     /// Extra large spacing (30px) - Used for spacing between major panels
+    #[allow(dead_code)]
     pub const EXTRA_LARGE: f32 = 30.0;
 }
 
@@ -113,16 +114,19 @@ pub mod border {
     /// Standard border (2px) - Used for standard borders
     pub const STANDARD: f32 = 2.0;
     /// Thick border (3px) - Used for emphasis
+    #[allow(dead_code)]
     pub const THICK: f32 = 3.0;
 }
 
 /// Corner radius constants
 pub mod corner_radius {
     /// Small corner radius (2px)
+    #[allow(dead_code)]
     pub const SMALL: f32 = 2.0;
     /// Standard corner radius (4px)
     pub const STANDARD: f32 = 4.0;
     /// Large corner radius (8px)
+    #[allow(dead_code)]
     pub const LARGE: f32 = 8.0;
 }
 
@@ -151,6 +155,7 @@ mod tests {
     use super::*;
 
     #[test]
+    #[allow(clippy::assertions_on_constants)]
     fn test_spacing_constants_are_positive() {
         assert!(spacing::SMALL > 0.0);
         assert!(spacing::MEDIUM > 0.0);
@@ -160,6 +165,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::assertions_on_constants)]
     fn test_spacing_constants_are_ordered() {
         assert!(spacing::SMALL < spacing::MEDIUM);
         assert!(spacing::MEDIUM < spacing::STANDARD);
@@ -168,6 +174,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::assertions_on_constants)]
     fn test_border_constants_are_positive() {
         assert!(border::THIN > 0.0);
         assert!(border::STANDARD > 0.0);
@@ -175,12 +182,14 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::assertions_on_constants)]
     fn test_border_constants_are_ordered() {
         assert!(border::THIN < border::STANDARD);
         assert!(border::STANDARD < border::THICK);
     }
 
     #[test]
+    #[allow(clippy::assertions_on_constants)]
     fn test_corner_radius_constants_are_positive() {
         assert!(corner_radius::SMALL > 0.0);
         assert!(corner_radius::STANDARD > 0.0);
@@ -188,12 +197,14 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::assertions_on_constants)]
     fn test_corner_radius_constants_are_ordered() {
         assert!(corner_radius::SMALL < corner_radius::STANDARD);
         assert!(corner_radius::STANDARD < corner_radius::LARGE);
     }
 
     #[test]
+    #[allow(clippy::assertions_on_constants)]
     fn test_scroll_constants_are_positive() {
         assert!(scroll::MESSAGES_MAX_HEIGHT > 0.0);
         assert!(scroll::BATCH_QUEUE_MAX_HEIGHT > 0.0);
@@ -260,6 +271,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::assertions_on_constants)]
     fn test_style_consistency() {
         // Verify that spacing values follow a consistent pattern
         // Standard spacing should be 2x medium, large should be 2x standard, etc.

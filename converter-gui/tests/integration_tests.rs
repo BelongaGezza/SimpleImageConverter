@@ -700,8 +700,8 @@ fn test_settings_auto_save_debouncing() {
 
 #[cfg(feature = "viewer-3d")]
 use converter_gui::preview_3d::{RenderMode, Viewer3D};
-use mesh_core::{Face, Mesh, Vertex};
-use std::sync::Mutex;
+#[cfg(feature = "viewer-3d")]
+use mesh_core::Mesh;
 use std::thread;
 
 // Helper to create a simple test mesh
@@ -806,7 +806,7 @@ fn test_3d_viewer_with_batch_processing_integration() {
 #[test]
 fn test_pause_resume_cancel_with_parallel_processing() {
     // Test that pause/resume/cancel works correctly with parallel processing state
-    let app = ConverterApp::default();
+    let _app = ConverterApp::default();
 
     // Create batch processing state
     let state = Arc::new(converter_gui::app::BatchProcessingState::new());
@@ -854,8 +854,8 @@ fn test_pause_resume_cancel_with_parallel_processing() {
 
     // State should be in a valid state after concurrent access
     // (may be paused or resumed, but should not be corrupted)
-    let final_paused = state_clone.is_paused();
-    let final_cancelled = state_clone.is_cancelled();
+    let _final_paused = state_clone.is_paused();
+    let _final_cancelled = state_clone.is_cancelled();
 
     // Reset to known state
     state_clone.reset();
@@ -1064,10 +1064,10 @@ fn test_memory_efficiency_batch_queue() {
 #[test]
 fn test_no_regressions_existing_functionality() {
     // Test that existing functionality still works
-    let mut app = ConverterApp::default();
-
-    // Test file type detection
-    app.detected_file_type = Some(FileType::Image);
+    let mut app = ConverterApp {
+        detected_file_type: Some(FileType::Image),
+        ..Default::default()
+    };
     assert_eq!(app.detected_file_type, Some(FileType::Image));
 
     // Test format selection

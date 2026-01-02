@@ -63,7 +63,6 @@ pub fn render_help_panel(ui: &mut Ui) {
 
                     ui.label(RichText::new("Navigation:").strong());
                     ui.indent("nav", |ui| {
-                        ui.label("Ctrl+, (Cmd+, on macOS): Open/Close settings panel");
                         ui.label("Ctrl+R (Cmd+R on macOS): Reset/Clear current file selection");
                         ui.label("Escape: Close dialogs or cancel batch processing");
                         ui.label("Tab: Navigate between fields");

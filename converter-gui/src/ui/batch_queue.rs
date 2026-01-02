@@ -141,23 +141,21 @@ pub fn render_batch_queue(ui: &mut Ui, app: &mut ConverterApp) {
                     );
                 }
             }
-        } else {
-            if ui
-                .button("⏸ Pause")
-                .on_hover_text("Pause batch processing (Press Space)")
-                .clicked()
-            {
-                if let Err(e) = app.pause_batch_processing() {
-                    app.add_message(
-                        format!("Cannot pause batch processing: {}. Please start batch processing first.", e),
-                        crate::app::MessageType::Error,
-                    );
-                } else {
-                    app.add_message(
-                        "Batch processing paused".to_string(),
-                        crate::app::MessageType::Info,
-                    );
-                }
+        } else if ui
+            .button("⏸ Pause")
+            .on_hover_text("Pause batch processing (Press Space)")
+            .clicked()
+        {
+            if let Err(e) = app.pause_batch_processing() {
+                app.add_message(
+                    format!("Cannot pause batch processing: {}. Please start batch processing first.", e),
+                    crate::app::MessageType::Error,
+                );
+            } else {
+                app.add_message(
+                    "Batch processing paused".to_string(),
+                    crate::app::MessageType::Info,
+                );
             }
         }
 

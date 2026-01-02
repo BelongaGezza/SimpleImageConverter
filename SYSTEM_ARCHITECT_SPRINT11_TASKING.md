@@ -123,7 +123,7 @@ Based on the comprehensive architectural review completed December 30, 2025, Spr
   - Batch processing (Start: Ctrl+Enter, Pause: Ctrl+P, Cancel: Esc)
   - Queue management (Add: Ctrl+A, Remove: Delete, Clear: Ctrl+Shift+D)
   - View controls (Preview toggle, 3D viewer controls)
-  - Settings (Open: Ctrl+,)
+  - Settings (Open: Edit → Preferences)
 - Display shortcuts in menu or tooltips
 - Ensure shortcuts don't conflict
 - Document shortcuts in help system

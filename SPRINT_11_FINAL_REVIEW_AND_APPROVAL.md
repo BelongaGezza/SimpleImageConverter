@@ -75,7 +75,7 @@ Sprint 11 has been successfully completed with all 7 tasks delivered and approve
      - ✅ File operations (Ctrl+O, Ctrl+S)
      - ✅ Batch processing (Ctrl+Enter, Ctrl+P, Space, Esc)
      - ✅ Queue management (Ctrl+A, Ctrl+Shift+D)
-     - ✅ Settings (Ctrl+,)
+     - ✅ Settings (Edit → Preferences)
      - ✅ Navigation (Enter for conversion)
    - Proper modifier handling (Ctrl vs Cmd)
    - Good error handling

@@ -383,7 +383,6 @@ The error message system has been security-reviewed and approved (see `SECURITY_
 - **Ctrl+Shift+D** (Cmd+Shift+D on macOS): Clear batch queue (shows confirmation dialog)
 
 **Navigation:**
-- **Ctrl+,** (Cmd+, on macOS): Open/Close settings panel
 - **Ctrl+R** (Cmd+R on macOS): Reset/Clear current file selection and options
 - **Escape**: Close dialogs or cancel batch processing
 - **Tab**: Navigate between fields
