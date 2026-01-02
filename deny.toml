@@ -10,6 +10,12 @@ ignore = [
     # paste is unmaintained but is a transitive dependency from image->ravif->rav1e
     # No security vulnerability, just maintenance status
     "RUSTSEC-2024-0436",
+    # derivative is unmaintained - transitive via eframe->accesskit_unix->zbus
+    # No security vulnerability, just maintenance status
+    "RUSTSEC-2024-0388",
+    # instant is unmaintained - transitive via eframe->accesskit_unix->futures-lite->fastrand
+    # No security vulnerability, just maintenance status
+    "RUSTSEC-2024-0384",
 ]
 
 [licenses]
