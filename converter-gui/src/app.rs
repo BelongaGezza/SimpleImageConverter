@@ -710,8 +710,8 @@ impl eframe::App for ConverterApp {
 
                 ui.menu_button("Help", |ui| {
                     if ui
-                        .button("Keyboard Shortcuts...")
-                        .on_hover_text("Show keyboard shortcuts reference")
+                        .button("Help & Documentation")
+                        .on_hover_text("Show help panel with quick start guide, shortcuts, and troubleshooting (F1)")
                         .clicked()
                     {
                         self.show_help_panel = true;
@@ -2072,6 +2072,11 @@ impl ConverterApp {
                     MessageType::Error,
                 );
             }
+        }
+
+        // F1: Open help panel
+        if ctx.input(|i| i.key_pressed(egui::Key::F1)) {
+            self.show_help_panel = true;
         }
     }
 

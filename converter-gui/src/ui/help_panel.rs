@@ -11,12 +11,45 @@ use egui::{RichText, ScrollArea, Ui};
 
 /// Render the help panel
 ///
-/// Displays help content including keyboard shortcuts, feature overview,
-/// and troubleshooting tips.
+/// Displays help content including quick start guide, keyboard shortcuts,
+/// feature overview, and troubleshooting tips.
 pub fn render_help_panel(ui: &mut Ui) {
     ScrollArea::vertical().max_height(600.0).show(ui, |ui| {
         ui.vertical(|ui| {
             ui.heading("Help & Documentation");
+
+            ui.add_space(style::spacing::LARGE);
+
+            // Quick Start Section
+            ui.heading("Quick Start");
+            ui.add_space(style::spacing::STANDARD);
+
+            ui.group(|ui| {
+                ui.vertical(|ui| {
+                    ui.label(RichText::new("Getting Started in 3 Steps:").strong());
+                    ui.add_space(style::spacing::SMALL);
+
+                    ui.label(
+                        "1. Drag and drop a file onto the drop zone, or click 'Open File' (Ctrl+O)",
+                    );
+                    ui.label("2. Select your desired output format from the format panel");
+                    ui.label("3. Click 'Convert' or press Enter to start conversion");
+
+                    ui.add_space(style::spacing::MEDIUM);
+
+                    ui.label(RichText::new("Batch Processing:").strong());
+                    ui.label("• Add multiple files with Ctrl+A or drag and drop");
+                    ui.label("• Files appear in the Batch Processing Queue");
+                    ui.label("• Press Ctrl+Enter to convert all files at once");
+
+                    ui.add_space(style::spacing::MEDIUM);
+
+                    ui.label(RichText::new("Tips:").strong());
+                    ui.label("• Press F1 anytime to open this help panel");
+                    ui.label("• Hover over buttons and options for helpful tooltips");
+                    ui.label("• Settings are saved automatically as you change them");
+                });
+            });
 
             ui.add_space(style::spacing::LARGE);
 
@@ -67,6 +100,13 @@ pub fn render_help_panel(ui: &mut Ui) {
                         ui.label("Escape: Close dialogs or cancel batch processing");
                         ui.label("Tab: Navigate between fields");
                         ui.label("Arrow Keys: Navigate radio buttons");
+                    });
+
+                    ui.add_space(style::spacing::MEDIUM);
+
+                    ui.label(RichText::new("Help:").strong());
+                    ui.indent("help_keys", |ui| {
+                        ui.label("F1: Open this help panel");
                     });
                 });
             });
@@ -170,6 +210,9 @@ pub fn render_help_panel(ui: &mut Ui) {
     });
 }
 
+/// Application version from Cargo.toml
+const VERSION: &str = env!("CARGO_PKG_VERSION");
+
 /// Render the About dialog
 ///
 /// Displays application information including version, credits, and license.
@@ -178,7 +221,7 @@ pub fn render_about_dialog(ui: &mut Ui) {
         ui.heading("Simple Image Converter");
         ui.add_space(style::spacing::MEDIUM);
 
-        ui.label(RichText::new("Version 0.3.0").strong());
+        ui.label(RichText::new(format!("Version {}", VERSION)).strong());
         ui.add_space(style::spacing::SMALL);
 
         ui.label("A high-performance Rust toolkit for converting between");

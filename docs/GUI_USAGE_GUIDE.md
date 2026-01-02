@@ -388,6 +388,9 @@ The error message system has been security-reviewed and approved (see `SECURITY_
 - **Tab**: Navigate between fields
 - **Arrow Keys**: Navigate radio buttons in format selection
 
+**Help:**
+- **F1**: Open the help panel with quick start guide, shortcuts, and troubleshooting
+
 ### Best Practices
 
 1. **Check file before converting:**
@@ -447,10 +450,10 @@ Progress indicator appears automatically for operations > 30 seconds.
 
 The application includes a Help menu in the menu bar with the following options:
 
-**Keyboard Shortcuts...**
-- Opens the help panel showing all available keyboard shortcuts
+**Help & Documentation**
+- Opens the help panel with quick start guide, keyboard shortcuts, feature overview, and troubleshooting
 - Includes shortcuts for file operations, conversion, batch processing, queue management, and navigation
-- Access via: Menu bar → Help → Keyboard Shortcuts...
+- Access via: Menu bar → Help → Help & Documentation, or press **F1**
 
 **About**
 - Displays application information including:
@@ -463,7 +466,12 @@ The application includes a Help menu in the menu bar with the following options:
 
 #### Help Panel
 
-The help panel provides comprehensive assistance:
+The help panel provides comprehensive assistance (press **F1** to open):
+
+**Quick Start Guide:**
+- Step-by-step instructions to get started in 3 steps
+- Batch processing overview
+- Helpful tips for new users
 
 **Keyboard Shortcuts Reference:**
 - Complete list of all keyboard shortcuts organized by category
