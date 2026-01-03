@@ -1,159 +1,249 @@
 # Format Support Matrix
 ## Simple Image Converter
 
-**Last Updated:** December 30, 2025  
-**Status:** v0.3.0 - Core formats complete, STEP FACETED_BREP support (feature-gated), 3D viewer available
+**Last Updated:** January 3, 2026
+**Current Version:** v0.3.0 (v1.0.0 in preparation)
+**Status:** All core formats implemented, STEP FACETED_BREP support, 3D viewer, parallel batch processing
 
 ---
 
 ## 2D Image Formats
 
-| Format | Extension | Read | Write | Status | Notes |
-|--------|-----------|------|-------|--------|-------|
-| PNG | .png | ✅ | ✅ | Sprint 2 | Full support |
-| JPEG | .jpg, .jpeg | ✅ | ✅ | Sprint 2 | Quality control |
-| BMP | .bmp | ✅ | ✅ | Sprint 2 ✅ | Windows bitmap |
-| GIF | .gif | ✅ | ✅ | Sprint 2 ✅ | First frame only (animated) |
-| TIFF | .tiff, .tif | ✅ | ✅ | Sprint 4 ✅ | Multi-page |
-| WebP | .webp | ✅ | ✅ | Sprint 4 ✅ | Lossy/lossless |
-| SVG | .svg | ✅ | ❌ | Sprint 4 ✅ | Rasterize only (read-only) |
-| TGA | .tga | 📅 | 📅 | **FUTURE** | Tier 2 - Planned for future release |
-| ICO | .ico | 📅 | 📅 | **FUTURE** | Tier 2 - Planned for future release |
-| DDS | .dds | 📅 | 📅 | **FUTURE** | Optional - Planned for future release |
-| HDR | .hdr | 📅 | 📅 | **FUTURE** | Optional - Planned for future release |
-| OpenEXR | .exr | 📅 | 📅 | **FUTURE** | Tier 2 - Planned for future release |
-| AVIF | .avif | 📅 | 📅 | **FUTURE** | Tier 3 - Planned for future release |
-| PDF | .pdf | 📅 | ❌ | **FUTURE** | Page to image - Planned for future release |
+| Format | Extension | Read | Write | Notes |
+|--------|-----------|------|-------|-------|
+| PNG | .png | Yes | Yes | Lossless, transparency support |
+| JPEG | .jpg, .jpeg | Yes | Yes | Quality 1-100, no transparency |
+| BMP | .bmp | Yes | Yes | Windows bitmap |
+| GIF | .gif | Yes | Yes | First frame only (animation not supported) |
+| TIFF | .tiff, .tif | Yes | Yes | Single page (multi-page not supported) |
+| WebP | .webp | Yes | Yes | Lossy and lossless modes |
+| SVG | .svg | Yes | No | Rasterization only (read-only) |
 
-**Legend:**
-- ✅ Implemented
-- 📅 Planned
-- ❌ Not supported
+### Planned Image Formats (Future Releases)
+
+| Format | Extension | Priority | Notes |
+|--------|-----------|----------|-------|
+| TGA | .tga | Medium | Targa format |
+| ICO | .ico | Medium | Windows icon |
+| DDS | .dds | Low | DirectDraw Surface |
+| HDR | .hdr | Low | High dynamic range |
+| OpenEXR | .exr | Medium | Professional HDR |
+| AVIF | .avif | Low | Modern compression |
+| PDF | .pdf | Low | Page to image (read-only) |
 
 ---
 
 ## 3D Mesh Formats
 
-| Format | Extension | Read | Write | Status | Notes |
-|--------|-----------|------|-------|--------|-------|
-| STL | .stl | ✅ | ✅ | Sprint 3 ✅ | Binary/ASCII |
-| OBJ | .obj | ✅ | ✅ | Sprint 3 ✅ | With materials |
-| PLY | .ply | ✅ | ✅ | Sprint 3 ✅ | ASCII format |
-| OFF | .off | ✅ | ✅ | Sprint 5 ✅ | Custom parser |
-| glTF | .gltf, .glb | ✅ | ✅ | Sprint 5 ✅ | Binary/text |
-| DXF | .dxf | ✅ | ✅ | Sprint 5 ✅ | 3D entities |
-| STEP | .step, .stp | ✅ | ❌ | Sprint 7-8 ✅ | **v0.2.0 RELEASED:** Read-only, feature-gated (`--features step`). **FACETED_BREP support only** (pre-tessellated geometry). STEP file parsing working (ruststep 0.4.0). Entity extraction framework complete. FACETED_BREP extraction implemented and tested. **Limitations:** Only supports FACETED_BREP entities (pre-tessellated). Full B-Rep with NURBS surfaces, cylinders, etc. planned for v1.1.0 (opencascade-rs integration). See `docs/CAD_EXPORT_GUIDE.md` and `docs/STEP_FORMAT_REFERENCE.md` for details. |
+| Format | Extension | Read | Write | Notes |
+|--------|-----------|------|-------|-------|
+| STL | .stl | Yes | Yes | Binary and ASCII variants |
+| OBJ | .obj | Yes | Yes | Wavefront, partial material support |
+| PLY | .ply | Yes | Yes | Stanford polygon format |
+| OFF | .off | Yes | Yes | Object file format |
+| glTF/GLB | .gltf, .glb | Yes | Yes | glTF 2.0, materials supported |
+| DXF | .dxf | Yes | Yes | AutoCAD, 3DFACE entities |
+| STEP | .step, .stp | Yes | No | FACETED_BREP only (feature-gated) |
 
-**Legend:**
-- ✅ Implemented
-- 📅 Planned
-- ❌ Not supported
+### STEP Format Details
+
+**Status:** Implemented in v0.2.0 (feature-gated)
+
+**Capabilities:**
+- Parses STEP AP203 files using ruststep 0.4.0
+- Extracts FACETED_BREP entities (pre-tessellated geometry)
+- Converts to mesh formats (STL, OBJ, PLY, etc.)
+
+**Limitations:**
+- **FACETED_BREP only** - Requires pre-tessellated geometry in STEP file
+- **No B-Rep support** - NURBS surfaces, cylinders, spheres not supported
+- **Read-only** - Cannot write STEP files
+- **Feature-gated** - Requires `--features step` flag
+
+**Future:** Full B-Rep support via opencascade-rs planned for v1.1.0
+
+**Documentation:**
+- `docs/CAD_EXPORT_GUIDE.md` - How to export FACETED_BREP from CAD software
+- `docs/STEP_FORMAT_REFERENCE.md` - Technical reference
+
+### Planned Mesh Formats (Future Releases)
+
+| Format | Extension | Priority | Notes |
+|--------|-----------|----------|-------|
+| IGES | .igs, .iges | Low | Legacy CAD format |
+| 3MF | .3mf | Medium | 3D manufacturing |
 
 ---
 
 ## Format Detection
 
-Formats are detected by:
+Formats are detected using a two-stage approach:
 
-1. **File Extension** (primary method)
-2. **Magic Bytes** (fallback for unknown extensions)
+### Stage 1: File Extension
+Primary detection method based on file extension.
 
-### Magic Byte Signatures
+### Stage 2: Magic Bytes
+Fallback for unknown or missing extensions.
 
-| Format | Magic Bytes |
-|--------|-------------|
-| PNG | `89 50 4E 47 0D 0A 1A 0A` |
-| JPEG | `FF D8 FF` |
-| GIF | `47 49 46 38` |
-| BMP | `42 4D` |
-| STL (ASCII) | `solid` (first 5 bytes) |
-| STL (Binary) | 80-byte header |
-
----
-
-## Quality Settings
-
-### Image Quality
-
-- **Range**: 0-100
-- **Default**: 90
-- **Formats**: JPEG, WebP, AVIF
-
-### Compression
-
-- **Range**: 0-9 (format-dependent)
-- **Default**: 6
-- **Formats**: PNG, TIFF
+| Format | Magic Bytes | Offset |
+|--------|-------------|--------|
+| PNG | `89 50 4E 47 0D 0A 1A 0A` | 0 |
+| JPEG | `FF D8 FF` | 0 |
+| GIF | `47 49 46 38` ("GIF8") | 0 |
+| BMP | `42 4D` ("BM") | 0 |
+| TIFF (LE) | `49 49 2A 00` | 0 |
+| TIFF (BE) | `4D 4D 00 2A` | 0 |
+| WebP | `52 49 46 46` + `57 45 42 50` | 0, 8 |
+| STL (ASCII) | `solid` | 0 |
+| glTF (JSON) | `7B` ("{") | 0 |
+| GLB (Binary) | `67 6C 54 46` ("glTF") | 0 |
 
 ---
 
-## Feature Matrix
+## Quality and Compression Settings
 
-| Feature | 2D Formats | 3D Formats |
-|---------|------------|------------|
-| Transparency | PNG, GIF, WebP | N/A |
-| Animation | GIF | N/A |
-| Multi-page | TIFF, PDF | N/A |
-| Materials | N/A | OBJ, glTF |
-| Textures | N/A | OBJ, glTF |
-| Coordinate Transforms | N/A | ✅ Implemented (v0.1.1) |
-| Normal Recalculation | N/A | ✅ Implemented (v0.1.1) |
-| Mesh Validation | N/A | ✅ Implemented (v0.1.1) |
+### Image Quality (Lossy Formats)
+
+| Format | Range | Default | Notes |
+|--------|-------|---------|-------|
+| JPEG | 1-100 | 90 | Higher = better quality, larger file |
+| WebP | 1-100 | 90 | Lossy mode only |
+
+### Compression Level (Lossless Formats)
+
+| Format | Range | Default | Notes |
+|--------|-------|---------|-------|
+| PNG | 0-9 | 6 | Higher = smaller file, slower |
 
 ---
 
-## Implementation Status
+## Feature Support Matrix
 
-### Sprint 1 (Foundation) ✅
-- Workspace structure
-- Trait definitions
-- Basic CLI skeletons
+### Image Features
 
-### Sprint 2 (Image Core) ✅
-- ✅ PNG format
-- ✅ JPEG format
-- ✅ BMP format
-- ✅ GIF format
+| Feature | PNG | JPEG | BMP | GIF | TIFF | WebP | SVG |
+|---------|-----|------|-----|-----|------|------|-----|
+| Transparency | Yes | No | No | Yes | Yes | Yes | Yes |
+| Quality Control | No | Yes | No | No | No | Yes | N/A |
+| Lossless | Yes | No | Yes | Yes | Yes | Yes | N/A |
+| Animation | No | No | No | No* | No | No | No |
 
-### Sprint 3 (Mesh Core) ✅
-- ✅ STL format
-- ✅ OBJ format
-- ✅ PLY format
-- ✅ mesh-convert CLI integrated
+*GIF animation not supported - first frame only
 
-### Sprint 4 (Advanced 2D Formats) ✅
-- ✅ TIFF format
-- ✅ WebP format
-- ✅ SVG format (rasterization, read-only)
+### Mesh Features
 
-### Sprint 5 (Advanced 3D Formats) ✅
-- ✅ OFF format
-- ✅ glTF format (binary & text)
-- ✅ DXF format (3D entities)
+| Feature | STL | OBJ | PLY | OFF | glTF | DXF | STEP |
+|---------|-----|-----|-----|-----|------|-----|------|
+| Vertex Colors | No | No | Yes | Yes | Yes | No | No |
+| Materials | No | Yes | No | No | Yes | No | No |
+| Textures | No | Yes | No | No | Yes | No | No |
+| Binary Format | Yes | No | Yes | No | Yes | No | No |
+| Normal Data | Yes | Yes | Yes | Yes | Yes | No | Yes |
 
-### Sprint 7-8 (STEP Format) ✅ COMPLETE (v0.2.0)
-- ✅ STEP format skeleton implemented
-- ✅ STEP file parsing working (ruststep 0.4.0 with AP203 feature)
-- ✅ Entity extraction framework complete
-- ✅ FACETED_BREP extraction implemented
-- ✅ Direct mesh construction from AP203 entities
-- ✅ Format registry updated with STEP support
-- ✅ Feature flag system in place
-- ✅ Research documentation complete
-- ✅ Integration tests (8 tests, all passing)
+### Mesh Processing Features (v0.1.1+)
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Coordinate Transforms | Yes | Y-up to Z-up, etc. |
+| Normal Recalculation | Yes | Automatic when missing |
+| Mesh Validation | Yes | Vertex/face validation |
+| Vertex Deduplication | Yes | Remove duplicate vertices |
+
+---
+
+## v0.3.0 Features
+
+### Parallel Batch Processing
+- Convert multiple files simultaneously
+- Configurable concurrency (1-16 threads)
+- Default: Number of CPU cores (capped at 8)
+- Up to 4x speedup on 4-core systems
+
+### 3D Mesh Viewer
+- Interactive preview in GUI
+- Camera controls: orbit, pan, zoom
+- Rendering modes: solid, wireframe
+- Hardware accelerated (WebGPU)
+- Feature-gated: `--features viewer-3d`
+
+### Settings Auto-Save
+- Automatic save 500ms after changes
+- Visual status indicator
+- No manual save required
+
+### Queue Item Editing
+- Edit pending batch items
+- Change format, path, options
+- No need to remove and re-add
+
+---
+
+## Resource Limits
+
+Default limits to prevent resource exhaustion:
+
+| Resource | Default Limit | Configurable |
+|----------|---------------|--------------|
+| Max File Size | 100 MB | Yes |
+| Max Image Dimension | 65,535 px | Yes |
+| Max Vertices | 10,000,000 | Yes |
+| Max Faces | 10,000,000 | Yes |
+| Max Concurrent Conversions | 8 | Yes (1-16) |
+
+---
+
+## Performance Characteristics
+
+### Typical Conversion Times
+
+| Operation | File Size | Time |
+|-----------|-----------|------|
+| PNG to JPEG | 10 MB | < 1 sec |
+| JPEG to PNG | 5 MB | < 1 sec |
+| STL to OBJ | 50K vertices | < 1 sec |
+| OBJ to glTF | 100K vertices | 1-2 sec |
+| STEP to STL | Varies | 1-5 sec |
+
+### Memory Usage
+
+| Type | Memory | Notes |
+|------|--------|-------|
+| Images | ~3x file size | Read + decode + encode |
+| Meshes | ~2x file size | Read + parse + write |
+
+---
+
+## Version History
+
+| Version | Formats Added | Features Added |
+|---------|---------------|----------------|
+| v0.1.0 | PNG, JPEG, BMP, GIF, STL, OBJ, PLY | Core converters |
+| v0.1.1 | - | Mesh transforms, validation |
+| v0.2.0 | STEP (FACETED_BREP) | Feature gates |
+| v0.2.1 | - | GUI application |
+| v0.2.2 | - | Batch processing, preview |
+| v0.3.0 | - | Parallel processing, 3D viewer |
+| v1.0.0 | - | First stable release |
 
 ---
 
 ## Notes
 
-- **SVG**: Read-only (rasterization), no write support
-- **PDF**: Read-only (page extraction), no write support
-- **STEP**: **v0.2.0 RELEASED** - FACETED_BREP extraction implemented and tested. STEP file parsing working (ruststep 0.4.0). Entity extraction framework complete. Direct mesh construction from AP203 entities. **Limitations:** Only supports FACETED_BREP entities (pre-tessellated geometry). Full B-Rep with NURBS surfaces, cylinders, etc. planned for v0.3.0 (opencascade-rs integration). Users must export STEP files with tessellation enabled. See `docs/CAD_EXPORT_GUIDE.md` for CAD software-specific instructions. Write support not planned (requires complex CAD modeling). Feature-gated (`--features step`). See `docs/STEP_FORMAT_REFERENCE.md` for technical details.
-- **FBX**: Not supported (proprietary, no open-source Rust library)
-- **DWG**: Not supported (proprietary)
+- **SVG**: Read-only via rasterization. Cannot write SVG output.
+- **STEP**: FACETED_BREP only. Full B-Rep support planned for v1.1.0.
+- **FBX**: Not supported (proprietary format, no open-source Rust library).
+- **DWG**: Not supported (proprietary format).
 
 ---
 
-_For implementation details, see Phase3_Architecture.md_  
-_For sprint planning, see IMPLEMENTATION_PLAN.md_
+## Related Documentation
 
+- `docs/CAD_EXPORT_GUIDE.md` - Exporting FACETED_BREP from CAD software
+- `docs/STEP_FORMAT_REFERENCE.md` - STEP format technical reference
+- `docs/PERFORMANCE.md` - Performance benchmarks and optimization
+- `docs/GUI_USAGE_GUIDE.md` - GUI application usage guide
+
+---
+
+*For architecture details, see `Phase3_Architecture.md`*
+*For implementation plan, see `IMPLEMENTATION_PLAN.md`*
