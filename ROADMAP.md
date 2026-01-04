@@ -1,7 +1,7 @@
 # Project Roadmap
 ## Simple Image Converter
 
-**Last Updated:** January 3, 2026
+**Last Updated:** January 4, 2026
 **Current Version:** v0.3.0
 **Next Release:** v1.0.0 (First Stable Release - Mid-January 2026)
 
@@ -138,6 +138,21 @@
 - Additional formats (TGA, ICO, DDS, HDR, OpenEXR, AVIF, IGES, 3MF)
 - Cloud integration
 - Web service API
+
+### Research: 2D to 2.5D Relief Conversion (Future Investigation)
+- **Goal:** Convert 2D images to 2.5D relief meshes (STL) for lithophanes, CNC, and 3D printing
+- **Approach:** Use depth estimation AI models to generate height maps from images
+- **Potential Technologies:**
+  - [Depth-Anything-V2](https://github.com/DepthAnything/Depth-Anything-V2) - State-of-the-art monocular depth estimation
+  - [mcp_3d_relief](https://github.com/Bigchx/mcp_3d_relief) - Python tool for 2D to 3D relief, specifically for STL output
+- **Use Cases:**
+  - Lithophane generation (3D printed photo panels)
+  - CNC relief carving from photographs
+  - Artistic relief sculptures from images
+- **Implementation Considerations:**
+  - May require Python integration or ONNX model inference
+  - GPU acceleration for real-time depth estimation
+  - Quality settings for mesh resolution/detail
 
 ---
 
