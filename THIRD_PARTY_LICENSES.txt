@@ -4,6 +4,9 @@ THIRD-PARTY SOFTWARE LICENSES
 SimpleImageConverter includes the following third-party software components.
 Each component is listed with its license information below.
 
+Maintainer: System Engineer — This file MUST be maintained by the System Engineer at each approval stage; include attribution and references for libraries, direct dependencies, and transitive dependencies.
+Last Updated: January 5, 2026
+
 ================================================================================
 DEPENDENCY SUMMARY
 ================================================================================
