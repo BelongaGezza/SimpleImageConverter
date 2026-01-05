@@ -45,7 +45,17 @@
       "Bash(cargo install:*)",
       "Bash(git mv:*)",
       "Bash(cargo about:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(chmod:*)",
+      "Bash(./scripts/package-linux.sh:*)",
+      "Bash(./scripts/package-gui-linux.sh:*)",
+      "Bash(git stash:*)",
+      "Bash(git pull:*)",
+      "Bash(gh release:*)",
+      "Bash(cargo clean:*)",
+      "Bash(bash:*)",
+      "Bash(cat:*)",
+      "Skill(commit-commands:commit)"
     ]
   }
 }
