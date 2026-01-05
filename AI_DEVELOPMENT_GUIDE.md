@@ -101,6 +101,36 @@ This is a Rust-based image and 3D mesh format converter project being developed 
    - Retrospective notes
    - Plan next sprint
 
+5. **Sprint Approvals (REQUIRED)**
+   - **System Architect Review:**
+     - Architecture compliance check
+     - Design decision validation
+     - Create: `Sprint[N]-SystemArchitectAPPROVAL.md`
+
+   - **Senior Engineer Review:**
+     - Code quality review
+     - Implementation completeness
+     - Create: `Sprint[N]-SeniorEngineerAPPROVAL.md`
+
+   - **Security Specialist Review:**
+     - Security posture assessment
+     - Vulnerability analysis
+     - Create: `Sprint[N]-SecurityAPPROVAL.md`
+
+   - **Update Tracking:**
+     - Add approvals to `SPRINT_APPROVAL_STATUS.md`
+     - Document any gaps or issues
+
+   - **Approval Gate:**
+     - All three approvals **MUST** be APPROVED status
+     - Any FAILED review **BLOCKS** next sprint
+     - Failed reviews must be addressed and re-reviewed
+
+6. **Next Sprint (Only if approved)**
+   - Verify all three approvals exist and are APPROVED
+   - Verify tracking in `SPRINT_APPROVAL_STATUS.md`
+   - Proceed to next sprint planning
+
 ### Code Review Checklist
 
 Before marking any task complete:
@@ -112,6 +142,38 @@ Before marking any task complete:
 - [ ] Error handling implemented
 - [ ] Tests written and passing
 - [ ] No compilation warnings
+
+### Sprint Completion Checklist
+
+Before marking a sprint complete:
+- [ ] All tasks in sprint completed
+- [ ] All tests passing
+- [ ] Documentation updated
+- [ ] CHANGELOG.md updated
+- [ ] **Three Approvals Created:**
+  - [ ] `Sprint[N]-SystemArchitectAPPROVAL.md` (APPROVED)
+  - [ ] `Sprint[N]-SeniorEngineerAPPROVAL.md` (APPROVED)
+  - [ ] `Sprint[N]-SecurityAPPROVAL.md` (APPROVED)
+- [ ] **Approval tracking updated:**
+  - [ ] `SPRINT_APPROVAL_STATUS.md` updated with sprint results
+- [ ] No FAILED reviews exist
+- [ ] Ready for next sprint
+
+### Release Completion Checklist
+
+Before releasing a version:
+- [ ] All sprint approvals for included sprints complete
+- [ ] **Three Release Approvals Created:**
+  - [ ] `ReleaseV[X.Y.Z]-SystemArchitectAPPROVAL.md` (APPROVED)
+  - [ ] `ReleaseV[X.Y.Z]-SeniorEngineerAPPROVAL.md` (APPROVED)
+  - [ ] `ReleaseV[X.Y.Z]-SecurityAPPROVAL.md` (APPROVED)
+- [ ] **Approval tracking updated:**
+  - [ ] `SPRINT_APPROVAL_STATUS.md` updated with release status
+- [ ] Security audit passed
+- [ ] Performance validation complete
+- [ ] Documentation complete and accurate
+- [ ] Version numbers updated
+- [ ] Release notes prepared
 
 ---
 
@@ -144,12 +206,16 @@ Before marking any task complete:
 
 ```
 workspace/
-├── common/           # Shared error types, utilities
-├── img-core/         # 2D conversion library
-├── img-convert/      # 2D CLI binary
-├── mesh-core/        # 3D conversion library
-├── mesh-convert/     # 3D CLI binary
-└── converter-gui/    # Future GUI
+├── common/              # Shared error types, utilities
+├── img-core/            # 2D conversion library
+├── img-convert/         # 2D CLI binary
+├── mesh-core/           # 3D conversion library
+├── mesh-convert/        # 3D CLI binary
+├── converter-gui/       # GUI application
+├── AGENT_TASKS/         # Agent taskings and some approvals
+├── research_outputs.md  # Consolidated research findings (REQUIRED)
+├── rust-resources.md    # Rust ecosystem & best practices (REQUIRED)
+└── SPRINT_APPROVAL_STATUS.md  # Approval tracking (REQUIRED)
 ```
 
 **When creating new files:**
@@ -157,6 +223,122 @@ workspace/
 - Follow module structure from Phase 3
 - Update `mod.rs` or `lib.rs`
 - Add corresponding tests
+
+### Required Research Documentation
+
+#### Consolidated Research Outputs
+**Location:** `research_outputs.md` (root directory)
+**Purpose:** Single source of truth for all research findings
+
+**Requirements:**
+- **MUST** exist in project root
+- All research taskings **MUST** add findings to this file
+- Use token-efficient format (avoid duplication)
+- Maintain table of contents
+
+**Content Structure:**
+```markdown
+# Research Outputs
+## [Research Topic]
+**Research Date:** [Date]
+**Status:** [Complete/In Progress]
+**Related Sprint:** [Sprint N]
+
+### Executive Summary
+[Key findings, recommendations]
+
+### [Detailed Sections]
+[Technical details, comparisons, code examples]
+```
+
+**Current Sections:**
+- opencascade-rs Integration Research
+- 3D Rendering Libraries Research
+
+#### Rust Ecosystem Knowledge
+**Location:** `rust-resources.md` (root directory)
+**Purpose:** Rust language, best practices, and ecosystem updates
+
+**Content:**
+- Rust language features and updates
+- Best practices and patterns
+- Dependency version tracking
+- Security advisories
+- Performance tips
+- Gotchas and limitations
+
+**Note:** Keep research findings separate from Rust-specific knowledge.
+
+### Approval Tracking and Documentation
+
+#### Approval Status Tracking
+**Location:** `SPRINT_APPROVAL_STATUS.md` (root directory)
+**Purpose:** Central tracking of all sprint and release approvals
+
+**Requirements:**
+- **MUST** exist in project root
+- Updated after each sprint/release
+- Tracks all three required approvals per sprint/release
+- Documents gaps and recommendations
+
+#### Individual Approval Documents
+**Locations:** Various (transitioning to organized structure)
+- Current: `AGENT_TASKS/`, root directory (mixed)
+- Recommended: Organize into `Approvals/` folder (future improvement)
+
+**Naming Convention:**
+
+**Successful Approvals:**
+- Format: `[Type][Identifier]-[Role]APPROVAL.md`
+- Examples:
+  - `Sprint7-SystemArchitectAPPROVAL.md`
+  - `Sprint9-SeniorEngineerAPPROVAL.md`
+  - `Sprint10-SecurityAPPROVAL.md`
+  - `ReleaseV0.2.1-SystemArchitectAPPROVAL.md`
+  - `ReleaseV0.3.0-SeniorEngineerAPPROVAL.md`
+  - `ReleaseV1.0.0-SecurityAPPROVAL.md`
+
+**Failed Reviews:**
+- Format: `[Type][Identifier]-[Role]FAILEDreview[DateTime].md`
+- Examples:
+  - `Sprint4-SystemArchitectFAILEDreview2025-12-30T14-30.md`
+  - `ReleaseV0.2.0-SecurityFAILEDreview2025-12-29T09-15.md`
+- **CRITICAL:** Development **MUST NOT** proceed when failed review exists
+- Failed review must be addressed and re-reviewed before continuing
+
+**THREE REQUIRED APPROVALS** for each sprint or release:
+1. System Architect approval
+2. Senior Engineer approval
+3. Security Specialist approval
+
+**Approval Document Requirements:**
+
+Each approval document must contain:
+1. **Header:**
+   - Sprint/Release identifier
+   - Review date
+   - Reviewer name and role
+   - Approval status (APPROVED / FAILED)
+
+2. **Executive Summary:**
+   - Overall assessment
+   - Grade/Rating (if applicable)
+   - Key findings
+
+3. **Detailed Review:**
+   - Architecture compliance (Architect)
+   - Code quality and implementation (Senior Engineer)
+   - Security posture and vulnerabilities (Security Specialist)
+
+4. **Issues and Recommendations:**
+   - Critical issues (blockers)
+   - High/Medium/Low priority issues
+   - Recommendations
+
+5. **Approval Decision:**
+   - Clear APPROVED or FAILED status
+   - Conditions (if any)
+   - Next steps
 
 ---
 
@@ -270,9 +452,31 @@ Update sprint progress in one of:
 Between sprints:
 1. Review completed sprint
 2. Update CHANGELOG.md
-3. Tag release if appropriate
-4. Plan next sprint
-5. Update README if needed
+3. **Verify Three Approvals Exist (MANDATORY):**
+   - `Sprint[N]-SystemArchitectAPPROVAL.md` ✅
+   - `Sprint[N]-SeniorEngineerAPPROVAL.md` ✅
+   - `Sprint[N]-SecurityAPPROVAL.md` ✅
+   - **All must show APPROVED status**
+4. **Update Approval Tracking:**
+   - Update `SPRINT_APPROVAL_STATUS.md` with sprint results
+   - Document approval status, gaps, recommendations
+5. Tag release if appropriate (requires release approvals)
+6. Plan next sprint (only if approvals passed)
+7. Update README if needed
+
+**Release Transitions (Additional):**
+
+For version releases (v0.x.x, v1.x.x):
+1. Complete all sprint approvals
+2. **Create Release Approvals (MANDATORY):**
+   - `ReleaseV[X.Y.Z]-SystemArchitectAPPROVAL.md`
+   - `ReleaseV[X.Y.Z]-SeniorEngineerAPPROVAL.md`
+   - `ReleaseV[X.Y.Z]-SecurityAPPROVAL.md`
+3. Verify all release approvals are APPROVED
+4. **Update Approval Tracking:**
+   - Update `SPRINT_APPROVAL_STATUS.md` with release status
+5. Tag and publish release
+6. Update version documentation
 
 ---
 
@@ -470,6 +674,9 @@ cargo clean
 - `IMPLEMENTATION_PLAN.md` - Sprint plan
 - `Phase3_Architecture.md` - Detailed design
 - `README.md` - Project overview
+- `research_outputs.md` - Consolidated research findings
+- `rust-resources.md` - Rust ecosystem knowledge
+- `SPRINT_APPROVAL_STATUS.md` - Approval tracking
 
 ### Key Contacts
 
@@ -481,5 +688,12 @@ cargo clean
 
 **This document evolves with the project. Update as needed.**
 
-**Last Updated:** December 26, 2025  
-**Version:** 1.0
+**Last Updated:** January 5, 2026
+**Version:** 1.1
+
+---
+
+## Version History
+
+- **v1.1** (January 5, 2026) - Added research documentation structure, approval tracking requirements, and consolidated research outputs approach
+- **v1.0** (December 26, 2025) - Initial version
