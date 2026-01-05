@@ -1,0 +1,13 @@
+THIRD-PARTY SOFTWARE LICENSES
+=============================
+
+This file lists third-party components and their licenses used by the project. Maintainership: System Engineer.
+
+DEPENDENCY SUMMARY (template)
+- MIT License (N crates)
+- Apache License 2.0 (N crates)
+- BSD Licenses (N crates)
+
+Include a full list for release distributions. Use `cargo license` or similar tooling to generate full contents.
+
+_Last updated: {{DATE}}_
