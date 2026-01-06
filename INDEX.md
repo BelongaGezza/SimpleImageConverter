@@ -26,11 +26,13 @@
 11. **docs/RUSTSTEP_GUIDANCE.md** - Comprehensive ruststep library guide
 
 ### Repository Management
-11. **LICENSE** - MIT License
-12. **.gitignore** - Git ignore rules
-13. **CONTRIBUTING.md** - Contribution guidelines
-14. **CHANGELOG.md** - Version history tracking
-15. **MANIFEST.md** - Complete deliverables list
+12. **LICENSE-MIT** - MIT License
+13. **LICENSE-APACHE** - Apache 2.0 License
+14. **THIRD_PARTY_LICENSES.txt** - Third-party attributions (maintained by the System Engineer at each approval stage; include attribution and references for libraries, dependencies, and transitive dependencies)
+15. **.gitignore** - Git ignore rules
+16. **CONTRIBUTING.md** - Contribution guidelines
+17. **CHANGELOG.md** - Version history tracking
+18. **MANIFEST.md** - Complete deliverables list
 
 ---
 
@@ -78,6 +80,7 @@ Two CLI tools: `img-convert` (2D images) and `mesh-convert` (3D meshes)
 
 ### Who's building this?
 Claude AI, Claude Code, and Cursor 2.2 in coordination
+**Project Manager:** Gerry Gillies
 
 ---
 
@@ -185,7 +188,9 @@ Use this to ensure you have everything:
 
 - [ ] PROJECT_SUMMARY.md (6.5 KB)
 - [ ] README.md (9.6 KB)
-- [ ] LICENSE (1.1 KB)
+- [ ] LICENSE-MIT (1.1 KB)
+- [ ] LICENSE-APACHE (Apache 2.0)
+- [ ] THIRD_PARTY_LICENSES.txt (to be maintained by the System Architect at each approval stage; includes attributions and references for libraries, dependencies, and transitive dependencies)
 - [ ] .gitignore (946 B)
 - [ ] CONTRIBUTING.md (1.5 KB)
 - [ ] CHANGELOG.md (1.7 KB)
@@ -200,7 +205,7 @@ Use this to ensure you have everything:
 - [ ] MANIFEST.md (6.2 KB)
 - [ ] INDEX.md (this file)
 
-**Total: 16 files, ~174 KB**
+**Total: 18 files, ~174 KB**
 
 ---
 
@@ -218,4 +223,4 @@ Use this to ensure you have everything:
 **Ready:** Yes  
 **Quality:** High
 
-_Last Updated: December 26, 2025_
+_Last Updated: January 5, 2026_

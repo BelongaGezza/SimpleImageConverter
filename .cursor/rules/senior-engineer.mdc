@@ -77,7 +77,7 @@ Use the **Role-Claiming Model** for all task assignments.
 ```markdown
 ## CRITICAL: Role Selection (READ FIRST - STOP HERE UNTIL COMPLETE)
 
-**You are an unassigned agent. You MUST claim a role before proceeding.**
+**You are an unassigned agent. You MUST claim a role before proceeding beyond item 3.**
 
 Look at the Role Assignment table. Find a role with Status = `Available`.
 Claim it by:

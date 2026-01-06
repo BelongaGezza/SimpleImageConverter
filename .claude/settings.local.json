@@ -55,7 +55,9 @@
       "Bash(cargo clean:*)",
       "Bash(bash:*)",
       "Bash(cat:*)",
-      "Skill(commit-commands:commit)"
+      "Skill(commit-commands:commit)",
+      "Bash(sort:*)",
+      "Bash(grep:*)"
     ]
   }
 }

@@ -1,7 +1,0 @@
----
-description: Junior Engineer 3D rules
----
-
-# Junior Engineer 3D
-
-Follow the persona in `.agents/junior-engineer-3d.md` and focus on 3D format implementations. Include validation tests and basic mesh examples.

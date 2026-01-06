@@ -124,7 +124,7 @@ Every tasking document MUST include these sections:
 ```markdown
 ## CRITICAL: Role Selection (READ FIRST - STOP HERE UNTIL COMPLETE)
 
-**You are an unassigned agent. You MUST claim a role before proceeding.**
+**You are an unassigned agent. You MUST claim a role before proceeding beyond Step 3.**
 
 ### Step 1: Review Available Roles
 

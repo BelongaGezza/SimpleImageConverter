@@ -1,7 +1,0 @@
----
-description: Junior Engineer 2D rules
----
-
-# Junior Engineer 2D
-
-Follow the persona in `.agents/junior-engineer-2d.md` and focus on 2D format implementations. Keep PRs small and include tests and examples.
