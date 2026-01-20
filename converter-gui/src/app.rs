@@ -630,7 +630,7 @@ impl eframe::App for ConverterApp {
                 ui.menu_button("File", |ui| {
                     if ui
                         .button("Open File...")
-                        .on_hover_text("Open file browser to select an image or mesh file (Keyboard: Ctrl+O)")
+                        .on_hover_text("Open file browser to select an image or mesh file (Keyboard: Ctrl+O / Cmd+O)")
                         .clicked()
                     {
                         if let Some(file_path) = rfd::FileDialog::new()
@@ -651,7 +651,7 @@ impl eframe::App for ConverterApp {
                     }
                     if ui
                         .button("Clear")
-                        .on_hover_text("Clear all selections and reset to initial state (Keyboard: Ctrl+R)")
+                        .on_hover_text("Clear all selections and reset to initial state (Keyboard: Ctrl+R / Cmd+R)")
                         .clicked()
                     {
                         // Note: Confirmation is handled in the main UI, not in menu
@@ -661,7 +661,7 @@ impl eframe::App for ConverterApp {
                     ui.separator();
                     let save_button = if self.show_settings_panel {
                         ui.button("Save Settings")
-                            .on_hover_text("Save current settings to disk (Keyboard: Ctrl+S, requires settings panel to be open)")
+                            .on_hover_text("Save current settings to disk (Keyboard: Ctrl+S / Cmd+S, requires settings panel to be open)")
                     } else {
                         ui.add_enabled(false, egui::Button::new("Save Settings"))
                             .on_hover_text("Open settings panel first (Edit → Preferences)")
@@ -1108,7 +1108,7 @@ impl eframe::App for ConverterApp {
 
                     if ui
                         .button("Clear")
-                        .on_hover_text("Clear all selections and reset to initial state (Keyboard: Ctrl+R)")
+                        .on_hover_text("Clear all selections and reset to initial state (Keyboard: Ctrl+R / Cmd+R)")
                         .clicked()
                     {
                         self.confirmation_dialog = Some(ConfirmationDialog::ClearAll);
@@ -1890,12 +1890,18 @@ impl ConverterApp {
     /// Handle keyboard shortcuts
     ///
     /// Processes common keyboard shortcuts for application actions.
+    /// Uses Command key on macOS, Ctrl key on Windows/Linux.
+    /// 
+    /// IMPORTANT: Use `key_pressed()` not `keys_down.contains()` to avoid false triggers
+    /// when modifier keys are held down alone.
     fn handle_keyboard_shortcuts(&mut self, ctx: &egui::Context) {
         let modifiers = ctx.input(|i| i.modifiers);
-        let pressed_keys = ctx.input(|i| i.keys_down.clone());
 
-        // Ctrl+O: Open file
-        if modifiers.ctrl && pressed_keys.contains(&egui::Key::O) {
+        // Helper: Check for platform-appropriate modifier (Command on macOS, Ctrl on Windows/Linux)
+        let cmd_or_ctrl = modifiers.command || modifiers.ctrl;
+
+        // Ctrl+O / Cmd+O: Open file
+        if cmd_or_ctrl && ctx.input(|i| i.key_pressed(egui::Key::O)) {
             if let Some(file_path) = rfd::FileDialog::new()
                 .add_filter(
                     "Image Files",
@@ -1916,8 +1922,8 @@ impl ConverterApp {
             }
         }
 
-        // Ctrl+S: Save settings (if settings panel is visible)
-        if modifiers.ctrl && pressed_keys.contains(&egui::Key::S) && self.show_settings_panel {
+        // Ctrl+S / Cmd+S: Save settings (if settings panel is visible)
+        if cmd_or_ctrl && ctx.input(|i| i.key_pressed(egui::Key::S)) && self.show_settings_panel {
             if let Err(e) = self.save_settings() {
                 self.add_message(
                     format!("Failed to save settings: {}", e),
@@ -1928,14 +1934,14 @@ impl ConverterApp {
             }
         }
 
-        // Ctrl+R: Reset/Clear
-        if modifiers.ctrl && pressed_keys.contains(&egui::Key::R) {
+        // Ctrl+R / Cmd+R: Reset/Clear
+        if cmd_or_ctrl && ctx.input(|i| i.key_pressed(egui::Key::R)) {
             self.reset();
         }
 
-        // Ctrl+A: Add files to batch queue
-        // Note: This will override Ctrl+A in text fields, but that's acceptable for this use case
-        if modifiers.ctrl && pressed_keys.contains(&egui::Key::A) {
+        // Ctrl+A / Cmd+A: Add files to batch queue
+        // Note: This will override Ctrl+A/Cmd+A in text fields, but that's acceptable for this use case
+        if cmd_or_ctrl && ctx.input(|i| i.key_pressed(egui::Key::A)) {
             let mut dialog = rfd::FileDialog::new()
                 .add_filter(
                     "Image Files",
@@ -1965,8 +1971,8 @@ impl ConverterApp {
             }
         }
 
-        // Ctrl+Shift+D: Clear batch queue
-        if modifiers.ctrl && modifiers.shift && pressed_keys.contains(&egui::Key::D) {
+        // Ctrl+Shift+D / Cmd+Shift+D: Clear batch queue
+        if cmd_or_ctrl && modifiers.shift && ctx.input(|i| i.key_pressed(egui::Key::D)) {
             if let Some(ref queue) = self.batch_queue {
                 if !queue.items.is_empty() {
                     self.confirmation_dialog = Some(ConfirmationDialog::ClearQueue);
@@ -1974,8 +1980,8 @@ impl ConverterApp {
             }
         }
 
-        // Ctrl+Enter: Start batch processing
-        if modifiers.ctrl && ctx.input(|i| i.key_pressed(egui::Key::Enter)) {
+        // Ctrl+Enter / Cmd+Enter: Start batch processing
+        if cmd_or_ctrl && ctx.input(|i| i.key_pressed(egui::Key::Enter)) {
             if let Some(ref queue) = self.batch_queue {
                 if queue.has_pending() {
                     if let Err(e) = self.start_batch_processing(ctx.clone()) {
@@ -1990,8 +1996,8 @@ impl ConverterApp {
             }
         }
 
-        // Ctrl+P: Pause/Resume batch processing
-        if modifiers.ctrl && ctx.input(|i| i.key_pressed(egui::Key::P)) {
+        // Ctrl+P / Cmd+P: Pause/Resume batch processing
+        if cmd_or_ctrl && ctx.input(|i| i.key_pressed(egui::Key::P)) {
             let is_paused = self.is_batch_processing_paused();
             if is_paused {
                 if let Err(e) = self.resume_batch_processing() {
@@ -2061,7 +2067,7 @@ impl ConverterApp {
         // Enter: Start conversion (if file and format selected, and no batch processing)
         // Use key_pressed() instead of keys_down to prevent key repeat
         if ctx.input(|i| i.key_pressed(egui::Key::Enter))
-            && !modifiers.ctrl // Don't trigger if Ctrl+Enter (batch processing)
+            && !cmd_or_ctrl // Don't trigger if Ctrl+Enter/Cmd+Enter (batch processing)
             && self.source_file.is_some()
             && self.output_format.is_some()
             && !matches!(self.status, Status::Converting { .. })

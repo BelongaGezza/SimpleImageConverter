@@ -89,8 +89,34 @@ Use the template below to capture lessons as they are discovered.
 | ID | Date | Title | Area | Owner | Status |
 |----|------|-------|------|-------|--------|
 | AAR-001 | 2026-01-05 | License files maintained centrally | process | System Engineer | resolved |
+| AAR-002 | 2026-01-20 | egui keyboard shortcuts: use key_pressed() not keys_down.contains() | tooling | Dr. Taylor Kim | resolved |
 
 > Append new lessons below with full template details.
+
+#### AAR-002: egui keyboard shortcuts: use key_pressed() not keys_down.contains()
+- **ID:** AAR-002
+- **Date:** 2026-01-20
+- **Title:** egui keyboard shortcuts: use key_pressed() not keys_down.contains()
+- **Area:** tooling
+- **Summary:** Using `keys_down.contains()` for keyboard shortcuts with modifiers causes false triggers when modifier keys are held down alone. Must use `key_pressed()` instead.
+- **Details:** When implementing cross-platform keyboard shortcuts in egui (Cmd on macOS, Ctrl on Windows/Linux), the initial implementation used `keys_down.contains()` which checks if a key is currently in the "down" state. This caused shortcuts to trigger incorrectly when only the modifier key (Command/Ctrl) was pressed, because `keys_down` can include modifier keys or other keys that happen to be down. The correct pattern is to use `ctx.input(|i| i.key_pressed(egui::Key::X))` which only returns true when the key was pressed THIS frame, not when it's held down.
+- **Decision / Action:** Fixed all keyboard shortcuts to use `key_pressed()` pattern. Updated rust-resources.md with correct pattern and gotcha warning.
+- **Owner:** Dr. Taylor Kim
+- **Status:** resolved
+
+**Correct Pattern:**
+```rust
+let modifiers = ctx.input(|i| i.modifiers);
+let cmd_or_ctrl = modifiers.command || modifiers.ctrl;
+
+// CORRECT - Use key_pressed()
+if cmd_or_ctrl && ctx.input(|i| i.key_pressed(egui::Key::O)) {
+    // Handle shortcut
+}
+
+// WRONG - Causes false triggers
+// if cmd_or_ctrl && pressed_keys.contains(&egui::Key::O) { ... }
+```
 
 ---
 

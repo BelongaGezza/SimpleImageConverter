@@ -644,12 +644,28 @@ for file in dropped_files {
 }
 ```
 
+**4. Keyboard Shortcuts with Modifiers (Cross-Platform):**
+```rust
+let modifiers = ctx.input(|i| i.modifiers);
+// Use Command on macOS, Ctrl on Windows/Linux
+let cmd_or_ctrl = modifiers.command || modifiers.ctrl;
+
+// CRITICAL: Use key_pressed() not keys_down.contains() to avoid false triggers
+if cmd_or_ctrl && ctx.input(|i| i.key_pressed(egui::Key::O)) {
+    // Handle Ctrl+O / Cmd+O
+}
+
+// WRONG - causes false triggers when modifier alone is held:
+// if cmd_or_ctrl && pressed_keys.contains(&egui::Key::O) { ... }
+```
+
 **Gotchas:**
 - egui is immediate mode - state must be managed carefully
 - Thread synchronization requires `Arc<Mutex<>>` for shared state
 - File dialogs are blocking - use in separate thread if needed
 - UI rebuilds every frame - avoid expensive operations in update loop
 - Memory usage can grow if state isn't cleaned up properly
+- **CRITICAL:** For keyboard shortcuts with modifiers, always use `key_pressed()` not `keys_down.contains()` to avoid false triggers when modifier keys are held down alone
 
 **Performance Tips:**
 - Avoid expensive operations in `update()` method
