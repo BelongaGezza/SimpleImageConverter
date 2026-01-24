@@ -423,7 +423,7 @@ Batch processing is implemented in `converter-gui/src/ui/batch_queue.rs`:
 #### Test 5.3: Escape (Close Dialogs)
 **Shortcut:** `Escape`  
 **Expected:** Closes dialogs or cancels operations  
-**Status:** [ ] Not Tested / [ ] In Progress / [ ] Pass / [ ] Fail / [x] Blocked
+**Status:** [x] Not Tested / [ ] In Progress / [ ] Pass / [ ] Fail / [ ] Blocked
 
 **Test Steps:**
 1. Open edit dialog for queue item
@@ -432,17 +432,19 @@ Batch processing is implemented in `converter-gui/src/ui/batch_queue.rs`:
 4. Test with other dialogs (confirmation, etc.)
 
 **Results:**
-- [ ] Edit dialog closes (⚠️ cannot test - edit dialog not available)
-- [ ] Changes not saved when Escape pressed (⚠️ cannot test - edit dialog not available)
+- [ ] Edit dialog closes (✅ blocker fixed 2026-01-24 — ready for re-test)
+- [ ] Changes not saved when Escape pressed (ready for re-test)
 - [x] Other dialogs close correctly (✅ confirmation dialogs work - tested in Test 4.2)
 - [x] Batch processing can be cancelled (✅ tested in Test 3.4)
 
 **Notes:**
 **macOS Testing Results:**
-- ⚠️ **BLOCKED**: Unable to test Escape key for closing edit dialog - the edit button on queued items does not open an edit dialog
-- ✅ **PASS**: Escape key works correctly for canceling batch processing (Test 3.4)
-- ✅ **PASS**: Escape key works correctly for closing confirmation dialogs (Test 4.2)
-- 💡 **ISSUE IDENTIFIED**: Edit button on queue items may not be implemented or may have a bug - edit dialog functionality not available for testing
+- ⚠️ **BLOCKED** (historical): Edit button did not open edit dialog → ✅ **RESOLVED** by Senior Engineer (see Recommendations §3).
+**Post-fix (2026-01-24):**
+- Edit button now opens "Edit Queue Item" dialog (fix in `batch_queue.rs::render_queue_item`).
+- Escape already closes edit dialog (`app.rs` keyboard handler clears `editing_queue_item`).
+- Re-test: Add item to queue → Click Edit → verify dialog opens → Press Escape → verify dialog closes without saving.
+- ✅ **PASS**: Escape works for batch cancel (Test 3.4) and confirmation dialogs (Test 4.2).
 
 ---
 
@@ -1164,10 +1166,11 @@ _List any low priority issues or suggestions_
    - Ready for manual testing
 
 3. **Issues Requiring Fix Before Further Testing** 🚨
-   - **BLOCKER**: Edit button on batch queue items does not open edit dialog (see Critical Issues section)
-     - This blocks testing of Escape key functionality for dialogs (Test 5.3)
-     - May indicate missing functionality that needs to be implemented
-     - **Action Required**: Fix edit button functionality or confirm if feature is intentionally disabled
+   - ~~**BLOCKER**: Edit button on batch queue items does not open edit dialog~~ ✅ **RESOLVED** (Senior Engineer, 2026-01-24)
+     - **Root cause**: In `converter-gui/src/ui/batch_queue.rs`, `render_queue_item` returned `(should_remove, should_edit_id)` from inside the `ui.vertical(...)` closure. The closure’s return value was ignored, so the function always fell through to `(false, None)`. The edit (and remove) signals were never propagated.
+     - **Fix**: Capture result in a `let mut result` outside the closures, assign inside the vertical closure, and return `result` from the function. Same pattern as `history_panel::render_history_entry`.
+     - **Scope**: Logic-only fix; no platform-specific code. Works on macOS, Windows, and Linux.
+     - **Action**: Re-run Test 5.3 (Escape closes edit dialog) and verify Edit button opens dialog.
 
 4. **Potential Issues to Watch For** ⚠️
    - Batch queue drag-and-drop may not be implemented (not found in code)
@@ -1208,8 +1211,8 @@ _Add final notes and approval status_
 
 ---
 
-**Document Version:** 1.0  
+**Document Version:** 1.1  
 **Created:** December 30, 2025  
-**Last Updated:** December 30, 2025  
-**Status:** 🟡 In Progress - Manual Testing Checklist Created
+**Last Updated:** January 24, 2026  
+**Status:** 🟡 In Progress - Blocker resolved 2026-01-24 (Edit button fix); Test 5.3 ready for re-test
 

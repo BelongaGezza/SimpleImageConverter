@@ -308,6 +308,7 @@ pub fn render_batch_queue(ui: &mut Ui, app: &mut ConverterApp) {
 /// - should_remove: true if the item should be removed
 /// - should_edit_id: Some(id) if the item should be edited, None otherwise
 fn render_queue_item(ui: &mut Ui, item: &BatchItem, _index: usize) -> (bool, Option<uuid::Uuid>) {
+    let mut result = (false, None);
     ui.group(|ui| {
         ui.vertical(|ui| {
             // File name and format
@@ -435,14 +436,15 @@ fn render_queue_item(ui: &mut Ui, item: &BatchItem, _index: usize) -> (bool, Opt
                 });
             });
             if should_edit {
-                return (false, Some(item.id));
+                result = (false, Some(item.id));
+            } else {
+                result = (should_remove, None);
             }
-            (should_remove, None)
         });
     });
 
     ui.add_space(style::spacing::MEDIUM);
-    (false, None) // Don't remove or edit by default
+    result
 }
 
 /// Render the queue item editing dialog
