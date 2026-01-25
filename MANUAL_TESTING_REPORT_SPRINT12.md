@@ -423,7 +423,7 @@ Batch processing is implemented in `converter-gui/src/ui/batch_queue.rs`:
 #### Test 5.3: Escape (Close Dialogs)
 **Shortcut:** `Escape`  
 **Expected:** Closes dialogs or cancels operations  
-**Status:** [x] Not Tested / [ ] In Progress / [ ] Pass / [ ] Fail / [ ] Blocked
+**Status:** [ ] Not Tested / [ ] In Progress / [ ] Pass / [x] Fail / [ ] Blocked
 
 **Test Steps:**
 1. Open edit dialog for queue item
@@ -432,8 +432,8 @@ Batch processing is implemented in `converter-gui/src/ui/batch_queue.rs`:
 4. Test with other dialogs (confirmation, etc.)
 
 **Results:**
-- [ ] Edit dialog closes (✅ blocker fixed 2026-01-24 — ready for re-test)
-- [ ] Changes not saved when Escape pressed (ready for re-test)
+- [ ] Edit dialog closes (not verified in this run)
+- [ ] Changes not saved when Escape pressed (not verified in this run)
 - [x] Other dialogs close correctly (✅ confirmation dialogs work - tested in Test 4.2)
 - [x] Batch processing can be cancelled (✅ tested in Test 3.4)
 
@@ -445,6 +445,8 @@ Batch processing is implemented in `converter-gui/src/ui/batch_queue.rs`:
 - Escape already closes edit dialog (`app.rs` keyboard handler clears `editing_queue_item`).
 - Re-test: Add item to queue → Click Edit → verify dialog opens → Press Escape → verify dialog closes without saving.
 - ✅ **PASS**: Escape works for batch cancel (Test 3.4) and confirmation dialogs (Test 4.2).
+**macOS Re-test (2026-01-25):**
+- ❌ **FAIL**: Edit dialog opens, but output format selection is not interactive/persistent (e.g., BMP appears pre-selected; clicking other formats shows no change). This blocks completing the Escape/“no changes saved” verification via format change.
 
 ---
 
@@ -982,19 +984,34 @@ _Add Linux-specific observations here_
 ### Critical Issues
 _List any critical issues that block release_
 
-1. **Issue:** Edit button on batch queue items does not open edit dialog  
-   **Severity:** High (blocks testing of Escape key functionality for dialogs)  
-   **Steps to Reproduce:** 
+1. **Issue:** Edit button on batch queue items did not open edit dialog (resolved)  
+   **Severity:** High (previously blocked Test 5.3)  
+   **Steps to Reproduce (historical):** 
    1. Add files to batch queue
    2. Click "Edit" button on any queue item
    3. Observe that no edit dialog opens
    
    **Expected:** Edit dialog should open allowing user to modify queue item settings (output format, path, options)  
-   **Actual:** Edit button does not trigger any dialog or functionality  
-   **Impact:** Prevents testing of Test 5.3 (Escape key to close dialogs) and may indicate missing functionality  
-   **Status:** [x] Open / [ ] Fixed / [ ] Deferred  
-   **Platform:** macOS (needs verification on Windows/Linux)  
+   **Actual:** Edit button did not trigger any dialog or functionality  
+   **Impact:** Previously prevented testing of Test 5.3 (Escape key to close dialogs)  
+   **Status:** [ ] Open / [x] Fixed / [ ] Deferred  
+   **Fix:** `fix(gui): Edit button on batch queue items now opens edit dialog` (2026-01-24)  
+   **Platform:** macOS (verify Windows/Linux)  
    **Date Reported:** January 20, 2026
+
+2. **Issue:** Edit Queue Item dialog output format selection does not update/persist  
+   **Severity:** High (blocks effective queue item editing; blocks completing Test 5.3 validation via format change)  
+   **Steps to Reproduce:** 
+   1. Add an image file to batch queue
+   2. Click "Edit" on the queue item
+   3. In the "Edit Queue Item" dialog, click a different output format (e.g., JPEG, PNG)
+   4. Observe the selection does not change (appears stuck on the original/pre-selected format)
+   
+   **Expected:** Clicking a format changes the selected format in the dialog and the selection persists while the dialog is open (until Save/Cancel)  
+   **Actual:** Clicking different formats has no visible effect; selection appears stuck  
+   **Status:** [x] Open / [ ] Fixed / [ ] Deferred  
+   **Platform:** macOS (verify Windows/Linux)  
+   **Date Reported:** January 25, 2026
 
 ---
 
@@ -1213,6 +1230,6 @@ _Add final notes and approval status_
 
 **Document Version:** 1.1  
 **Created:** December 30, 2025  
-**Last Updated:** January 24, 2026  
-**Status:** 🟡 In Progress - Blocker resolved 2026-01-24 (Edit button fix); Test 5.3 ready for re-test
+**Last Updated:** January 25, 2026  
+**Status:** 🟡 In Progress - Paused 2026-01-25 due to open blocker (Edit Queue Item format selection not updating). Resume at Test 5.3 after fix and re-test.
 

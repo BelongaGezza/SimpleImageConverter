@@ -109,6 +109,12 @@ pub struct ConverterApp {
     /// Tracks which queue item is being edited (None if dialog is closed)
     pub editing_queue_item: Option<Uuid>,
 
+    /// Draft state for the queue item edit dialog.
+    ///
+    /// This must be stored in the app state (not local variables) so that edits persist
+    /// across frames in egui's immediate-mode UI. Changes are only committed on "Save".
+    pub editing_queue_item_draft: Option<QueueItemEditDraft>,
+
     /// Confirmation dialog state
     /// Tracks which confirmation dialog should be shown
     pub confirmation_dialog: Option<ConfirmationDialog>,
@@ -124,6 +130,22 @@ pub struct ConverterApp {
     /// Track which mesh file is currently loaded in the 3D viewer (for reload detection)
     #[cfg(feature = "viewer-3d")]
     pub viewer_3d_loaded_file: Option<PathBuf>,
+}
+
+/// Draft state for the "Edit Queue Item" dialog.
+///
+/// This is separate from the underlying queue item; it allows users to cancel/escape
+/// without committing changes.
+#[derive(Debug, Clone)]
+pub struct QueueItemEditDraft {
+    pub id: Uuid,
+    pub output_format: OutputFormat,
+    /// Editable output path as a string (keeps partially-typed values stable).
+    pub output_path_str: String,
+    pub quality: u8,
+    pub mesh_options: Option<crate::batch_queue::MeshOptions>,
+    /// Preserve existing priority (not editable in the dialog).
+    pub priority: crate::batch_queue::ProcessingPriority,
 }
 
 /// File type detection result
@@ -386,6 +408,7 @@ impl Default for ConverterApp {
                 status_set_time: None,
             },
             editing_queue_item: None,
+            editing_queue_item_draft: None,
             confirmation_dialog: None,
             batch_processing_state: None,
             #[cfg(feature = "viewer-3d")]
@@ -1891,7 +1914,7 @@ impl ConverterApp {
     ///
     /// Processes common keyboard shortcuts for application actions.
     /// Uses Command key on macOS, Ctrl key on Windows/Linux.
-    /// 
+    ///
     /// IMPORTANT: Use `key_pressed()` not `keys_down.contains()` to avoid false triggers
     /// when modifier keys are held down alone.
     fn handle_keyboard_shortcuts(&mut self, ctx: &egui::Context) {
@@ -2051,6 +2074,7 @@ impl ConverterApp {
             // Close edit dialog if open
             if self.editing_queue_item.is_some() {
                 self.editing_queue_item = None;
+                self.editing_queue_item_draft = None;
             } else if self.batch_processing_state.is_some() {
                 // Cancel batch processing if active
                 if let Err(e) = self.cancel_batch_processing() {

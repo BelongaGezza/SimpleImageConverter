@@ -5,21 +5,28 @@
 //!
 //! This module provides the UI for managing and displaying the batch conversion queue.
 
-use crate::app::{ConverterApp, OutputFormat};
+use crate::app::{ConverterApp, OutputFormat, QueueItemEditDraft};
 use crate::batch_queue::{BatchItem, BatchItemStatus};
 use crate::ui::style;
 use egui::{RichText, Ui};
 use rfd;
 use std::path::PathBuf;
 
-/// Type alias for save data tuple to reduce complexity
-type SaveData = (
-    OutputFormat,
-    PathBuf,
-    u8,
-    Option<crate::batch_queue::MeshOptions>,
-    Option<String>,
-);
+#[derive(Debug, Clone)]
+enum EditDialogAction {
+    Cancel,
+    Save(QueueItemEditDraft),
+}
+
+fn update_path_extension_for_format(path_str: &str, fmt: OutputFormat) -> String {
+    let mut path = PathBuf::from(path_str);
+    let ext = match fmt {
+        OutputFormat::Image(img_fmt) => crate::format_helpers::get_format_extension(img_fmt),
+        OutputFormat::Mesh(mesh_fmt) => crate::format_helpers::get_mesh_format_extension(mesh_fmt),
+    };
+    path.set_extension(ext);
+    path.to_string_lossy().to_string()
+}
 
 /// Render the batch queue UI panel
 ///
@@ -456,32 +463,60 @@ pub fn render_edit_dialog(ui: &mut Ui, app: &mut ConverterApp) {
     };
 
     // Extract item data before the closure to avoid borrowing issues
-    let (file_type, output_format, output_path, options, source_path) = {
+    let (file_type, source_path, original_output_format, original_output_path, original_options) = {
         let Some(ref queue) = app.batch_queue else {
             app.editing_queue_item = None;
+            app.editing_queue_item_draft = None;
             return;
         };
 
         let Some(item) = queue.get_item(editing_id) else {
             app.editing_queue_item = None;
+            app.editing_queue_item_draft = None;
             return;
         };
 
         // Only allow editing pending items
         if !matches!(item.status, BatchItemStatus::Pending) {
             app.editing_queue_item = None;
+            app.editing_queue_item_draft = None;
             return;
         }
 
         // Clone necessary data
         (
             item.file_type,
+            item.source_path.clone(),
             item.output_format,
             item.output_path.clone(),
             item.options.clone(),
-            item.source_path.clone(),
         )
     };
+
+    // Ensure a persistent draft exists so UI changes survive across frames.
+    // This is critical in egui (immediate mode); otherwise selections "snap back".
+    let needs_new_draft = app
+        .editing_queue_item_draft
+        .as_ref()
+        .map(|d| d.id != editing_id)
+        .unwrap_or(true);
+    if needs_new_draft {
+        app.editing_queue_item_draft = Some(QueueItemEditDraft {
+            id: editing_id,
+            output_format: original_output_format,
+            output_path_str: original_output_path.to_string_lossy().to_string(),
+            quality: original_options.quality,
+            mesh_options: original_options.mesh_options.clone(),
+            priority: original_options.priority,
+        });
+    }
+    let draft_snapshot = match app.editing_queue_item_draft.clone() {
+        Some(d) => d,
+        None => return,
+    };
+
+    let mut updated_draft: Option<QueueItemEditDraft> = None;
+    let mut action: Option<EditDialogAction> = None;
 
     // Create modal dialog
     egui::Window::new("Edit Queue Item")
@@ -489,6 +524,7 @@ pub fn render_edit_dialog(ui: &mut Ui, app: &mut ConverterApp) {
         .resizable(true)
         .default_width(500.0)
         .show(ui.ctx(), |ui| {
+            let mut draft = draft_snapshot.clone();
             ui.vertical(|ui| {
                 // Source file (read-only)
                 ui.horizontal(|ui| {
@@ -504,73 +540,68 @@ pub fn render_edit_dialog(ui: &mut Ui, app: &mut ConverterApp) {
 
                 // Output format selection
                 ui.label("Output Format:");
-                let mut selected_format = output_format;
-                let format_changed = match file_type {
+                match file_type {
                     crate::app::FileType::Image => {
                         let formats = crate::format_helpers::get_writable_image_formats();
-                        let mut changed = false;
                         ui.horizontal_wrapped(|ui| {
                             for format in formats {
                                 let format_enum = crate::app::OutputFormat::Image(format);
                                 let is_selected = matches!(
-                                    selected_format,
+                                    draft.output_format,
                                     crate::app::OutputFormat::Image(f) if f == format
                                 );
                                 let label = crate::format_helpers::get_image_format_name(format);
                                 if ui.selectable_label(is_selected, label).clicked() {
-                                    selected_format = format_enum;
-                                    changed = true;
+                                    draft.output_format = format_enum;
+                                    draft.output_path_str =
+                                        update_path_extension_for_format(&draft.output_path_str, draft.output_format);
                                 }
                             }
                         });
-                        changed
                     }
                     crate::app::FileType::Mesh => {
                         let formats = crate::format_helpers::get_writable_mesh_formats();
-                        let mut changed = false;
                         ui.horizontal_wrapped(|ui| {
                             for format in formats {
                                 let format_enum = crate::app::OutputFormat::Mesh(format);
                                 let is_selected = matches!(
-                                    selected_format,
+                                    draft.output_format,
                                     crate::app::OutputFormat::Mesh(f) if f == format
                                 );
                                 let label = crate::format_helpers::get_mesh_format_name(format);
                                 if ui.selectable_label(is_selected, label).clicked() {
-                                    selected_format = format_enum;
-                                    changed = true;
+                                    draft.output_format = format_enum;
+                                    draft.output_path_str =
+                                        update_path_extension_for_format(&draft.output_path_str, draft.output_format);
                                 }
                             }
                         });
-                        changed
                     }
-                };
+                }
 
                 ui.add_space(style::spacing::STANDARD);
 
                 // Output path
                 ui.label("Output Path:");
-                let mut output_path_str = output_path.to_string_lossy().to_string();
-                let output_path_response = ui.text_edit_singleline(&mut output_path_str);
-                let output_path_changed = output_path_response.changed();
+                ui.text_edit_singleline(&mut draft.output_path_str);
 
                 ui.horizontal(|ui| {
                     if ui.button("Browse...").clicked() {
                         let mut dialog = rfd::FileDialog::new().set_file_name(
-                            output_path
+                            original_output_path
                                 .file_name()
                                 .and_then(|n| n.to_str())
                                 .unwrap_or("output"),
                         );
 
-                        if let Some(parent) = output_path.parent() {
+                        if let Some(parent) = original_output_path.parent() {
                             if let Ok(canonical) = parent.canonicalize() {
                                 dialog = dialog.set_directory(canonical);
                             }
                         }
 
                         if let Some(selected_path) = dialog.save_file() {
-                            output_path_str = selected_path.to_string_lossy().to_string();
+                            draft.output_path_str = selected_path.to_string_lossy().to_string();
                         }
                     }
                 });
@@ -578,157 +609,129 @@ pub fn render_edit_dialog(ui: &mut Ui, app: &mut ConverterApp) {
                 ui.add_space(style::spacing::STANDARD);
 
                 // Quality (for image formats)
-                let mut quality = options.quality;
-                let mut quality_changed = false;
                 if matches!(file_type, crate::app::FileType::Image) {
-                    if let crate::app::OutputFormat::Image(img_fmt) = selected_format {
+                    if let crate::app::OutputFormat::Image(img_fmt) = draft.output_format {
                         if crate::format_helpers::format_supports_quality(img_fmt) {
                             ui.label("Quality:");
-                            let quality_response = ui.add(egui::Slider::new(&mut quality, 1..=100));
-                            ui.label(format!("{}", quality));
-                            quality_changed = quality_response.changed();
+                            ui.add(egui::Slider::new(&mut draft.quality, 1..=100));
+                            ui.label(format!("{}", draft.quality));
                         }
                     }
                 }
 
                 // Mesh options (for mesh formats)
-                let mut mesh_options = options.mesh_options.clone();
-                let mut mesh_options_changed = false;
                 if matches!(file_type, crate::app::FileType::Mesh) {
                     ui.add_space(style::spacing::STANDARD);
                     ui.separator();
                     ui.label("Mesh Options:");
 
-                    if let Some(ref mut opts) = mesh_options {
+                    if let Some(ref mut opts) = draft.mesh_options {
                         let mut recalc = opts.recalculate_normals;
                         let recalc_response = ui.checkbox(&mut recalc, "Recalculate Normals");
                         if recalc_response.changed() {
                             opts.recalculate_normals = recalc;
-                            mesh_options_changed = true;
                         }
 
                         let mut validate = opts.validate;
                         let validate_response = ui.checkbox(&mut validate, "Validate Mesh");
                         if validate_response.changed() {
                             opts.validate = validate;
-                            mesh_options_changed = true;
                         }
+                    } else {
+                        ui.label(
+                            RichText::new("No mesh options available for this item.")
+                                .small()
+                                .color(style::colors::ui::SECONDARY_TEXT),
+                        );
                     }
                 }
 
                 ui.add_space(style::spacing::LARGE);
 
-                // Dialog buttons - use a mutable flag to track actions outside closure
-                let mut should_cancel = false;
-                let mut should_save = false;
-                let mut save_data: Option<SaveData> = None;
-
                 ui.horizontal(|ui| {
                     if ui.button("Cancel").clicked() {
-                        should_cancel = true;
+                        action = Some(EditDialogAction::Cancel);
                     }
 
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                         if ui.button("Save").clicked() {
-                            // Validate and prepare save data
-                            let output_path = PathBuf::from(&output_path_str);
-
-                            // Validate output path directory exists and is writable
-                            let output_dir_valid = if let Some(parent) = output_path.parent() {
-                                common::validation::validate_directory_path(parent).is_ok()
-                            } else {
-                                false
-                            };
-
-                            // Validate path is not in system directory
-                            let not_system_dir =
-                                crate::utils::validate_output_path_not_system(&output_path).is_ok();
-
-                            if output_dir_valid && not_system_dir {
-                                should_save = true;
-                                save_data = Some((
-                                    selected_format,
-                                    output_path,
-                                    quality,
-                                    mesh_options.clone(),
-                                    None,
-                                ));
-                            } else {
-                                // Store error message to show after closure
-                                let error_msg = if !output_dir_valid {
-                                    "Invalid output directory or directory does not exist"
-                                        .to_string()
-                                } else {
-                                    "Output path is in a system directory".to_string()
-                                };
-                                save_data = Some((
-                                    selected_format,
-                                    output_path,
-                                    quality,
-                                    mesh_options.clone(),
-                                    Some(error_msg),
-                                ));
-                            }
+                            action = Some(EditDialogAction::Save(draft.clone()));
                         }
                     });
                 });
 
-                // Handle actions after closure to avoid borrowing issues
-                if should_cancel {
-                    app.editing_queue_item = None;
-                }
-
-                if let Some((
-                    selected_format_val,
-                    output_path_val,
-                    quality_val,
-                    mesh_options_val,
-                    validation_error,
-                )) = save_data
-                {
-                    if should_save {
-                        // Update queue item
-                        if let Some(ref mut queue) = app.batch_queue {
-                            // Update format (this also updates output path extension)
-                            if format_changed {
-                                queue.update_item_format(editing_id, selected_format_val);
-                            }
-
-                            // Update output path if changed
-                            if output_path_changed {
-                                queue.update_item_output_path(editing_id, output_path_val.clone());
-                            }
-
-                            // Update options if changed
-                            if quality_changed || mesh_options_changed {
-                                let new_options = crate::batch_queue::BatchItemOptions {
-                                    quality: quality_val,
-                                    mesh_options: mesh_options_val,
-                                    priority: crate::batch_queue::ProcessingPriority::Medium, // Preserve existing priority
-                                };
-                                queue.update_item_options(editing_id, new_options);
-                            }
-
-                            app.add_message(
-                                "Queue item updated".to_string(),
-                                crate::app::MessageType::Success,
-                            );
-                        }
-
-                        app.editing_queue_item = None;
-                    } else if let Some(error_msg) = validation_error {
-                        // Validation failed
-                        app.add_message(
-                            format!(
-                                "Invalid output path: {}. Please choose a valid path.",
-                                error_msg
-                            ),
-                            crate::app::MessageType::Error,
-                        );
-                    }
-                }
+                updated_draft = Some(draft);
             });
         });
+
+    if let Some(d) = updated_draft {
+        app.editing_queue_item_draft = Some(d);
+    }
+
+    match action {
+        Some(EditDialogAction::Cancel) => {
+            app.editing_queue_item = None;
+            app.editing_queue_item_draft = None;
+        }
+        Some(EditDialogAction::Save(draft)) => {
+            let output_path = PathBuf::from(&draft.output_path_str);
+
+            // Validate output path directory exists and is writable
+            let output_dir_valid = if let Some(parent) = output_path.parent() {
+                common::validation::validate_directory_path(parent).is_ok()
+            } else {
+                false
+            };
+
+            // Validate path is not in system directory
+            let not_system_dir = crate::utils::validate_output_path_not_system(&output_path).is_ok();
+
+            if !output_dir_valid || !not_system_dir {
+                let error_msg = if !output_dir_valid {
+                    "Invalid output directory or directory does not exist"
+                } else {
+                    "Output path is in a system directory"
+                };
+                app.add_message(
+                    format!("Invalid output path: {}. Please choose a valid path.", error_msg),
+                    crate::app::MessageType::Error,
+                );
+                return; // Keep dialog open
+            }
+
+            // Commit changes (only on Save)
+            if let Some(ref mut queue) = app.batch_queue {
+                if draft.output_format != original_output_format {
+                    queue.update_item_format(editing_id, draft.output_format);
+                }
+
+                if output_path != original_output_path {
+                    queue.update_item_output_path(editing_id, output_path.clone());
+                }
+
+                if draft.quality != original_options.quality
+                    || draft.mesh_options != original_options.mesh_options
+                    || draft.priority != original_options.priority
+                {
+                    let new_options = crate::batch_queue::BatchItemOptions {
+                        quality: draft.quality,
+                        mesh_options: draft.mesh_options.clone(),
+                        priority: draft.priority,
+                    };
+                    queue.update_item_options(editing_id, new_options);
+                }
+            }
+
+            app.add_message(
+                "Queue item updated".to_string(),
+                crate::app::MessageType::Success,
+            );
+
+            app.editing_queue_item = None;
+            app.editing_queue_item_draft = None;
+        }
+        None => {}
+    }
 }
 
 /// Add a file to the batch queue with automatic format detection

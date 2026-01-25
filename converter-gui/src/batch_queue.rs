@@ -79,7 +79,7 @@ pub struct BatchItemOptions {
 }
 
 /// Mesh-specific conversion options
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MeshOptions {
     /// Coordinate system transform (from, to)
     pub transform: Option<(mesh_core::CoordinateSystem, mesh_core::CoordinateSystem)>,
