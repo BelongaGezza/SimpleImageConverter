@@ -85,6 +85,30 @@ pub fn render_settings_panel(ui: &mut Ui, app: &mut ConverterApp) {
 
             ui.add_space(style::spacing::STANDARD);
 
+            // Recent files
+            ui.label("Recent Files:");
+            if settings.recent_files.is_empty() {
+                ui.label(
+                    RichText::new("(none yet)")
+                        .italics()
+                        .color(style::colors::ui::PLACEHOLDER_TEXT),
+                );
+            } else {
+                for path in settings.recent_files.iter() {
+                    ui.label(crate::utils::sanitize_path_for_display(path));
+                }
+                if ui
+                    .button("Clear Recent Files")
+                    .on_hover_text("Remove all entries from the recent files list")
+                    .clicked()
+                {
+                    settings.recent_files.clear();
+                    app.settings_auto_save.mark_changed();
+                }
+            }
+
+            ui.add_space(style::spacing::STANDARD);
+
             // Default quality
             ui.horizontal(|ui| {
                 ui.label("Default Quality:")

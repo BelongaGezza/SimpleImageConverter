@@ -242,7 +242,6 @@ impl AppSettings {
     ///
     /// If the file is already in the list, it's moved to the front.
     /// The list is limited to 10 files.
-    #[allow(dead_code)] // Reserved for future use
     pub fn add_recent_file(&mut self, path: PathBuf) {
         // Remove if already exists
         self.recent_files.retain(|p| p != &path);

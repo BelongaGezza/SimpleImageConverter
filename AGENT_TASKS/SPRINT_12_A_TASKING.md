@@ -140,6 +140,55 @@ Code verification is complete, but manual testing is 0% complete per `MANUAL_TES
 
 ---
 
+#### Task 2.4: Urgent GUI Remediation (External Consultant + Sprint 12 Manual Testing Blockers)
+**Assigned Role:** Senior Engineer (Jordan Rivera) + System Architect (Alex Chen)
+**Status:** [x] Code Fixes Applied / [ ] Manual Re-test Complete
+**Priority:** BLOCKING (must be resolved before completing Sprint 12 manual testing)
+
+**Context:**
+- External consultant report: `ExternalConsultantReportGUI.md` (Critical Issues 1.1–1.3)
+- Manual testing blocker: `MANUAL_TESTING_REPORT_SPRINT12.md` Issue #2 (Edit Queue Item output format selection not updating)
+
+**Scope (must-fix before manual testing completion):**
+- [x] **Exit-save reliability**: Implement `eframe::App::on_exit()` to force-save settings on OS-level window close
+- [x] **Shortcut focus correctness**: Do not override text-field conventions:
+  - [x] `Ctrl+A` / `Cmd+A` respects Select All when typing in a text field
+  - [x] `Space` does not pause/resume batch while typing in a text field
+- [x] **Edit Queue Item dialog**: Make output format selection clearly interactive and persistent (align with main format selector)
+- [ ] **Manual verification**: Re-run manual tests impacted by these changes (macOS + Windows 11; Linux if available)
+
+**Acceptance Criteria (manual):**
+- [ ] Settings changes persist when closing via window close (X) immediately after edits
+- [ ] `Ctrl+A` / `Cmd+A` selects all text inside output path/name fields (does not open Add Files dialog)
+- [ ] While batch processing is active, pressing Space inside a focused text field inserts a space (does not pause)
+- [ ] In Edit Queue Item dialog, selecting a different output format visibly changes selection and persists until Save/Cancel
+- [ ] Escape closes Edit Queue Item dialog without committing changes (Test 5.3) — verify after output-format selection is functional
+
+**Code touchpoints (for review):**
+- `converter-gui/src/app.rs` (keyboard shortcut focus gating; `on_exit`)
+- `converter-gui/src/ui/batch_queue.rs` (edit dialog output format selection)
+
+---
+
+#### Task 2.5: Consultant Report Follow-Through (High-Leverage Non-Blockers)
+**Assigned Role:** Senior Engineer (Jordan Rivera) + System Architect (Alex Chen)
+**Status:** [x] Code Fixes Applied / [ ] Manual Verification Complete
+**Priority:** HIGH
+
+**Scope (from `ExternalConsultantReportGUI.md`, beyond Task 2.4):**
+- [x] **Window size restore**: Load window size from settings on startup; persist window size changes
+- [x] **Batch processing cleanup**: Sync UI state from background worker and clear processing state on completion
+- [x] **Recent files integration**: Record recent files on selection and batch add; expose list in Settings
+- [x] **Preview cache eviction**: Replace O(n) front-removal with O(1) `VecDeque` pop-front
+- [x] **Documentation drift**: Update `rust-resources.md` to reflect `rfd` version in use
+
+**Manual verification (recommended):**
+- [ ] Launch app, resize window, close, relaunch → size restored
+- [ ] Run a batch, wait for completion → pause/resume controls disabled; UI reflects final statuses
+- [ ] Select a file and add batch items → “Recent Files” populates in Settings
+
+---
+
 ### Phase 3: Security Final Review ✅ COMPLETE
 
 #### Task 3.1: Final Security Audit

@@ -43,7 +43,7 @@
 **GUI Dependencies (Sprint 7):**
 - 📋 `egui` v0.27 - GUI framework (latest: **0.33.3** - stick with 0.27 for Sprint 7)
 - 📋 `eframe` v0.27 - Application framework (latest: **0.33.3** - stick with 0.27 for Sprint 7)
-- 📋 `rfd` v0.14 - File dialogs (latest: **0.16.0** - stick with 0.14 for Sprint 7)
+- 📋 `rfd` v0.15 - File dialogs (latest: **0.16.0** - updated for compatibility; monitor for 0.16+)
 
 **3D/Mesh Dependencies:**
 - ❌ `stl_io` v0.7 - STL format (latest: **0.10.0** - update required)

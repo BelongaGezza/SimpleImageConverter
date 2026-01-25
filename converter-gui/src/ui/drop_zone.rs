@@ -212,6 +212,12 @@ fn handle_file_selection(app: &mut ConverterApp, file_path: PathBuf) {
             app.source_file = Some(file_path.clone());
             app.detected_file_type = Some(file_type);
 
+            // Track recent files (persisted in settings).
+            if let Some(ref mut settings) = app.settings {
+                settings.add_recent_file(file_path.clone());
+                app.settings_auto_save.mark_changed();
+            }
+
             // Detect input format with two-stage detection for images (security)
             match file_type {
                 FileType::Image => {

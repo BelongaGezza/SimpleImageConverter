@@ -80,6 +80,13 @@ pub struct ConverterApp {
     /// Batch processing queue (None if not initialized)
     pub batch_queue: Option<crate::batch_queue::BatchQueue>,
 
+    /// Shared batch queue used while background batch processing is active.
+    ///
+    /// The worker thread updates this queue; the UI thread snapshots it into `batch_queue`
+    /// each frame for rendering. This avoids holding locks in hot UI code while still
+    /// reflecting real-time progress.
+    pub batch_queue_shared: Option<Arc<Mutex<crate::batch_queue::BatchQueue>>>,
+
     /// Application settings (loaded from config file)
     pub settings: Option<crate::settings::AppSettings>,
 
@@ -393,6 +400,7 @@ impl Default for ConverterApp {
             mesh_recalculate_normals: false,
             mesh_validate: false,
             batch_queue: Some(crate::batch_queue::BatchQueue::new()),
+            batch_queue_shared: None,
             settings: None, // Will be loaded on startup
             history: Some(crate::history::ConversionHistory::default()),
             preview_cache: Some(std::sync::Arc::new(std::sync::Mutex::new(
@@ -483,6 +491,15 @@ impl SettingsAutoSave {
 }
 
 impl eframe::App for ConverterApp {
+    fn on_exit(&mut self, _gl: Option<&eframe::glow::Context>) {
+        // Best-effort settings flush to avoid losing recent changes when the user closes the
+        // window via OS controls (e.g., the window "X" button).
+        if let Err(e) = self.save_settings() {
+            // We can't reliably surface UI messages during shutdown.
+            eprintln!("{e}");
+        }
+    }
+
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         // Performance: egui automatically optimizes redraws - only updates when necessary
         // (mouse movement, window resize, or explicit request_repaint() calls)
@@ -491,6 +508,12 @@ impl eframe::App for ConverterApp {
         if self.settings.is_none() {
             self.load_settings();
         }
+
+        // Persist window dimensions (for restore on next launch).
+        self.maybe_update_window_size(ctx);
+
+        // Keep batch queue UI in sync with background processing.
+        self.sync_batch_queue_from_thread();
 
         // Handle keyboard shortcuts
         self.handle_keyboard_shortcuts(ctx);
@@ -1206,6 +1229,96 @@ impl eframe::App for ConverterApp {
 }
 
 impl ConverterApp {
+    /// Construct an app instance using pre-loaded settings.
+    ///
+    /// This is used by `main.rs` so window sizing can be applied before the first frame,
+    /// while keeping settings application logic centralized.
+    pub fn with_settings(settings: crate::settings::AppSettings) -> Self {
+        let mut app = Self {
+            settings: Some(settings.clone()),
+            ..Self::default()
+        };
+        app.apply_settings(&settings);
+        app
+    }
+
+    fn apply_settings(&mut self, settings: &crate::settings::AppSettings) {
+        // Apply settings to app state
+        if let Some(ref default_dir) = settings.default_output_directory {
+            self.output_directory = default_dir.clone();
+        }
+        self.quality = settings.default_quality;
+        self.show_advanced = settings.show_advanced_options;
+
+        // Apply history sizing
+        if let Some(ref mut history) = self.history {
+            history.max_entries = settings.max_history_entries;
+            history.entries.truncate(history.max_entries);
+        }
+    }
+
+    fn maybe_update_window_size(&mut self, ctx: &egui::Context) {
+        let Some(ref mut settings) = self.settings else {
+            return;
+        };
+
+        let rect = ctx.screen_rect();
+        let width = rect.width();
+        let height = rect.height();
+
+        // Only treat meaningful changes as an update (avoid churn from fractional pixel jitter).
+        let changed = (settings.window_width - width).abs() > 1.0
+            || (settings.window_height - height).abs() > 1.0;
+        if changed {
+            settings.window_width = width;
+            settings.window_height = height;
+            self.settings_auto_save.mark_changed();
+        }
+    }
+
+    fn sync_batch_queue_from_thread(&mut self) {
+        let Some(ref shared) = self.batch_queue_shared else {
+            return;
+        };
+
+        let snapshot = {
+            let guard = shared.lock().unwrap_or_else(|poisoned| {
+                eprintln!(
+                    "Batch queue mutex poisoned during UI sync, using potentially inconsistent data"
+                );
+                poisoned.into_inner()
+            });
+            guard.clone()
+        };
+
+        self.batch_queue = Some(snapshot.clone());
+
+        // Cleanup processing state once the queue is fully settled.
+        let is_done = snapshot.processing_ids.is_empty() && !snapshot.has_pending();
+        if is_done && self.batch_processing_state.is_some() {
+            let was_cancelled = self
+                .batch_processing_state
+                .as_ref()
+                .map(|s| s.is_cancelled())
+                .unwrap_or(false);
+
+            self.batch_processing_state = None;
+            self.batch_queue_shared = None;
+
+            if was_cancelled {
+                self.add_message(
+                    "Batch processing finished (cancelled)".to_string(),
+                    MessageType::Info,
+                );
+            } else {
+                self.add_message(
+                    "Batch processing completed".to_string(),
+                    MessageType::Success,
+                );
+            }
+        }
+    }
+
     /// Add a message to the messages list
     ///
     /// Messages are automatically limited to the last 50 to prevent memory issues.
@@ -1496,6 +1609,9 @@ impl ConverterApp {
         } else {
             return Err("Batch queue not initialized".to_string());
         };
+
+        // Store Arc reference in app state so the UI can sync progress updates.
+        self.batch_queue_shared = Some(queue_arc.clone());
 
         // Create or reset batch processing state
         let processing_state = if let Some(ref state) = self.batch_processing_state {
@@ -1895,17 +2011,14 @@ impl ConverterApp {
         match crate::settings::AppSettings::load() {
             Ok(settings) => {
                 self.settings = Some(settings.clone());
-                // Apply settings to app state
-                if let Some(ref default_dir) = settings.default_output_directory {
-                    self.output_directory = default_dir.clone();
-                }
-                self.quality = settings.default_quality;
-                self.show_advanced = settings.show_advanced_options;
+                self.apply_settings(&settings);
             }
             Err(e) => {
                 // Settings file doesn't exist or is corrupted - use defaults
                 self.add_message(format!("Using default settings: {}", e), MessageType::Info);
-                self.settings = Some(crate::settings::AppSettings::default());
+                let settings = crate::settings::AppSettings::default();
+                self.settings = Some(settings.clone());
+                self.apply_settings(&settings);
             }
         }
     }
@@ -1922,6 +2035,10 @@ impl ConverterApp {
 
         // Helper: Check for platform-appropriate modifier (Command on macOS, Ctrl on Windows/Linux)
         let cmd_or_ctrl = modifiers.command || modifiers.ctrl;
+
+        // If a text input has focus, avoid stealing common editing keys (e.g., Ctrl+A, Space).
+        // This preserves platform conventions and prevents surprising behavior while typing.
+        let wants_keyboard_input = ctx.wants_keyboard_input();
 
         // Ctrl+O / Cmd+O: Open file
         if cmd_or_ctrl && ctx.input(|i| i.key_pressed(egui::Key::O)) {
@@ -1963,8 +2080,8 @@ impl ConverterApp {
         }
 
         // Ctrl+A / Cmd+A: Add files to batch queue
-        // Note: This will override Ctrl+A/Cmd+A in text fields, but that's acceptable for this use case
-        if cmd_or_ctrl && ctx.input(|i| i.key_pressed(egui::Key::A)) {
+        // Respect "Select All" when the user is typing in a text field.
+        if cmd_or_ctrl && ctx.input(|i| i.key_pressed(egui::Key::A)) && !wants_keyboard_input {
             let mut dialog = rfd::FileDialog::new()
                 .add_filter(
                     "Image Files",
@@ -2045,7 +2162,8 @@ impl ConverterApp {
         }
 
         // Space: Pause/Resume batch processing (when processing is active)
-        if ctx.input(|i| i.key_pressed(egui::Key::Space)) {
+        // Respect typing space in text fields while processing is active.
+        if ctx.input(|i| i.key_pressed(egui::Key::Space)) && !wants_keyboard_input {
             let is_processing_active = self.batch_processing_state.is_some();
             if is_processing_active {
                 let is_paused = self.is_batch_processing_paused();

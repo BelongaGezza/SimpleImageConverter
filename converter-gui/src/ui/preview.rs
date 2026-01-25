@@ -16,7 +16,7 @@ use common::validation::validate_file_path;
 use egui::ColorImage;
 use image::GenericImageView;
 use mesh_core::{FormatRegistry as MeshFormatRegistry, MeshFormat};
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
@@ -29,7 +29,7 @@ pub struct PreviewCache {
     /// Map from file path to cached preview data
     cache: HashMap<PathBuf, Arc<PreviewData>>,
     /// Access order tracking for LRU eviction (most recently used at the end)
-    access_order: Vec<PathBuf>,
+    access_order: VecDeque<PathBuf>,
     /// Maximum number of cached entries (to prevent memory bloat)
     max_entries: usize,
 }
@@ -53,7 +53,7 @@ impl PreviewCache {
     pub fn new() -> Self {
         Self {
             cache: HashMap::new(),
-            access_order: Vec::new(),
+            access_order: VecDeque::new(),
             max_entries: 50, // Cache up to 50 previews
         }
     }
@@ -63,7 +63,7 @@ impl PreviewCache {
     pub fn with_max_entries(max_entries: usize) -> Self {
         Self {
             cache: HashMap::new(),
-            access_order: Vec::new(),
+            access_order: VecDeque::new(),
             max_entries,
         }
     }
@@ -78,7 +78,7 @@ impl PreviewCache {
             if let Some(pos) = self.access_order.iter().position(|p| p == &path_buf) {
                 self.access_order.remove(pos);
             }
-            self.access_order.push(path_buf);
+            self.access_order.push_back(path_buf);
             Some(preview)
         } else {
             None
@@ -95,10 +95,9 @@ impl PreviewCache {
         if !is_update {
             // Remove least recently used entries if cache is full
             while self.cache.len() >= self.max_entries && !self.cache.is_empty() {
-                // Remove first entry in access_order (least recently used)
-                if let Some(lru_path) = self.access_order.first().cloned() {
+                // Remove front entry in access_order (least recently used) in O(1).
+                if let Some(lru_path) = self.access_order.pop_front() {
                     self.cache.remove(&lru_path);
-                    self.access_order.remove(0);
                 } else {
                     break; // Safety: avoid infinite loop
                 }
@@ -113,7 +112,7 @@ impl PreviewCache {
         // Insert/update the cache entry
         self.cache.insert(path.clone(), preview);
         // Add to end of access order (most recently used)
-        self.access_order.push(path);
+        self.access_order.push_back(path);
     }
 
     /// Clear the cache

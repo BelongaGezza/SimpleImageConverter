@@ -34,7 +34,6 @@ use std::path::{Path, PathBuf};
 /// let sanitized = sanitize_path_for_display(path);
 /// // Returns something like "Documents\\photo.jpg" or just "photo.jpg"
 /// ```
-#[allow(dead_code)] // Reserved for future use
 pub fn sanitize_path_for_display(path: &Path) -> String {
     // Try to get relative path from home directory
     if let Ok(home) = std::env::var("USERPROFILE") {

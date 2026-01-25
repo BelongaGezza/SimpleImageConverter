@@ -446,7 +446,8 @@ Batch processing is implemented in `converter-gui/src/ui/batch_queue.rs`:
 - Re-test: Add item to queue → Click Edit → verify dialog opens → Press Escape → verify dialog closes without saving.
 - ✅ **PASS**: Escape works for batch cancel (Test 3.4) and confirmation dialogs (Test 4.2).
 **macOS Re-test (2026-01-25):**
-- ❌ **FAIL**: Edit dialog opens, but output format selection is not interactive/persistent (e.g., BMP appears pre-selected; clicking other formats shows no change). This blocks completing the Escape/“no changes saved” verification via format change.
+- ❌ **FAIL (pre-fix)**: Edit dialog opens, but output format selection is not interactive/persistent (e.g., BMP appears pre-selected; clicking other formats shows no change). This blocks completing the Escape/“no changes saved” verification via format change.
+- ✅ **CODE FIX APPLIED (2026-01-25)**: Updated the edit dialog output format selector to use the same `radio_value` pattern as the main format selector. Re-test required to confirm behavior on macOS, Windows, and Linux.
 
 ---
 
@@ -1009,7 +1010,7 @@ _List any critical issues that block release_
    
    **Expected:** Clicking a format changes the selected format in the dialog and the selection persists while the dialog is open (until Save/Cancel)  
    **Actual:** Clicking different formats has no visible effect; selection appears stuck  
-   **Status:** [x] Open / [ ] Fixed / [ ] Deferred  
+   **Status:** [ ] Open / [x] Fix Applied (Re-test Required) / [ ] Deferred  
    **Platform:** macOS (verify Windows/Linux)  
    **Date Reported:** January 25, 2026
 

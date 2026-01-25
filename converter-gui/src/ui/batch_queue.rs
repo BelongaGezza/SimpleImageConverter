@@ -543,39 +543,39 @@ pub fn render_edit_dialog(ui: &mut Ui, app: &mut ConverterApp) {
                 match file_type {
                     crate::app::FileType::Image => {
                         let formats = crate::format_helpers::get_writable_image_formats();
-                        ui.horizontal_wrapped(|ui| {
-                            for format in formats {
-                                let format_enum = crate::app::OutputFormat::Image(format);
-                                let is_selected = matches!(
+                        for format in formats {
+                            let label = crate::format_helpers::get_image_format_name(format);
+                            let response = ui.radio_value(
+                                &mut draft.output_format,
+                                crate::app::OutputFormat::Image(format),
+                                label,
+                            );
+                            if response.changed() {
+                                draft.output_path_str = update_path_extension_for_format(
+                                    &draft.output_path_str,
                                     draft.output_format,
-                                    crate::app::OutputFormat::Image(f) if f == format
                                 );
-                                let label = crate::format_helpers::get_image_format_name(format);
-                                if ui.selectable_label(is_selected, label).clicked() {
-                                    draft.output_format = format_enum;
-                                    draft.output_path_str =
-                                        update_path_extension_for_format(&draft.output_path_str, draft.output_format);
-                                }
                             }
-                        });
+                            ui.add_space(style::spacing::SMALL);
+                        }
                     }
                     crate::app::FileType::Mesh => {
                         let formats = crate::format_helpers::get_writable_mesh_formats();
-                        ui.horizontal_wrapped(|ui| {
-                            for format in formats {
-                                let format_enum = crate::app::OutputFormat::Mesh(format);
-                                let is_selected = matches!(
+                        for format in formats {
+                            let label = crate::format_helpers::get_mesh_format_name(format);
+                            let response = ui.radio_value(
+                                &mut draft.output_format,
+                                crate::app::OutputFormat::Mesh(format),
+                                label,
+                            );
+                            if response.changed() {
+                                draft.output_path_str = update_path_extension_for_format(
+                                    &draft.output_path_str,
                                     draft.output_format,
-                                    crate::app::OutputFormat::Mesh(f) if f == format
                                 );
-                                let label = crate::format_helpers::get_mesh_format_name(format);
-                                if ui.selectable_label(is_selected, label).clicked() {
-                                    draft.output_format = format_enum;
-                                    draft.output_path_str =
-                                        update_path_extension_for_format(&draft.output_path_str, draft.output_format);
-                                }
                             }
-                        });
+                            ui.add_space(style::spacing::SMALL);
+                        }
                     }
                 }
 
@@ -684,7 +684,8 @@ pub fn render_edit_dialog(ui: &mut Ui, app: &mut ConverterApp) {
             };
 
             // Validate path is not in system directory
-            let not_system_dir = crate::utils::validate_output_path_not_system(&output_path).is_ok();
+            let not_system_dir =
+                crate::utils::validate_output_path_not_system(&output_path).is_ok();
 
             if !output_dir_valid || !not_system_dir {
                 let error_msg = if !output_dir_valid {
@@ -693,7 +694,10 @@ pub fn render_edit_dialog(ui: &mut Ui, app: &mut ConverterApp) {
                     "Output path is in a system directory"
                 };
                 app.add_message(
-                    format!("Invalid output path: {}. Please choose a valid path.", error_msg),
+                    format!(
+                        "Invalid output path: {}. Please choose a valid path.",
+                        error_msg
+                    ),
                     crate::app::MessageType::Error,
                 );
                 return; // Keep dialog open
@@ -745,6 +749,12 @@ pub fn add_file_to_batch_queue(app: &mut ConverterApp, file_path: std::path::Pat
         use crate::error_messages::format_user_message;
         app.add_message(format_user_message(&e), crate::app::MessageType::Error);
         return;
+    }
+
+    // Track recent files (persisted in settings).
+    if let Some(ref mut settings) = app.settings {
+        settings.add_recent_file(file_path.clone());
+        app.settings_auto_save.mark_changed();
     }
 
     // Detect file type
