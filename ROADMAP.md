@@ -1,7 +1,7 @@
 # Project Roadmap
 ## Simple Image Converter
 
-**Last Updated:** January 4, 2026
+**Last Updated:** January 26, 2026
 **Current Version:** v0.3.0
 **Next Release:** v1.0.0 (First Stable Release - Mid-January 2026)
 
@@ -66,7 +66,10 @@
 
 ### Phase 1: Critical Fixes ✅
 - [x] Fix license configuration in deny.toml (OFL-1.1, UFL-1.0 for egui fonts)
-- [ ] Assess dependency future-compatibility (ashpd Rust 2024 warning)
+- [x] Assess dependency future-compatibility (ashpd Rust 2024 warning)
+- [ ] **P0** Restore `cargo fmt --check` compliance (formatting drift)
+- [ ] **P0** glTF write correctness decision + remediation (valid output or explicitly read-only)
+- [ ] **P1** Align mesh format detection with two-stage verification where feasible (extension + signature)
 
 ### Phase 2: Manual Testing 🟡
 - [ ] Execute manual testing checklist (50+ test cases)

@@ -8,7 +8,7 @@
 
 use crate::ui::mode_switch::ProcessingMode;
 use common::limits::ResourceLimits;
-use converter_gui::app::{FileType, InputFormat, MessageType, OutputFormat, Status};
+use converter_gui::app::{FileType, InputFormat, MessageType, OutputFormat, QueueItemEditDraft, Status};
 use converter_gui::batch_queue::{BatchItem, BatchItemOptions, BatchItemStatus, BatchQueue, MeshOptions};
 use converter_gui::history::{ConversionEntry, ConversionHistory};
 use converter_gui::ui::preview::PreviewCache;
@@ -129,6 +129,7 @@ pub struct ModernApp {
     batch_queue_shared: Option<Arc<Mutex<BatchQueue>>>,
     batch_processing_state: Option<Arc<BatchProcessingState>>,
     editing_queue_item: Option<Uuid>,
+    editing_queue_item_draft: Option<QueueItemEditDraft>,
 
     // Messaging / status
     messages: Vec<Message>,
@@ -183,6 +184,7 @@ impl ModernApp {
             batch_queue_shared: None,
             batch_processing_state: None,
             editing_queue_item: None,
+            editing_queue_item_draft: None,
 
             messages: Vec::new(),
             status: Status::Ready,
@@ -1808,16 +1810,45 @@ fn render_history_panel(ui: &mut Ui, app: &mut ModernApp) {
         });
 }
 
+fn update_path_extension_for_format(path_str: &str, fmt: OutputFormat) -> String {
+    let mut path = PathBuf::from(path_str);
+    let ext = match fmt {
+        OutputFormat::Image(img_fmt) => converter_gui::format_helpers::get_format_extension(img_fmt),
+        OutputFormat::Mesh(mesh_fmt) => converter_gui::format_helpers::get_mesh_format_extension(mesh_fmt),
+    };
+    path.set_extension(ext);
+    path.to_string_lossy().to_string()
+}
+
 fn render_edit_queue_item(ui: &mut Ui, app: &mut ModernApp, id: Uuid) {
     let Some(item) = app.batch_queue.get_item(id).cloned() else {
         app.editing_queue_item = None;
+        app.editing_queue_item_draft = None;
         return;
     };
 
     // Only allow editing pending items (clear, obvious behavior).
     if !matches!(item.status, BatchItemStatus::Pending) {
         app.editing_queue_item = None;
+        app.editing_queue_item_draft = None;
         return;
+    }
+
+    // Keep a persistent draft so edits (radio selection, typed path, sliders) survive across frames.
+    let needs_new_draft = app
+        .editing_queue_item_draft
+        .as_ref()
+        .map(|d| d.id != id)
+        .unwrap_or(true);
+    if needs_new_draft {
+        app.editing_queue_item_draft = Some(QueueItemEditDraft {
+            id,
+            output_format: item.output_format,
+            output_path_str: item.output_path.to_string_lossy().to_string(),
+            quality: item.options.quality,
+            mesh_options: item.options.mesh_options.clone(),
+            priority: item.options.priority,
+        });
     }
 
     let palette = crate::ui::theme::Palette::default();
@@ -1841,16 +1872,43 @@ fn render_edit_queue_item(ui: &mut Ui, app: &mut ModernApp, id: Uuid) {
 
     // Format selection
     ui.label(RichText::new("Output format").strong());
-    let mut selected_format = item.output_format;
+    let mut draft = match app.editing_queue_item_draft.clone() {
+        Some(d) => d,
+        None => {
+            app.editing_queue_item = None;
+            app.editing_queue_item_draft = None;
+            return;
+        }
+    };
     match item.file_type {
         FileType::Image => {
             for fmt in converter_gui::format_helpers::get_writable_image_formats() {
-                ui.radio_value(&mut selected_format, OutputFormat::Image(fmt), converter_gui::format_helpers::get_image_format_name(fmt));
+                let resp = ui.radio_value(
+                    &mut draft.output_format,
+                    OutputFormat::Image(fmt),
+                    converter_gui::format_helpers::get_image_format_name(fmt),
+                );
+                if resp.changed() {
+                    draft.output_path_str = update_path_extension_for_format(
+                        &draft.output_path_str,
+                        draft.output_format,
+                    );
+                }
             }
         }
         FileType::Mesh => {
             for fmt in converter_gui::format_helpers::get_writable_mesh_formats() {
-                ui.radio_value(&mut selected_format, OutputFormat::Mesh(fmt), converter_gui::format_helpers::get_mesh_format_name(fmt));
+                let resp = ui.radio_value(
+                    &mut draft.output_format,
+                    OutputFormat::Mesh(fmt),
+                    converter_gui::format_helpers::get_mesh_format_name(fmt),
+                );
+                if resp.changed() {
+                    draft.output_path_str = update_path_extension_for_format(
+                        &draft.output_path_str,
+                        draft.output_format,
+                    );
+                }
             }
         }
     }
@@ -1859,8 +1917,7 @@ fn render_edit_queue_item(ui: &mut Ui, app: &mut ModernApp, id: Uuid) {
 
     // Output path
     ui.label(RichText::new("Output path").strong());
-    let mut output_path_str = item.output_path.to_string_lossy().to_string();
-    ui.text_edit_singleline(&mut output_path_str);
+    ui.text_edit_singleline(&mut draft.output_path_str);
     if ui.button("Browse…").clicked() {
         let mut dialog = rfd::FileDialog::new();
         if let Some(parent) = item.output_path.parent() {
@@ -1869,19 +1926,18 @@ fn render_edit_queue_item(ui: &mut Ui, app: &mut ModernApp, id: Uuid) {
             }
         }
         if let Some(path) = dialog.save_file() {
-            output_path_str = path.to_string_lossy().to_string();
+            draft.output_path_str = path.to_string_lossy().to_string();
         }
     }
 
     ui.add_space(8.0);
 
     // Quality (images only, if supported)
-    let mut quality = item.options.quality;
     if matches!(item.file_type, FileType::Image) {
-        if let OutputFormat::Image(fmt) = selected_format {
+        if let OutputFormat::Image(fmt) = draft.output_format {
             if converter_gui::format_helpers::format_supports_quality(fmt) {
-                ui.label(RichText::new(format!("Quality: {quality}")).strong());
-                ui.add(egui::Slider::new(&mut quality, 1..=100));
+                ui.label(RichText::new(format!("Quality: {}", draft.quality)).strong());
+                ui.add(egui::Slider::new(&mut draft.quality, 1..=100));
             }
         }
     }
@@ -1890,48 +1946,73 @@ fn render_edit_queue_item(ui: &mut Ui, app: &mut ModernApp, id: Uuid) {
     ui.separator();
     ui.add_space(10.0);
 
+    let mut cancel_clicked = false;
+    let mut save_clicked = false;
     ui.horizontal(|ui| {
         if ui.button("Cancel").clicked() {
-            app.editing_queue_item = None;
-            return;
+            cancel_clicked = true;
         }
 
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
             if ui.button(RichText::new("Save").strong()).clicked() {
-                let output_path = PathBuf::from(output_path_str);
-                let output_dir_valid = output_path
-                    .parent()
-                    .map(|p| common::validation::validate_directory_path(p).is_ok())
-                    .unwrap_or(false);
-                let not_system_dir = converter_gui::utils::validate_output_path_not_system(&output_path).is_ok();
-
-                if !output_dir_valid || !not_system_dir {
-                    app.add_message(
-                        "Invalid output path. Please choose a valid non-system directory.",
-                        MessageType::Error,
-                    );
-                    return;
-                }
-
-                // Commit changes (explicit, visible action)
-                if selected_format != item.output_format {
-                    app.batch_queue.update_item_format(id, selected_format);
-                }
-                if output_path != item.output_path {
-                    app.batch_queue.update_item_output_path(id, output_path);
-                }
-
-                if quality != item.options.quality {
-                    let mut new_opts = item.options.clone();
-                    new_opts.quality = quality;
-                    app.batch_queue.update_item_options(id, new_opts);
-                }
-
-                app.add_message("Queue item updated", MessageType::Success);
-                app.editing_queue_item = None;
+                save_clicked = true;
             }
         });
     });
+
+    if cancel_clicked {
+        app.editing_queue_item = None;
+        app.editing_queue_item_draft = None;
+        return;
+    }
+
+    if save_clicked {
+        let output_path = PathBuf::from(&draft.output_path_str);
+        let output_dir_valid = output_path
+            .parent()
+            .map(|p| common::validation::validate_directory_path(p).is_ok())
+            .unwrap_or(false);
+        let not_system_dir =
+            converter_gui::utils::validate_output_path_not_system(&output_path).is_ok();
+
+        if !output_dir_valid || !not_system_dir {
+            app.add_message(
+                "Invalid output path. Please choose a valid non-system directory.",
+                MessageType::Error,
+            );
+            app.editing_queue_item_draft = Some(draft);
+            return;
+        }
+
+        // Commit changes (explicit, visible action)
+        if draft.output_format != item.output_format {
+            app.batch_queue.update_item_format(id, draft.output_format);
+        }
+        if output_path != item.output_path {
+            app.batch_queue
+                .update_item_output_path(id, output_path);
+        }
+
+        if draft.quality != item.options.quality
+            || draft.mesh_options != item.options.mesh_options
+            || draft.priority != item.options.priority
+        {
+            let new_opts = BatchItemOptions {
+                quality: draft.quality,
+                mesh_options: draft.mesh_options.clone(),
+                priority: draft.priority,
+            };
+            app.batch_queue.update_item_options(id, new_opts);
+        }
+
+        app.add_message("Queue item updated", MessageType::Success);
+        app.editing_queue_item = None;
+        app.editing_queue_item_draft = None;
+        return;
+    }
+
+    // Persist edits across frames while the dialog is open.
+    app.editing_queue_item_draft = Some(draft);
 }
 
 fn render_preferences(ui: &mut Ui, app: &mut ModernApp) {

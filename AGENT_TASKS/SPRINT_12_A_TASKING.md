@@ -3,7 +3,7 @@
 **Sprint Duration:** January 3-10, 2026
 **Sprint Goal:** Complete all remaining tasks for v1.0.0 stable release
 **Target Release:** v1.0.0 (Mid-January 2026)
-**Last Updated:** January 3, 2026
+**Last Updated:** January 26, 2026
 
 ---
 
@@ -50,6 +50,84 @@
 - ✅ No more Rust 2024 future-incompat warnings
 
 ---
+
+## Addendum (January 26, 2026): Reliability & Consistency Review Follow-ups (PRIORITY OVERRIDE)
+
+This addendum captures new release-relevant findings from a codebase reliability/consistency review run on **January 26, 2026**.
+
+### Evidence (automated checks)
+- ✅ `cargo test --workspace`: PASS
+- 🟡 `cargo clippy --workspace --all-targets`: PASS with **3 warnings** (all in `converter-gui-modern/src/app.rs`)
+- 🔴 `cargo fmt --all --check`: **FAIL** (formatting drift present)
+
+### Key Findings (impact)
+- 🔴 **Formatting drift**: `cargo fmt --check` failing means the formatting/consistency gate is currently broken.
+- 🔴 **glTF writer output likely incomplete**: `mesh-core/src/formats/gltf.rs` writes a placeholder `uri` without embedding buffer data, which can produce invalid `.gltf` output.
+- 🟡 **Security/consistency mismatch**: image formats use **two-stage detection**; mesh formats are currently **extension-only**.
+
+### Priority Tasks (assignments)
+
+#### Addendum Task A.1: Restore rustfmt compliance (Quality Gate)
+**Assigned Role:** Senior Engineer (Jordan Rivera)  
+**Priority:** **BLOCKING**  
+**Status:** [ ] Not Started / [ ] In Progress / [ ] Complete
+
+**Acceptance Criteria:**
+- [ ] `cargo fmt --all --check` passes on `main`
+- [ ] CI (or equivalent) enforces the formatting gate consistently
+
+---
+
+#### Addendum Task A.2: glTF write correctness decision + remediation
+**Assigned Roles:** System Architect (Alex Chen) + Senior Engineer (Jordan Rivera)  
+**Priority:** **BLOCKING**  
+**Status:** [ ] Not Started / [ ] In Progress / [ ] Complete
+
+**Architect Decision (required):**
+- [ ] Decide whether v1.0.0 will:
+  - (A) **Support glTF write fully** (valid `.gltf` with embedded buffer or `.glb`), or
+  - (B) **Mark glTF write as unsupported** (read-only) until fully implemented.
+
+**Implementation Acceptance Criteria:**
+- [ ] If (A): generated output imports in a standard glTF validator/viewer and has automated test coverage
+- [ ] If (B): writer returns `UnsupportedFormat` and documentation reflects read-only status
+
+---
+
+#### Addendum Task A.3: Mesh format two-stage detection policy + implementation
+**Assigned Roles:** System Architect (Alex Chen) + Senior Engineer (Jordan Rivera)  
+**Priority:** **HIGH**  
+**Status:** [ ] Not Started / [ ] In Progress / [ ] Complete
+
+**Acceptance Criteria:**
+- [ ] Define a consistent policy (extension + signature where feasible) aligned with `rust-resources.md`
+- [ ] Implement signature verification for formats with clear headers (e.g., `OFF`, `ply`, `glTF`/`GLB`)
+- [ ] Add/adjust tests covering spoofing/mismatch cases
+
+---
+
+#### Addendum Task A.4: Dependency maintenance per rust-resources.md
+**Assigned Role:** Senior Engineer (Jordan Rivera)  
+**Priority:** **HIGH**  
+**Status:** [ ] Not Started / [ ] In Progress / [ ] Complete
+
+**Scope:**
+- [ ] Upgrade `stl_io` (**0.7 → 0.10**) with regression testing
+- [ ] Upgrade `resvg` (**0.40 → 0.45**) with SVG rendering regression testing
+
+**Acceptance Criteria:**
+- [ ] `cargo test --workspace` passes after upgrades
+- [ ] Any API changes documented (and `rust-resources.md` updated if needed)
+
+---
+
+#### Addendum Task A.5: Address outstanding clippy warnings (converter-gui-modern)
+**Assigned Role:** Senior Engineer (Jordan Rivera)  
+**Priority:** **MEDIUM**  
+**Status:** [ ] Not Started / [ ] In Progress / [ ] Complete
+
+**Acceptance Criteria:**
+- [ ] `cargo clippy --workspace --all-targets` is warning-free (or warnings explicitly justified/allowed)
 
 ## Task Breakdown
 
@@ -316,7 +394,8 @@ Final architecture review and release approval for v1.0.0.
 | Metric | Value | Status |
 |--------|-------|--------|
 | Automated Tests | 633 | ✅ All passing |
-| Clippy Warnings | 0 | ✅ Clean |
+| cargo fmt --check | FAIL | 🔴 Formatting drift present |
+| Clippy Warnings | 3 | 🟡 All in `converter-gui-modern/src/app.rs` |
 | Security Audit | Grade A | ✅ Approved |
 | cargo deny | All pass | ✅ Clean |
 | Manual Tests | 0% | ⏳ Pending |
@@ -334,6 +413,6 @@ Final architecture review and release approval for v1.0.0.
 
 **Document Version:** 2.0
 **Created:** January 3, 2026
-**Last Updated:** January 3, 2026
+**Last Updated:** January 26, 2026
 **Author:** Senior Engineer (Jordan Rivera)
 **Status:** In Progress - Awaiting Manual Testing

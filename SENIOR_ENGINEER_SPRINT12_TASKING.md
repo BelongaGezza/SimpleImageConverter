@@ -19,6 +19,49 @@ Sprint 12 focuses on final release preparation and validation for v1.0.0, the fi
 3. Final documentation review and updates
 4. Release execution (version bump, git tag, GitHub release)
 
+---
+
+## Addendum (January 26, 2026): Codebase Reliability Review Follow-ups (PRIORITY OVERRIDE)
+
+This addendum records new release-relevant TODOs identified in a reliability/consistency review run on **January 26, 2026**.
+
+### Evidence (automated checks)
+- ✅ `cargo test --workspace`: PASS
+- 🟡 `cargo clippy --workspace --all-targets`: PASS with **3 warnings** (all in `converter-gui-modern/src/app.rs`)
+- 🔴 `cargo fmt --all --check`: **FAIL** (formatting drift present)
+
+### Action Items (prioritized)
+
+#### P0 / BLOCKING: Restore rustfmt compliance (Quality Gate)
+- **Owner**: Senior Engineer
+- **Acceptance**:
+  - [ ] `cargo fmt --all --check` passes on `main`
+  - [ ] Formatting is enforced consistently (CI and/or local gate)
+
+#### P0 / BLOCKING: glTF write correctness decision + remediation
+- **Owner**: System Architect (decision) + Senior Engineer (implementation)
+- **Decision needed**:
+  - [ ] v1.0.0 glTF output is either (A) fully valid `.gltf`/`.glb`, or (B) explicitly read-only (writer returns `UnsupportedFormat`)
+- **Acceptance**:
+  - [ ] If supported: output validates/imports and has automated test coverage
+  - [ ] If read-only: docs + UI reflect that clearly
+
+#### P1 / HIGH: Mesh format detection policy alignment
+- **Owner**: System Architect (policy) + Senior Engineer (implementation)
+- **Acceptance**:
+  - [ ] Define and implement a consistent “extension + signature verification (where feasible)” approach, aligned with `rust-resources.md`
+
+#### P1 / HIGH: Dependency maintenance per rust-resources.md
+- **Owner**: Senior Engineer
+- **Scope**:
+  - [ ] Upgrade `stl_io` (0.7 → 0.10) with regression tests
+  - [ ] Upgrade `resvg` (0.40 → 0.45) with SVG regression tests
+
+#### P2 / MEDIUM: Address clippy warnings (converter-gui-modern)
+- **Owner**: Senior Engineer
+- **Acceptance**:
+  - [ ] `cargo clippy --workspace --all-targets` warning-free (or warnings explicitly justified/allowed)
+
 **Sprint 11 Status:** ✅ **COMPLETE** (7/7 tasks - 100%)
 - ✅ Task 1.1: UI Consistency & Visual Polish
 - ✅ Task 1.2: Keyboard Shortcuts Implementation
@@ -111,6 +154,9 @@ Sprint 12 focuses on final release preparation and validation for v1.0.0, the fi
 - [x] Release build successful (`cargo build --release` completes)
 - [x] Test execution report created
 - [x] Any critical issues documented and resolved
+
+**Note (January 26, 2026):**
+- Formatting gate currently failing (`cargo fmt --all --check`), and clippy now reports warnings in `converter-gui-modern`. See Addendum tasks above.
 
 **Files to Create/Modify:**
 - `TEST_EXECUTION_REPORT_SPRINT12.md` (new - test execution results) ✅ CREATED
