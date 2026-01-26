@@ -77,16 +77,20 @@
 - [ ] Cross-platform validation (Windows, macOS, Linux)
 
 ### Phase 3: Security Review
-- [ ] Final security audit
-- [ ] Security documentation review
+- [x] Final security audit (`SECURITY_AUDIT_v1.0.0.md`)
+- [x] Security documentation review (included in audit)
+  - Note: Re-validate format-detection consistency after Sprint 12_A Addendum Task (mesh two-stage detection)
 
 ### Phase 4: Documentation
 - [x] Update stale ROADMAP.md
-- [ ] Update docs/FORMATS.md for v0.3.0 features
-- [ ] Draft v1.0.0 release notes
+- [x] Update docs/FORMATS.md for v0.3.0 features
+- [x] Draft v1.0.0 release notes (`RELEASE_NOTES_v1.0.0.md`)
 
-### Phase 5: Release Approval
+### Phase 5: Approval & Release Execution
 - [ ] System Architect final review and approval
+- [ ] Final release artifacts (archives + SHA256SUMS)
+- [ ] Version bump + tag `v1.0.0`
+- [ ] GitHub Release published with artifacts
 
 **Detailed Tasking:** See `AGENT_TASKS/SPRINT_12_A_TASKING.md`
 
@@ -165,10 +169,11 @@
 |--------|----------------|
 | Test Count | 633 tests |
 | Test Status | ✅ All passing |
-| Clippy | ✅ Clean |
-| Security Audit | ✅ Passing |
+| rustfmt | 🔴 `cargo fmt --check` failing (formatting drift) |
+| Clippy | 🟡 Warnings present (see Sprint 12_A addendum) |
+| Security Audit | ✅ Passing (Grade A) |
 | License Check | ✅ Passing |
-| CI/CD | ✅ All pipelines green |
+| CI/CD | 🟡 Needs re-run/verification after formatting drift |
 
 ---
 

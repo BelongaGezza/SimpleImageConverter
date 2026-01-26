@@ -8,6 +8,18 @@
 
 ---
 
+## Addendum (January 26, 2026): What Changed Since This Review
+
+This critical review reflects the state as of **Dec 30, 2025**. Since then:
+
+- ✅ Security audit has been completed and passed (`SECURITY_AUDIT_v1.0.0.md`, Jan 3)
+- ✅ Documentation updates + v1.0.0 release notes draft exist (`docs/FORMATS.md`, `RELEASE_NOTES_v1.0.0.md`)
+- 🔴 Release gates were re-opened by later checks (rustfmt drift; clippy warnings; format-policy alignment items)
+
+**Current source of truth for v1.0.0 release gating:** `AGENT_TASKS/SPRINT_12_A_TASKING.md`
+
+---
+
 ## Executive Summary
 
 This critical review examines the Sprint 12 status, codebase quality, documentation completeness, and release readiness for v1.0.0. The review identifies critical blockers, quality concerns, and recommendations for proceeding with the release.

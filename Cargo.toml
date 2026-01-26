@@ -35,11 +35,11 @@ log = "0.4"
 
 # 2D image processing
 image = "0.25"
-resvg = "0.40"
+resvg = "0.45"
 tiny-skia = "0.11"
 
 # 3D mesh processing
-stl_io = "0.7"
+stl_io = "0.10"
 nalgebra = "0.33"
 tobj = "4.0"
 # Note: ply-rs removed due to CVE-2020-25573 - use ply-rs-bw directly in mesh-core

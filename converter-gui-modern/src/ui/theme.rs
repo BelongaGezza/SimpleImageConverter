@@ -37,12 +37,27 @@ pub fn apply_modern_theme(ctx: &egui::Context) {
     // Fonts: keep default families, but scale sizes up.
     let mut style = (*ctx.style()).clone();
     style.text_styles = [
-        (TextStyle::Heading, FontId::new(28.0, FontFamily::Proportional)),
-        (TextStyle::Name("H2".into()), FontId::new(22.0, FontFamily::Proportional)),
+        (
+            TextStyle::Heading,
+            FontId::new(28.0, FontFamily::Proportional),
+        ),
+        (
+            TextStyle::Name("H2".into()),
+            FontId::new(22.0, FontFamily::Proportional),
+        ),
         (TextStyle::Body, FontId::new(18.0, FontFamily::Proportional)),
-        (TextStyle::Button, FontId::new(18.0, FontFamily::Proportional)),
-        (TextStyle::Small, FontId::new(14.0, FontFamily::Proportional)),
-        (TextStyle::Monospace, FontId::new(16.0, FontFamily::Monospace)),
+        (
+            TextStyle::Button,
+            FontId::new(18.0, FontFamily::Proportional),
+        ),
+        (
+            TextStyle::Small,
+            FontId::new(14.0, FontFamily::Proportional),
+        ),
+        (
+            TextStyle::Monospace,
+            FontId::new(16.0, FontFamily::Monospace),
+        ),
     ]
     .into();
 
@@ -75,4 +90,3 @@ pub fn apply_modern_theme(ctx: &egui::Context) {
 
     ctx.set_style(style);
 }
-

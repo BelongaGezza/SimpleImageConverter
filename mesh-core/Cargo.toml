@@ -12,6 +12,7 @@ common = { path = "../common" }
 anyhow.workspace = true
 thiserror.workspace = true
 tempfile.workspace = true
+serde_json.workspace = true
 
 # Mesh processing (always included)
 stl_io.workspace = true

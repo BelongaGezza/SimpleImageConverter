@@ -6,6 +6,17 @@
 
 ---
 
+## Addendum (January 26, 2026): Status Drift Note
+
+This status report reflects **Dec 30, 2025** results. Since then:
+
+- ✅ Security audit has been completed and passed (`SECURITY_AUDIT_v1.0.0.md`, Jan 3)
+- 🔴 Release gates have re-opened (rustfmt drift; clippy warnings in `converter-gui-modern`; plus format-policy items)
+
+**Current source of truth for sprint gating:** `AGENT_TASKS/SPRINT_12_A_TASKING.md`
+
+---
+
 ## Completed Tasks
 
 ### ✅ Task 1.1: Automated Test Suite Execution & Verification

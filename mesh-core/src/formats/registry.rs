@@ -67,7 +67,7 @@ impl FormatRegistry {
             "ply" => Ok(MeshFormat::Ply),
             "off" => Ok(MeshFormat::Off),
             "gltf" => Ok(MeshFormat::Gltf),
-            "glb" => Ok(MeshFormat::Gltf), // Binary glTF
+            "glb" => Ok(MeshFormat::Glb), // Binary glTF container
             "dxf" => Ok(MeshFormat::Dxf),
             "step" | "stp" => {
                 #[cfg(feature = "step")]
@@ -119,6 +119,63 @@ impl FormatRegistry {
         Self::detect_format(&ext)
     }
 
+    /// Best-effort signature detection from bytes.
+    ///
+    /// This is intentionally conservative: it only returns `Some` when a format has a
+    /// clear, low-cost signature. For other formats it returns `None`.
+    pub fn detect_from_bytes(data: &[u8]) -> Option<MeshFormat> {
+        let data = skip_ascii_whitespace(data);
+
+        // GLB starts with the "glTF" magic.
+        if data.len() >= 4 && &data[0..4] == b"glTF" {
+            return Some(MeshFormat::Glb);
+        }
+
+        // OFF family starts with an "OFF" token (e.g., OFF / COFF / NOFF / CNOFF / STOFF).
+        if let Some(token) = first_ascii_token(data) {
+            if token.len() >= 3
+                && token.len() <= 5
+                && token.iter().all(|b| b.is_ascii_alphabetic())
+                && token.ends_with(b"OFF")
+            {
+                return Some(MeshFormat::Off);
+            }
+        }
+
+        // PLY starts with "ply" (ASCII).
+        if data.len() >= 3 && data[0..3].eq_ignore_ascii_case(b"ply") {
+            return Some(MeshFormat::Ply);
+        }
+
+        // Text `.gltf` is JSON; we do a cheap heuristic check rather than a full parse here.
+        if looks_like_gltf_json(data) {
+            return Some(MeshFormat::Gltf);
+        }
+
+        None
+    }
+
+    /// Detect format using two-stage detection (extension + signature, when available).
+    ///
+    /// This mirrors the image pipeline: we always use the extension as the primary signal,
+    /// then (when feasible) verify the content signature to reduce spoofing risk.
+    pub fn detect_two_stage(path: &Path, data: &[u8]) -> Result<MeshFormat> {
+        // Stage 1: extension
+        let extension_format = Self::detect_from_path(path)?;
+
+        // Stage 2: signature (best-effort)
+        if let Some(signature_format) = Self::detect_from_bytes(data) {
+            if signature_format != extension_format {
+                return Err(ConversionError::InvalidFormat(format!(
+                    "Format mismatch: extension suggests {:?} but signature indicates {:?}",
+                    extension_format, signature_format
+                )));
+            }
+        }
+
+        Ok(extension_format)
+    }
+
     /// Get reader for a format
     ///
     /// Returns a boxed `MeshReader` trait object for the specified format.
@@ -151,6 +208,7 @@ impl FormatRegistry {
             MeshFormat::Ply => Ok(Box::new(PlyFormat::new())),
             MeshFormat::Off => Ok(Box::new(OffFormat::new())),
             MeshFormat::Gltf => Ok(Box::new(GltfFormat::new())),
+            MeshFormat::Glb => Ok(Box::new(GltfFormat::new())),
             MeshFormat::Dxf => Ok(Box::new(DxfFormat::new())),
             MeshFormat::Step => {
                 #[cfg(feature = "step")]
@@ -190,6 +248,7 @@ impl FormatRegistry {
             MeshFormat::Ply => Ok(Box::new(PlyFormat::with_limits(limits))),
             MeshFormat::Off => Ok(Box::new(OffFormat::with_limits(limits))),
             MeshFormat::Gltf => Ok(Box::new(GltfFormat::with_limits(limits))),
+            MeshFormat::Glb => Ok(Box::new(GltfFormat::with_limits(limits))),
             MeshFormat::Dxf => Ok(Box::new(DxfFormat::with_limits(limits))),
             MeshFormat::Step => {
                 #[cfg(feature = "step")]
@@ -241,6 +300,7 @@ impl FormatRegistry {
             MeshFormat::Ply => Ok(Box::new(PlyFormat::new())),
             MeshFormat::Off => Ok(Box::new(OffFormat::new())),
             MeshFormat::Gltf => Ok(Box::new(GltfFormat::new())),
+            MeshFormat::Glb => Ok(Box::new(GltfFormat::new_glb())),
             MeshFormat::Dxf => Ok(Box::new(DxfFormat::new())),
             MeshFormat::Step => {
                 #[cfg(feature = "step")]
@@ -266,13 +326,52 @@ pub enum MeshFormat {
     Ply,
     Off,
     Gltf,
+    Glb,
     Dxf,
     Step,
+}
+
+fn skip_ascii_whitespace(mut data: &[u8]) -> &[u8] {
+    while let Some((&b, rest)) = data.split_first() {
+        if b.is_ascii_whitespace() {
+            data = rest;
+        } else {
+            break;
+        }
+    }
+    data
+}
+
+fn first_ascii_token(data: &[u8]) -> Option<&[u8]> {
+    if data.is_empty() {
+        return None;
+    }
+    let end = data
+        .iter()
+        .position(|b| b.is_ascii_whitespace())
+        .unwrap_or(data.len());
+    Some(&data[..end])
+}
+
+fn looks_like_gltf_json(data: &[u8]) -> bool {
+    let data = skip_ascii_whitespace(data);
+    if data.first().copied() != Some(b'{') {
+        return false;
+    }
+
+    let scan_len = data.len().min(4096);
+    let Ok(prefix) = std::str::from_utf8(&data[..scan_len]) else {
+        return false;
+    };
+
+    // Cheap "shape" checks for glTF 2.0 JSON.
+    prefix.contains("\"asset\"") && prefix.contains("\"version\"") && prefix.contains("2.0")
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::mesh::{Face, Mesh, Vertex};
 
     #[test]
     fn test_detect_format_stl() {
@@ -397,8 +496,59 @@ mod tests {
         );
         assert_eq!(
             FormatRegistry::detect_format("glb").unwrap(),
-            MeshFormat::Gltf
+            MeshFormat::Glb
         );
+    }
+
+    fn create_test_triangle() -> Mesh {
+        let mut mesh = Mesh::new();
+        mesh.vertices.push(Vertex {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+        });
+        mesh.vertices.push(Vertex {
+            x: 1.0,
+            y: 0.0,
+            z: 0.0,
+        });
+        mesh.vertices.push(Vertex {
+            x: 0.5,
+            y: 1.0,
+            z: 0.0,
+        });
+        mesh.faces.push(Face { indices: [0, 1, 2] });
+        mesh
+    }
+
+    #[test]
+    fn test_detect_two_stage_glb_matches() {
+        let mesh = create_test_triangle();
+        let glb = GltfFormat::new_glb().write(&mesh).unwrap();
+        let detected = FormatRegistry::detect_two_stage(Path::new("mesh.glb"), &glb).unwrap();
+        assert_eq!(detected, MeshFormat::Glb);
+    }
+
+    #[test]
+    fn test_detect_two_stage_glb_mismatch_gltf() {
+        let mesh = create_test_triangle();
+        let gltf = GltfFormat::new().write(&mesh).unwrap();
+        let result = FormatRegistry::detect_two_stage(Path::new("mesh.glb"), &gltf);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_detect_two_stage_off_mismatch_ply() {
+        let ply_data = b"ply\nformat ascii 1.0\nend_header\n";
+        let result = FormatRegistry::detect_two_stage(Path::new("mesh.off"), ply_data);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_detect_two_stage_ply_mismatch_off() {
+        let off_data = b"OFF\n0 0 0\n";
+        let result = FormatRegistry::detect_two_stage(Path::new("mesh.ply"), off_data);
+        assert!(result.is_err());
     }
 
     #[test]

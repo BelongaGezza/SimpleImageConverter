@@ -681,6 +681,17 @@ impl eframe::App for ConverterApp {
                     {
                         if let Some(file_path) = rfd::FileDialog::new()
                             .add_filter(
+                                "Supported Files",
+                                &[
+                                    // Images
+                                    "png", "jpg", "jpeg", "bmp", "gif", "tiff", "tif", "webp",
+                                    "svg",
+                                    // Meshes
+                                    "stl", "obj", "ply", "off", "gltf", "glb", "dxf", "step",
+                                    "stp",
+                                ],
+                            )
+                            .add_filter(
                                 "Image Files",
                                 &["png", "jpg", "jpeg", "bmp", "gif", "tiff", "tif", "webp", "svg"],
                             )
@@ -935,7 +946,7 @@ impl eframe::App for ConverterApp {
                                                         let limits = ResourceLimits::default();
                                                         match std::fs::read(source_file) {
                                                             Ok(input_data) => {
-                                                                match mesh_core::FormatRegistry::detect_from_path(source_file) {
+                                                                match mesh_core::FormatRegistry::detect_two_stage(source_file, &input_data) {
                                                                     Ok(format) => {
                                                                         let mesh_limits = ResourceLimits::builder()
                                                                             .max_file_size(limits.max_file_size)
@@ -2047,6 +2058,15 @@ impl ConverterApp {
         if cmd_or_ctrl && ctx.input(|i| i.key_pressed(egui::Key::O)) {
             if let Some(file_path) = rfd::FileDialog::new()
                 .add_filter(
+                    "Supported Files",
+                    &[
+                        // Images
+                        "png", "jpg", "jpeg", "bmp", "gif", "tiff", "tif", "webp", "svg",
+                        // Meshes
+                        "stl", "obj", "ply", "off", "gltf", "glb", "dxf", "step", "stp",
+                    ],
+                )
+                .add_filter(
                     "Image Files",
                     &[
                         "png", "jpg", "jpeg", "bmp", "gif", "tiff", "tif", "webp", "svg",
@@ -2086,6 +2106,15 @@ impl ConverterApp {
         // Respect "Select All" when the user is typing in a text field.
         if cmd_or_ctrl && ctx.input(|i| i.key_pressed(egui::Key::A)) && !wants_keyboard_input {
             let mut dialog = rfd::FileDialog::new()
+                .add_filter(
+                    "Supported Files",
+                    &[
+                        // Images
+                        "png", "jpg", "jpeg", "bmp", "gif", "tiff", "tif", "webp", "svg",
+                        // Meshes
+                        "stl", "obj", "ply", "off", "gltf", "glb", "dxf", "step", "stp",
+                    ],
+                )
                 .add_filter(
                     "Image Files",
                     &[

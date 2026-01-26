@@ -936,7 +936,7 @@ _Add any issues or observations here_
 ## Cross-Platform Testing Notes
 
 ### Windows 11 Testing
-**Status:** [x] Not Tested / [ ] In Progress / [x] Complete
+**Status:** [ ] Not Tested / [ ] In Progress / [x] Complete
 
 **Platform-Specific Observations:**
 - [x] Keyboard shortcuts work (Ctrl modifiers)
@@ -1045,16 +1045,15 @@ _List any high priority issues_
    3. Check filter dropdown
    **Expected:** File dialog should show "Mesh Files" filter with extensions (.stl, .obj, .ply, etc.)  
    **Actual:** File dialog may not be displaying mesh file filters correctly  
-   **Status:** [x] Open / [ ] Fixed / [ ] Deferred
+   **Status:** [ ] Open / [x] Fixed / [ ] Deferred
    
    **Technical Details:**
    - ✅ Verified: Code includes mesh file filters: `["stl", "obj", "ply", "off", "gltf", "glb", "dxf", "step", "stp"]`
    - ✅ Verified: Filters are added in `drop_zone.rs` and `app.rs` for Ctrl+O handler
    - ✅ Verified: Filters are also in batch queue file dialog
-   - ⚠️ **Investigation:** Filters are correctly implemented in code
-   - ⚠️ **Possible Issue:** Windows file dialog may not be displaying filter dropdown correctly
-   - **Action Required:** User verification needed - check if filter dropdown shows "Mesh Files" option
-   - **Note:** If filters don't appear, this may be a Windows/rfd library display issue, not a code issue
+   - ✅ **Mitigation Implemented:** Added a first filter named **"Supported Files"** (images + meshes) so mesh files are visible by default even if the Windows filter dropdown is not shown/used.
+   - ⚠️ **Note:** If the filter dropdown still does not list "Mesh Files", this may be Windows/rfd UI behavior. The "Supported Files" default should make this non-blocking.
+   - **Action Required:** Quick manual re-test on Windows 11: confirm mesh files are visible by default and selectable via Ctrl+O / File → Open.
 
 ---
 
@@ -1176,10 +1175,10 @@ _List any low priority issues or suggestions_
 - All implementations verified in code
 - All features present and correctly implemented
 
-**Manual Testing:** ⏳ **0% COMPLETE** - Checklist Ready
-- Comprehensive testing checklist created
-- Ready for manual execution on Windows 11
-- Cross-platform testing (macOS/Linux) if available
+**Manual Testing:** 🟡 **PARTIAL** - Execution in progress, sign-off pending
+- Checklist created and partially executed (see individual test case statuses)
+- Re-test required for impacted fixes (notably Edit Queue Item output format selection + Escape behavior)
+- Cross-platform coverage still incomplete (macOS/Linux as available)
 
 **Test Coverage:**
 - Keyboard Shortcuts: ✅ Code Verified / ⏳ Manual Testing Required

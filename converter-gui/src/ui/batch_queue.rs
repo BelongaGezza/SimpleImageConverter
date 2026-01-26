@@ -48,6 +48,15 @@ pub fn render_batch_queue(ui: &mut Ui, app: &mut ConverterApp) {
             // Open multi-file selection dialog
             let mut dialog = rfd::FileDialog::new()
                 .add_filter(
+                    "Supported Files",
+                    &[
+                        // Images
+                        "png", "jpg", "jpeg", "bmp", "gif", "tiff", "tif", "webp", "svg",
+                        // Meshes
+                        "stl", "obj", "ply", "off", "gltf", "glb", "dxf", "step", "stp",
+                    ],
+                )
+                .add_filter(
                     "Image Files",
                     &[
                         "png", "jpg", "jpeg", "bmp", "gif", "tiff", "tif", "webp", "svg",

@@ -8,8 +8,12 @@
 
 use crate::ui::mode_switch::ProcessingMode;
 use common::limits::ResourceLimits;
-use converter_gui::app::{FileType, InputFormat, MessageType, OutputFormat, QueueItemEditDraft, Status};
-use converter_gui::batch_queue::{BatchItem, BatchItemOptions, BatchItemStatus, BatchQueue, MeshOptions};
+use converter_gui::app::{
+    FileType, InputFormat, MessageType, OutputFormat, QueueItemEditDraft, Status,
+};
+use converter_gui::batch_queue::{
+    BatchItem, BatchItemOptions, BatchItemStatus, BatchQueue, MeshOptions,
+};
 use converter_gui::history::{ConversionEntry, ConversionHistory};
 use converter_gui::ui::preview::PreviewCache;
 use egui::{RichText, Ui};
@@ -261,7 +265,8 @@ impl ModernApp {
 
         // Input format detection (security: image uses two-stage).
         match ft {
-            FileType::Image => match img_core::FormatRegistry::detect_two_stage(&path, &file_bytes) {
+            FileType::Image => match img_core::FormatRegistry::detect_two_stage(&path, &file_bytes)
+            {
                 Ok(fmt) => {
                     self.input_format = Some(InputFormat::Image(fmt));
                     self.add_message(format!("Image file detected: {fmt:?}"), MessageType::Info);
@@ -298,7 +303,9 @@ impl ModernApp {
             if let Some(out) = default_out {
                 self.output_format = Some(out);
                 let ext = match out {
-                    OutputFormat::Image(fmt) => converter_gui::format_helpers::get_format_extension(fmt),
+                    OutputFormat::Image(fmt) => {
+                        converter_gui::format_helpers::get_format_extension(fmt)
+                    }
                     OutputFormat::Mesh(fmt) => {
                         converter_gui::format_helpers::get_mesh_format_extension(fmt)
                     }
@@ -410,7 +417,9 @@ impl ModernApp {
             }
             Ok(Err(err)) => {
                 self.single_result_rx = None;
-                self.status = Status::Error { message: err.clone() };
+                self.status = Status::Error {
+                    message: err.clone(),
+                };
                 self.add_message(err, MessageType::Error);
 
                 if self.settings.conversion_history_enabled {
@@ -461,7 +470,9 @@ impl ModernApp {
             return;
         };
         let snapshot = {
-            let guard = shared.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+            let guard = shared
+                .lock()
+                .unwrap_or_else(|poisoned| poisoned.into_inner());
             guard.clone()
         };
         self.batch_queue = snapshot.clone();
@@ -475,7 +486,8 @@ impl ModernApp {
                 }
                 match &item.status {
                     BatchItemStatus::Completed { output_path } => {
-                        let input_fmt = detect_input_format_string(item.file_type, &item.source_path);
+                        let input_fmt =
+                            detect_input_format_string(item.file_type, &item.source_path);
                         let out_fmt = format!("{:?}", item.output_format);
                         self.history.add_entry(ConversionEntry::new(
                             item.source_path.clone(),
@@ -488,7 +500,8 @@ impl ModernApp {
                         self.recorded_batch_history_ids.insert(item.id);
                     }
                     BatchItemStatus::Failed { error } => {
-                        let input_fmt = detect_input_format_string(item.file_type, &item.source_path);
+                        let input_fmt =
+                            detect_input_format_string(item.file_type, &item.source_path);
                         let out_fmt = format!("{:?}", item.output_format);
                         self.history.add_entry(ConversionEntry::new(
                             item.source_path.clone(),
@@ -590,8 +603,7 @@ impl ModernApp {
                             }
                             // Mark processing + snapshot item.
                             let item_snapshot = {
-                                let mut guard =
-                                    queue.lock().unwrap_or_else(|p| p.into_inner());
+                                let mut guard = queue.lock().unwrap_or_else(|p| p.into_inner());
                                 if !guard.mark_processing(id) {
                                     return;
                                 }
@@ -711,7 +723,9 @@ impl ModernApp {
                 .and_then(|s| s.to_str())
                 .unwrap_or("output");
             let ext = match output_format {
-                OutputFormat::Image(fmt) => converter_gui::format_helpers::get_format_extension(fmt),
+                OutputFormat::Image(fmt) => {
+                    converter_gui::format_helpers::get_format_extension(fmt)
+                }
                 OutputFormat::Mesh(fmt) => {
                     converter_gui::format_helpers::get_mesh_format_extension(fmt)
                 }
@@ -981,14 +995,11 @@ impl eframe::App for ModernApp {
                         ui.add_space(12.0);
                         ui.separator();
                         ui.add_space(8.0);
-                        ui.with_layout(
-                            egui::Layout::right_to_left(egui::Align::Center),
-                            |ui| {
-                                if ui.button("Close").clicked() {
-                                    self.settings_pane = SettingsPane::None;
-                                }
-                            },
-                        );
+                        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                            if ui.button("Close").clicked() {
+                                self.settings_pane = SettingsPane::None;
+                            }
+                        });
                     });
             }
             SettingsPane::About => {
@@ -1003,14 +1014,11 @@ impl eframe::App for ModernApp {
                         ui.add_space(12.0);
                         ui.separator();
                         ui.add_space(8.0);
-                        ui.with_layout(
-                            egui::Layout::right_to_left(egui::Align::Center),
-                            |ui| {
-                                if ui.button("Close").clicked() {
-                                    self.settings_pane = SettingsPane::None;
-                                }
-                            },
-                        );
+                        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                            if ui.button("Close").clicked() {
+                                self.settings_pane = SettingsPane::None;
+                            }
+                        });
                     });
             }
         }
@@ -1037,15 +1045,23 @@ fn render_single_mode(ui: &mut Ui, app: &mut ModernApp, _ctx: &egui::Context) {
         ui.add_space(8.0);
 
         let w = ui.available_width();
-        let h = if app.source_file.is_some() { 72.0 } else { 200.0 };
+        let h = if app.source_file.is_some() {
+            72.0
+        } else {
+            200.0
+        };
         let resp = ui.allocate_response(egui::vec2(w, h), egui::Sense::click());
 
         let rect = resp.rect;
         let palette = crate::ui::theme::Palette::default();
         let hovered_files = ui.ctx().input(|i| i.raw.hovered_files.clone());
-        let dropped_files = ui
-            .ctx()
-            .input(|i| i.raw.dropped_files.iter().filter_map(|f| f.path.clone()).collect::<Vec<_>>());
+        let dropped_files = ui.ctx().input(|i| {
+            i.raw
+                .dropped_files
+                .iter()
+                .filter_map(|f| f.path.clone())
+                .collect::<Vec<_>>()
+        });
 
         let is_drag_over = !hovered_files.is_empty()
             && ui
@@ -1060,8 +1076,7 @@ fn render_single_mode(ui: &mut Ui, app: &mut ModernApp, _ctx: &egui::Context) {
             ui.visuals().faint_bg_color
         };
 
-        ui.painter()
-            .rect_filled(rect, 12.0, bg);
+        ui.painter().rect_filled(rect, 12.0, bg);
         ui.painter().rect_stroke(
             rect,
             12.0,
@@ -1084,12 +1099,25 @@ fn render_single_mode(ui: &mut Ui, app: &mut ModernApp, _ctx: &egui::Context) {
         if resp.clicked() {
             if let Some(file_path) = rfd::FileDialog::new()
                 .add_filter(
+                    "Supported Files",
+                    &[
+                        // Images
+                        "png", "jpg", "jpeg", "bmp", "gif", "tiff", "tif", "webp", "svg",
+                        // Meshes
+                        "stl", "obj", "ply", "off", "gltf", "glb", "dxf", "step", "stp",
+                    ],
+                )
+                .add_filter(
                     "Image Files",
-                    &["png", "jpg", "jpeg", "bmp", "gif", "tiff", "tif", "webp", "svg"],
+                    &[
+                        "png", "jpg", "jpeg", "bmp", "gif", "tiff", "tif", "webp", "svg",
+                    ],
                 )
                 .add_filter(
                     "Mesh Files",
-                    &["stl", "obj", "ply", "off", "gltf", "glb", "dxf", "step", "stp"],
+                    &[
+                        "stl", "obj", "ply", "off", "gltf", "glb", "dxf", "step", "stp",
+                    ],
                 )
                 .add_filter("All Files", &["*"])
                 .pick_file()
@@ -1381,7 +1409,8 @@ fn render_batch_mode(ui: &mut Ui, app: &mut ModernApp, ctx: &egui::Context) {
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                 if ui.button("Reset defaults").clicked() {
                     app.batch_defaults = BatchDefaults::default();
-                    app.batch_defaults.output_directory = app.settings.default_output_directory.clone();
+                    app.batch_defaults.output_directory =
+                        app.settings.default_output_directory.clone();
                 }
             });
         });
@@ -1446,7 +1475,9 @@ fn render_batch_mode(ui: &mut Ui, app: &mut ModernApp, ctx: &egui::Context) {
         ui.add_space(8.0);
 
         ui.horizontal(|ui| {
-            ui.label(RichText::new(format!("Default quality: {}", app.batch_defaults.quality)).strong());
+            ui.label(
+                RichText::new(format!("Default quality: {}", app.batch_defaults.quality)).strong(),
+            );
             ui.add(egui::Slider::new(&mut app.batch_defaults.quality, 1..=100));
         });
 
@@ -1459,12 +1490,18 @@ fn render_batch_mode(ui: &mut Ui, app: &mut ModernApp, ctx: &egui::Context) {
                 ui.radio_value(&mut app.batch_defaults.mesh_transform, None, "None");
                 ui.radio_value(
                     &mut app.batch_defaults.mesh_transform,
-                    Some((mesh_core::CoordinateSystem::ZUp, mesh_core::CoordinateSystem::YUp)),
+                    Some((
+                        mesh_core::CoordinateSystem::ZUp,
+                        mesh_core::CoordinateSystem::YUp,
+                    )),
                     "Z-up → Y-up",
                 );
                 ui.radio_value(
                     &mut app.batch_defaults.mesh_transform,
-                    Some((mesh_core::CoordinateSystem::YUp, mesh_core::CoordinateSystem::ZUp)),
+                    Some((
+                        mesh_core::CoordinateSystem::YUp,
+                        mesh_core::CoordinateSystem::ZUp,
+                    )),
                     "Y-up → Z-up",
                 );
             });
@@ -1489,9 +1526,13 @@ fn render_batch_mode(ui: &mut Ui, app: &mut ModernApp, ctx: &egui::Context) {
         let palette = crate::ui::theme::Palette::default();
 
         let hovered_files = ui.ctx().input(|i| i.raw.hovered_files.clone());
-        let dropped_files = ui
-            .ctx()
-            .input(|i| i.raw.dropped_files.iter().filter_map(|f| f.path.clone()).collect::<Vec<_>>());
+        let dropped_files = ui.ctx().input(|i| {
+            i.raw
+                .dropped_files
+                .iter()
+                .filter_map(|f| f.path.clone())
+                .collect::<Vec<_>>()
+        });
         let is_drag_over = !hovered_files.is_empty()
             && ui
                 .ctx()
@@ -1526,12 +1567,25 @@ fn render_batch_mode(ui: &mut Ui, app: &mut ModernApp, ctx: &egui::Context) {
         if resp.clicked() {
             let mut dialog = rfd::FileDialog::new()
                 .add_filter(
+                    "Supported Files",
+                    &[
+                        // Images
+                        "png", "jpg", "jpeg", "bmp", "gif", "tiff", "tif", "webp", "svg",
+                        // Meshes
+                        "stl", "obj", "ply", "off", "gltf", "glb", "dxf", "step", "stp",
+                    ],
+                )
+                .add_filter(
                     "Image Files",
-                    &["png", "jpg", "jpeg", "bmp", "gif", "tiff", "tif", "webp", "svg"],
+                    &[
+                        "png", "jpg", "jpeg", "bmp", "gif", "tiff", "tif", "webp", "svg",
+                    ],
                 )
                 .add_filter(
                     "Mesh Files",
-                    &["stl", "obj", "ply", "off", "gltf", "glb", "dxf", "step", "stp"],
+                    &[
+                        "stl", "obj", "ply", "off", "gltf", "glb", "dxf", "step", "stp",
+                    ],
                 )
                 .add_filter("All Files", &["*"]);
 
@@ -1549,7 +1603,9 @@ fn render_batch_mode(ui: &mut Ui, app: &mut ModernApp, ctx: &egui::Context) {
         ui.allocate_ui_at_rect(rect.shrink(10.0), |ui| {
             ui.vertical_centered(|ui| {
                 ui.label(RichText::new("Add Files").size(22.0).strong());
-                ui.label(RichText::new("Click or drop a bunch of files here").color(palette.secondary));
+                ui.label(
+                    RichText::new("Click or drop a bunch of files here").color(palette.secondary),
+                );
             });
         });
 
@@ -1558,7 +1614,31 @@ fn render_batch_mode(ui: &mut Ui, app: &mut ModernApp, ctx: &egui::Context) {
         // Buttons
         ui.horizontal(|ui| {
             if ui.button("Add Files…").clicked() {
-                if let Some(files) = rfd::FileDialog::new().pick_files() {
+                if let Some(files) = rfd::FileDialog::new()
+                    .add_filter(
+                        "Supported Files",
+                        &[
+                            // Images
+                            "png", "jpg", "jpeg", "bmp", "gif", "tiff", "tif", "webp", "svg",
+                            // Meshes
+                            "stl", "obj", "ply", "off", "gltf", "glb", "dxf", "step", "stp",
+                        ],
+                    )
+                    .add_filter(
+                        "Image Files",
+                        &[
+                            "png", "jpg", "jpeg", "bmp", "gif", "tiff", "tif", "webp", "svg",
+                        ],
+                    )
+                    .add_filter(
+                        "Mesh Files",
+                        &[
+                            "stl", "obj", "ply", "off", "gltf", "glb", "dxf", "step", "stp",
+                        ],
+                    )
+                    .add_filter("All Files", &["*"])
+                    .pick_files()
+                {
                     app.add_files_to_batch(files);
                 }
             }
@@ -1627,75 +1707,92 @@ fn render_batch_mode(ui: &mut Ui, app: &mut ModernApp, ctx: &egui::Context) {
             return;
         }
 
-        egui::ScrollArea::vertical().max_height(520.0).show(ui, |ui| {
-            let mut to_remove: Vec<Uuid> = Vec::new();
-            for item in app.batch_queue.items.iter() {
-                let (icon, color) = match &item.status {
-                    BatchItemStatus::Pending => ("⏳", egui::Color32::GRAY),
-                    BatchItemStatus::Processing => ("⚙", crate::ui::theme::Palette::default().secondary),
-                    BatchItemStatus::Completed { .. } => ("✓", crate::ui::theme::Palette::default().success),
-                    BatchItemStatus::Failed { .. } => ("✗", crate::ui::theme::Palette::default().error),
-                    BatchItemStatus::Cancelled => ("⊘", egui::Color32::GRAY),
-                };
-
-                ui.group(|ui| {
-                    ui.horizontal(|ui| {
-                        ui.label(RichText::new(icon).color(color).size(18.0).strong());
-
-                        let filename = item
-                            .source_path
-                            .file_name()
-                            .and_then(|n| n.to_str())
-                            .unwrap_or("Unknown");
-                        ui.label(RichText::new(filename).strong());
-
-                        ui.label("→");
-                        ui.label(format!("{:?}", item.output_format));
-
-                        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                            let can_edit = matches!(item.status, BatchItemStatus::Pending);
-                            let can_remove = !matches!(item.status, BatchItemStatus::Processing);
-
-                            ui.add_enabled_ui(can_remove, |ui| {
-                                if ui.small_button("Remove").clicked() {
-                                    to_remove.push(item.id);
-                                }
-                            });
-
-                            ui.add_enabled_ui(can_edit, |ui| {
-                                if ui.small_button("Edit").clicked() {
-                                    app.editing_queue_item = Some(item.id);
-                                }
-                            });
-                        });
-                    });
-
-                    match &item.status {
-                        BatchItemStatus::Failed { error } => {
-                            ui.label(RichText::new(error).small().color(
-                                crate::ui::theme::Palette::default().error,
-                            ));
+        egui::ScrollArea::vertical()
+            .max_height(520.0)
+            .show(ui, |ui| {
+                let mut to_remove: Vec<Uuid> = Vec::new();
+                for item in app.batch_queue.items.iter() {
+                    let (icon, color) = match &item.status {
+                        BatchItemStatus::Pending => ("⏳", egui::Color32::GRAY),
+                        BatchItemStatus::Processing => {
+                            ("⚙", crate::ui::theme::Palette::default().secondary)
                         }
-                        BatchItemStatus::Completed { output_path } => {
-                            ui.label(
-                                RichText::new(format!("Output: {}", ModernApp::sanitize_path(output_path)))
+                        BatchItemStatus::Completed { .. } => {
+                            ("✓", crate::ui::theme::Palette::default().success)
+                        }
+                        BatchItemStatus::Failed { .. } => {
+                            ("✗", crate::ui::theme::Palette::default().error)
+                        }
+                        BatchItemStatus::Cancelled => ("⊘", egui::Color32::GRAY),
+                    };
+
+                    ui.group(|ui| {
+                        ui.horizontal(|ui| {
+                            ui.label(RichText::new(icon).color(color).size(18.0).strong());
+
+                            let filename = item
+                                .source_path
+                                .file_name()
+                                .and_then(|n| n.to_str())
+                                .unwrap_or("Unknown");
+                            ui.label(RichText::new(filename).strong());
+
+                            ui.label("→");
+                            ui.label(format!("{:?}", item.output_format));
+
+                            ui.with_layout(
+                                egui::Layout::right_to_left(egui::Align::Center),
+                                |ui| {
+                                    let can_edit = matches!(item.status, BatchItemStatus::Pending);
+                                    let can_remove =
+                                        !matches!(item.status, BatchItemStatus::Processing);
+
+                                    ui.add_enabled_ui(can_remove, |ui| {
+                                        if ui.small_button("Remove").clicked() {
+                                            to_remove.push(item.id);
+                                        }
+                                    });
+
+                                    ui.add_enabled_ui(can_edit, |ui| {
+                                        if ui.small_button("Edit").clicked() {
+                                            app.editing_queue_item = Some(item.id);
+                                        }
+                                    });
+                                },
+                            );
+                        });
+
+                        match &item.status {
+                            BatchItemStatus::Failed { error } => {
+                                ui.label(
+                                    RichText::new(error)
+                                        .small()
+                                        .color(crate::ui::theme::Palette::default().error),
+                                );
+                            }
+                            BatchItemStatus::Completed { output_path } => {
+                                ui.label(
+                                    RichText::new(format!(
+                                        "Output: {}",
+                                        ModernApp::sanitize_path(output_path)
+                                    ))
                                     .small()
                                     .color(egui::Color32::GRAY),
-                            );
+                                );
+                            }
+                            BatchItemStatus::Processing => {
+                                ui.add(egui::ProgressBar::new(item.progress).show_percentage());
+                            }
+                            _ => {}
                         }
-                        BatchItemStatus::Processing => {
-                            ui.add(egui::ProgressBar::new(item.progress).show_percentage());
-                        }
-                        _ => {}
-                    }
-                });
-                ui.add_space(8.0);
-            }
+                    });
+                    ui.add_space(8.0);
+                }
 
-            for id in to_remove {
-                app.batch_queue.remove_item(id);
-            }
-        });
+                for id in to_remove {
+                    app.batch_queue.remove_item(id);
+                }
+            });
     });
 
     ui.add_space(14.0);
@@ -1739,56 +1836,59 @@ fn render_history_panel(ui: &mut Ui, app: &mut ModernApp) {
 
             ui.add_space(10.0);
 
-            egui::ScrollArea::vertical().max_height(360.0).show(ui, |ui| {
-                for (idx, entry) in app.history.entries.iter().enumerate() {
-                    ui.group(|ui| {
-                        ui.horizontal(|ui| {
-                            let color = if entry.success {
-                                crate::ui::theme::Palette::default().success
-                            } else {
-                                crate::ui::theme::Palette::default().error
-                            };
-                            ui.label(
-                                RichText::new(if entry.success { "✓" } else { "✗" })
-                                    .color(color)
-                                    .strong(),
-                            );
-                            ui.label(RichText::new(entry.source_filename()).strong());
-                            ui.label("→");
-                            ui.label(RichText::new(entry.output_format.clone()).small());
-
-                            ui.with_layout(
-                                egui::Layout::right_to_left(egui::Align::Center),
-                                |ui| {
-                                    if ui.small_button("Remove").clicked() {
-                                        remove_indices.push(idx);
-                                    }
-                                    if entry.success && ui.small_button("Open Output").clicked() {
-                                        open_path = Some(entry.output_path.clone());
-                                    }
-                                },
-                            );
-                        });
-
-                        ui.label(
-                            RichText::new(entry.formatted_timestamp())
-                                .small()
-                                .color(egui::Color32::GRAY),
-                        );
-
-                        if !entry.success {
-                            if let Some(ref err) = entry.error {
+            egui::ScrollArea::vertical()
+                .max_height(360.0)
+                .show(ui, |ui| {
+                    for (idx, entry) in app.history.entries.iter().enumerate() {
+                        ui.group(|ui| {
+                            ui.horizontal(|ui| {
+                                let color = if entry.success {
+                                    crate::ui::theme::Palette::default().success
+                                } else {
+                                    crate::ui::theme::Palette::default().error
+                                };
                                 ui.label(
-                                    RichText::new(err)
-                                        .small()
-                                        .color(crate::ui::theme::Palette::default().error),
+                                    RichText::new(if entry.success { "✓" } else { "✗" })
+                                        .color(color)
+                                        .strong(),
                                 );
+                                ui.label(RichText::new(entry.source_filename()).strong());
+                                ui.label("→");
+                                ui.label(RichText::new(entry.output_format.clone()).small());
+
+                                ui.with_layout(
+                                    egui::Layout::right_to_left(egui::Align::Center),
+                                    |ui| {
+                                        if ui.small_button("Remove").clicked() {
+                                            remove_indices.push(idx);
+                                        }
+                                        if entry.success && ui.small_button("Open Output").clicked()
+                                        {
+                                            open_path = Some(entry.output_path.clone());
+                                        }
+                                    },
+                                );
+                            });
+
+                            ui.label(
+                                RichText::new(entry.formatted_timestamp())
+                                    .small()
+                                    .color(egui::Color32::GRAY),
+                            );
+
+                            if !entry.success {
+                                if let Some(ref err) = entry.error {
+                                    ui.label(
+                                        RichText::new(err)
+                                            .small()
+                                            .color(crate::ui::theme::Palette::default().error),
+                                    );
+                                }
                             }
-                        }
-                    });
-                    ui.add_space(6.0);
-                }
-            });
+                        });
+                        ui.add_space(6.0);
+                    }
+                });
 
             // Apply removals after render (reverse order).
             for idx in remove_indices.into_iter().rev() {
@@ -1813,8 +1913,12 @@ fn render_history_panel(ui: &mut Ui, app: &mut ModernApp) {
 fn update_path_extension_for_format(path_str: &str, fmt: OutputFormat) -> String {
     let mut path = PathBuf::from(path_str);
     let ext = match fmt {
-        OutputFormat::Image(img_fmt) => converter_gui::format_helpers::get_format_extension(img_fmt),
-        OutputFormat::Mesh(mesh_fmt) => converter_gui::format_helpers::get_mesh_format_extension(mesh_fmt),
+        OutputFormat::Image(img_fmt) => {
+            converter_gui::format_helpers::get_format_extension(img_fmt)
+        }
+        OutputFormat::Mesh(mesh_fmt) => {
+            converter_gui::format_helpers::get_mesh_format_extension(mesh_fmt)
+        }
     };
     path.set_extension(ext);
     path.to_string_lossy().to_string()
@@ -1857,13 +1961,15 @@ fn render_edit_queue_item(ui: &mut Ui, app: &mut ModernApp, id: Uuid) {
 
     ui.horizontal(|ui| {
         ui.label("Source");
-        ui.label(RichText::new(
-            item.source_path
-                .file_name()
-                .and_then(|n| n.to_str())
-                .unwrap_or("Unknown"),
-        )
-        .strong());
+        ui.label(
+            RichText::new(
+                item.source_path
+                    .file_name()
+                    .and_then(|n| n.to_str())
+                    .unwrap_or("Unknown"),
+            )
+            .strong(),
+        );
     });
 
     ui.add_space(8.0);
@@ -1989,8 +2095,7 @@ fn render_edit_queue_item(ui: &mut Ui, app: &mut ModernApp, id: Uuid) {
             app.batch_queue.update_item_format(id, draft.output_format);
         }
         if output_path != item.output_path {
-            app.batch_queue
-                .update_item_output_path(id, output_path);
+            app.batch_queue.update_item_output_path(id, output_path);
         }
 
         if draft.quality != item.options.quality
@@ -2016,9 +2121,11 @@ fn render_edit_queue_item(ui: &mut Ui, app: &mut ModernApp, id: Uuid) {
 }
 
 fn render_preferences(ui: &mut Ui, app: &mut ModernApp) {
-    ui.label(RichText::new("These settings are shared with the classic GUI.").small().color(
-        egui::Color32::GRAY,
-    ));
+    ui.label(
+        RichText::new("These settings are shared with the classic GUI.")
+            .small()
+            .color(egui::Color32::GRAY),
+    );
     ui.add_space(10.0);
 
     ui.group(|ui| {
@@ -2039,7 +2146,8 @@ fn render_preferences(ui: &mut Ui, app: &mut ModernApp) {
                     if common::validation::validate_directory_path(&dir).is_ok() {
                         app.settings.default_output_directory = Some(dir.clone());
                         app.output_directory = dir;
-                        app.batch_defaults.output_directory = app.settings.default_output_directory.clone();
+                        app.batch_defaults.output_directory =
+                            app.settings.default_output_directory.clone();
                         let _ = app.settings.save();
                         app.add_message("Settings saved", MessageType::Success);
                     } else {
@@ -2111,7 +2219,10 @@ fn render_preferences(ui: &mut Ui, app: &mut ModernApp) {
 
         ui.horizontal(|ui| {
             ui.label("Max concurrent conversions");
-            let mut val = app.settings.max_concurrent_conversions.unwrap_or(app.max_concurrent());
+            let mut val = app
+                .settings
+                .max_concurrent_conversions
+                .unwrap_or(app.max_concurrent());
             let resp = ui.add(egui::Slider::new(&mut val, 1..=16));
             if resp.changed() {
                 app.settings.max_concurrent_conversions = Some(val);
@@ -2136,7 +2247,9 @@ fn render_help(ui: &mut Ui) {
     ui.label("Single mode: pick a file, choose output format, convert.");
     ui.label("Batch mode: set defaults, add files, then Process Queue.");
     ui.add_space(10.0);
-    ui.label(RichText::new("Tip: In Batch mode, defaults apply only to newly-added files.").strong());
+    ui.label(
+        RichText::new("Tip: In Batch mode, defaults apply only to newly-added files.").strong(),
+    );
 }
 
 fn render_about(ui: &mut Ui) {
@@ -2152,4 +2265,3 @@ fn render_about(ui: &mut Ui) {
         "https://github.com/BelongaGezza/SimpleImageConverter",
     );
 }
-

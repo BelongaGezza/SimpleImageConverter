@@ -99,6 +99,15 @@ pub fn render_drop_zone(ui: &mut Ui, app: &mut ConverterApp) {
         // Open file browser
         if let Some(file_path) = rfd::FileDialog::new()
             .add_filter(
+                "Supported Files",
+                &[
+                    // Images
+                    "png", "jpg", "jpeg", "bmp", "gif", "tiff", "tif", "webp", "svg",
+                    // Meshes
+                    "stl", "obj", "ply", "off", "gltf", "glb", "dxf", "step", "stp",
+                ],
+            )
+            .add_filter(
                 "Image Files",
                 &[
                     "png", "jpg", "jpeg", "bmp", "gif", "tiff", "tif", "webp", "svg",
@@ -153,6 +162,15 @@ pub fn render_drop_zone(ui: &mut Ui, app: &mut ConverterApp) {
                     .clicked()
                 {
                     if let Some(file_path) = rfd::FileDialog::new()
+                        .add_filter(
+                            "Supported Files",
+                            &[
+                                // Images
+                                "png", "jpg", "jpeg", "bmp", "gif", "tiff", "tif", "webp", "svg",
+                                // Meshes
+                                "stl", "obj", "ply", "off", "gltf", "glb", "dxf", "step", "stp",
+                            ],
+                        )
                         .add_filter(
                             "Image Files",
                             &[

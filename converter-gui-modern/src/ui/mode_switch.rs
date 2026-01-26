@@ -33,15 +33,17 @@ pub fn render_mode_switch(ui: &mut Ui, mode: &mut ProcessingMode) {
         let stroke = ui.visuals().widgets.inactive.bg_stroke;
 
         let button = |ui: &mut Ui, label: &str, selected: bool| -> bool {
-            let mut b = egui::Button::new(
-                RichText::new(label)
-                    .strong()
-                    .color(if selected { Color32::WHITE } else { ui.visuals().text_color() }),
-            )
+            let mut b = egui::Button::new(RichText::new(label).strong().color(if selected {
+                Color32::WHITE
+            } else {
+                ui.visuals().text_color()
+            }))
             .min_size(egui::vec2(150.0, desired_height));
 
             if selected {
-                b = b.fill(selected_bg).stroke(egui::Stroke::new(1.5, stroke.color));
+                b = b
+                    .fill(selected_bg)
+                    .stroke(egui::Stroke::new(1.5, stroke.color));
             } else {
                 b = b.fill(inactive_bg).stroke(stroke);
             }
@@ -64,4 +66,3 @@ pub fn render_mode_switch(ui: &mut Ui, mode: &mut ProcessingMode) {
         }
     });
 }
-

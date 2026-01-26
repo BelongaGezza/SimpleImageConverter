@@ -2,15 +2,15 @@
 ## Living Knowledge Base for Simple Image Converter
 
 **Maintained By:** Researcher (Dr. Taylor Kim)  
-**Last Updated:** December 2025  
+**Last Updated:** January 26, 2026  
 **Update Frequency:** Weekly + as needed  
 **Purpose:** Track Rust ecosystem changes, library updates, and project learnings
 
 **⚠️ IMPORTANT:** All team members must consult this document before implementing features or making decisions.
 
-### Quick Status Summary (as of Dec 30, 2025)
+### Quick Status Summary (as of Jan 26, 2026)
 
-**Current Project Phase:** Sprint 8 (v0.2.1 Release & v0.2.2 Development Start)
+**Current Project Phase:** Sprint 12_A (v1.0.0 Final Release Preparation)
 
 **Technology Audit Completed:** December 27, 2025
 - See `TECHNOLOGY_AUDIT_REPORT.md` for full details
@@ -37,7 +37,7 @@
 - ✅ `serde_json` v1.0 - JSON support
 - ✅ `log` v0.4 - Logging
 - ✅ `image` v0.25 - Image processing (latest: 0.25.8)
-- ⚠️ `resvg` v0.40 - SVG rendering (latest: **0.45.1** - update recommended)
+- ✅ `resvg` v0.45 - SVG rendering (current: 0.45.1)
 - ✅ `tiny-skia` v0.11 - 2D rendering (latest: 0.11.4)
 
 **GUI Dependencies (Sprint 7):**
@@ -78,6 +78,8 @@
 | 2025-12-30 | **SPRINT 8** | Performance optimization opportunities documented - sequential batch processing for v0.2.2 | Researcher |
 | 2025-12-30 | **SPRINT 8** | egui/eframe monitoring updated - 0.27.2 stable, 0.33.3 available (upgrade planned for v0.3.0) | Researcher |
 | 2025-12-30 | **SPRINT 10** | opencascade-rs documentation verified and compiled (Task 1.1 support) - OCCT installation guide complete, limitations documented, STEP reference updated | Researcher |
+| 2026-01-26 | Updates | Upgraded resvg 0.40→0.45 (usvg API: `Tree::from_data(data, &Options)`; fonts via `Options::fontdb_mut()`) | Junior Engineer (2D Formats) |
+| 2026-01-26 | Updates | Documented stl_io 0.7→0.10 upgrade approach: no GitHub Releases notes; rely on docs.rs comparison + compile + regression tests. | Researcher |
 
 ---
 
@@ -176,32 +178,29 @@ if image.color() == ColorType::Rgba8 {
 }
 ```
 
-#### resvg (v0.40) - SVG Rasterization - ⚠️ UPDATE AVAILABLE
-**License:** MPL-2.0
-**Status:** ⚠️ **5 versions behind** - Latest is 0.45.1
+#### resvg (v0.45) - SVG Rasterization
+**License:** MIT OR Apache-2.0 (note: resvg upstream changed from MPL-2.0 in v0.45.0)
+**Status:** ✅ Current (workspace uses 0.45.1)
 **Current Usage:** Active in img-core
 
-**Update Recommended:**
-```toml
-# In workspace Cargo.toml
-# Update: resvg = "0.40"
-# To:
-resvg = "0.45"
-```
-
-**Note:** Test SVG rendering thoroughly after upgrade - 5 minor versions may include API changes.
+**API Note (0.45+):**
+- `usvg::Tree::from_data` now takes only `(&[u8], &Options)`
+- Load system fonts via `Options::fontdb_mut()` (fontdb is stored inside `Options`)
+  - See upstream changelog: [linebender/resvg CHANGELOG](https://raw.githubusercontent.com/linebender/resvg/main/CHANGELOG.md)
 
 **Key APIs:**
 ```rust
-use resvg::usvg::{Tree, Options};
+use resvg::usvg::{Options, Tree};
 use resvg::tiny_skia::Pixmap;
 
-// Parse SVG
-let tree = Tree::from_data(svg_data, &Options::default())?;
+let mut opt = Options::default();
+opt.fontdb_mut().load_system_fonts();
 
-// Render to pixmap
-let pixmap = Pixmap::new(width, height)?;
-resvg::render(&tree, Transform::default(), &mut pixmap.as_mut());
+let tree = Tree::from_data(svg_data, &opt)?;
+
+let mut pixmap = Pixmap::new(width, height).unwrap();
+let mut pixmap_mut = pixmap.as_mut();
+resvg::render(&tree, resvg::usvg::Transform::default(), &mut pixmap_mut);
 ```
 
 **Gotchas:**
@@ -241,7 +240,13 @@ resvg::render(&tree, Transform::default(), &mut pixmap.as_mut());
 stl_io = "0.10"
 ```
 
-**Note:** Review [stl_io changelog](https://github.com/hmeyer/stl_io) for breaking changes between 0.7 and 0.10.
+**Notes (0.7 → 0.10):**
+- The upstream repo does **not** publish GitHub Releases notes; treat this as a “read docs + compile + test” upgrade.
+- The high-level API (`read_stl`, `create_stl_reader`, `write_stl`, `IndexedMesh`) appears stable between docs.rs `0.7.0` and `0.10.0`, but semver is still 0.x so breaking changes are possible.
+- References:
+  - [docs.rs `stl_io` 0.7.0](https://docs.rs/stl_io/0.7.0/stl_io/)
+  - [docs.rs `stl_io` 0.10.0](https://docs.rs/stl_io/0.10.0/stl_io/)
+  - Source: [hmeyer/stl_io](https://github.com/hmeyer/stl_io)
 
 **Key APIs:**
 ```rust
@@ -1547,10 +1552,10 @@ if img.color() == ColorType::Rgba8 {
 
 **Solution:**
 ```rust
-use resvg::usvg::fontdb::Database;
+use resvg::usvg::Options;
 
-let mut fontdb = Database::new();
-fontdb.load_system_fonts();
+let mut opt = Options::default();
+opt.fontdb_mut().load_system_fonts();
 ```
 
 ### 3D Mesh Processing

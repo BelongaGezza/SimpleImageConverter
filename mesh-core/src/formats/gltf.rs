@@ -5,11 +5,20 @@ use crate::formats::traits::{MeshReader, MeshWriter};
 use crate::mesh::{Face, Mesh, Normal, Vertex};
 use common::error::{ConversionError, Result};
 use common::limits::ResourceLimits;
-use std::io::Write;
+use serde_json::json;
+
+#[derive(Debug, Clone, Copy)]
+enum GltfContainer {
+    /// JSON `.gltf` with embedded base64 buffer.
+    Gltf,
+    /// Binary `.glb` container.
+    Glb,
+}
 
 /// glTF format handler
 pub struct GltfFormat {
     limits: ResourceLimits,
+    container: GltfContainer,
 }
 
 impl GltfFormat {
@@ -17,12 +26,32 @@ impl GltfFormat {
     pub fn new() -> Self {
         Self {
             limits: ResourceLimits::default(),
+            container: GltfContainer::Gltf,
+        }
+    }
+
+    /// Create a new GLB writer (binary glTF) with default resource limits.
+    pub fn new_glb() -> Self {
+        Self {
+            limits: ResourceLimits::default(),
+            container: GltfContainer::Glb,
         }
     }
 
     /// Create a new glTF format handler with custom resource limits
     pub fn with_limits(limits: ResourceLimits) -> Self {
-        Self { limits }
+        Self {
+            limits,
+            container: GltfContainer::Gltf,
+        }
+    }
+
+    /// Create a new GLB writer (binary glTF) with custom resource limits.
+    pub fn with_limits_glb(limits: ResourceLimits) -> Self {
+        Self {
+            limits,
+            container: GltfContainer::Glb,
+        }
     }
 
     /// Parse binary glTF (.glb) format
@@ -224,108 +253,300 @@ impl MeshWriter for GltfFormat {
             }
         }
 
-        // Write text .gltf format (simpler than binary)
-        // This creates a minimal valid glTF file
-        let mut buffer = Vec::new();
-
-        writeln!(buffer, "{{").map_err(ConversionError::Io)?;
-        writeln!(buffer, "  \"asset\": {{").map_err(ConversionError::Io)?;
-        writeln!(buffer, "    \"version\": \"2.0\",").map_err(ConversionError::Io)?;
-        writeln!(buffer, "    \"generator\": \"Simple Image Converter\"")
-            .map_err(ConversionError::Io)?;
-        writeln!(buffer, "  }},").map_err(ConversionError::Io)?;
-
-        // Write accessors
-        writeln!(buffer, "  \"accessors\": [").map_err(ConversionError::Io)?;
-        writeln!(buffer, "    {{").map_err(ConversionError::Io)?;
-        writeln!(buffer, "      \"bufferView\": 0,").map_err(ConversionError::Io)?;
-        writeln!(buffer, "      \"componentType\": 5126,").map_err(ConversionError::Io)?;
-        writeln!(buffer, "      \"count\": {},", mesh.vertices.len())
-            .map_err(ConversionError::Io)?;
-        writeln!(buffer, "      \"type\": \"VEC3\",").map_err(ConversionError::Io)?;
-        writeln!(buffer, "      \"min\": [0.0, 0.0, 0.0],").map_err(ConversionError::Io)?;
-        writeln!(buffer, "      \"max\": [1.0, 1.0, 1.0]").map_err(ConversionError::Io)?;
-        writeln!(buffer, "    }},").map_err(ConversionError::Io)?;
-
-        // Indices accessor
-        let total_indices = mesh.faces.len() * 3;
-        writeln!(buffer, "    {{").map_err(ConversionError::Io)?;
-        writeln!(buffer, "      \"bufferView\": 1,").map_err(ConversionError::Io)?;
-        writeln!(buffer, "      \"componentType\": 5123,").map_err(ConversionError::Io)?;
-        writeln!(buffer, "      \"count\": {},", total_indices).map_err(ConversionError::Io)?;
-        writeln!(buffer, "      \"type\": \"SCALAR\"").map_err(ConversionError::Io)?;
-        writeln!(buffer, "    }}").map_err(ConversionError::Io)?;
-        writeln!(buffer, "  ],").map_err(ConversionError::Io)?;
-
-        // Write buffer views
-        let vertices_size = mesh.vertices.len() * 3 * 4; // 3 floats * 4 bytes each
-        let indices_size = total_indices * 2; // u16 indices * 2 bytes each
-        writeln!(buffer, "  \"bufferViews\": [").map_err(ConversionError::Io)?;
-        writeln!(buffer, "    {{").map_err(ConversionError::Io)?;
-        writeln!(buffer, "      \"buffer\": 0,").map_err(ConversionError::Io)?;
-        writeln!(buffer, "      \"byteOffset\": 0,").map_err(ConversionError::Io)?;
-        writeln!(buffer, "      \"byteLength\": {}", vertices_size).map_err(ConversionError::Io)?;
-        writeln!(buffer, "    }},").map_err(ConversionError::Io)?;
-        writeln!(buffer, "    {{").map_err(ConversionError::Io)?;
-        writeln!(buffer, "      \"buffer\": 0,").map_err(ConversionError::Io)?;
-        writeln!(buffer, "      \"byteOffset\": {},", vertices_size)
-            .map_err(ConversionError::Io)?;
-        writeln!(buffer, "      \"byteLength\": {}", indices_size).map_err(ConversionError::Io)?;
-        writeln!(buffer, "    }}").map_err(ConversionError::Io)?;
-        writeln!(buffer, "  ],").map_err(ConversionError::Io)?;
-
-        // Write buffers
-        let total_buffer_size = vertices_size + indices_size;
-        writeln!(buffer, "  \"buffers\": [").map_err(ConversionError::Io)?;
-        writeln!(buffer, "    {{").map_err(ConversionError::Io)?;
-        writeln!(
-            buffer,
-            "      \"uri\": \"data:application/octet-stream;base64,"
-        )
-        .map_err(ConversionError::Io)?;
-        // Note: In a real implementation, we'd base64 encode the binary data here
-        // For now, we'll write a placeholder
-        writeln!(buffer, "      \"byteLength\": {}", total_buffer_size)
-            .map_err(ConversionError::Io)?;
-        writeln!(buffer, "    }}").map_err(ConversionError::Io)?;
-        writeln!(buffer, "  ],").map_err(ConversionError::Io)?;
-
-        // Write meshes
-        writeln!(buffer, "  \"meshes\": [").map_err(ConversionError::Io)?;
-        writeln!(buffer, "    {{").map_err(ConversionError::Io)?;
-        writeln!(buffer, "      \"primitives\": [").map_err(ConversionError::Io)?;
-        writeln!(buffer, "        {{").map_err(ConversionError::Io)?;
-        writeln!(buffer, "          \"attributes\": {{").map_err(ConversionError::Io)?;
-        writeln!(buffer, "            \"POSITION\": 0").map_err(ConversionError::Io)?;
-        writeln!(buffer, "          }},").map_err(ConversionError::Io)?;
-        writeln!(buffer, "          \"indices\": 1").map_err(ConversionError::Io)?;
-        writeln!(buffer, "        }}").map_err(ConversionError::Io)?;
-        writeln!(buffer, "      ]").map_err(ConversionError::Io)?;
-        writeln!(buffer, "    }}").map_err(ConversionError::Io)?;
-        writeln!(buffer, "  ],").map_err(ConversionError::Io)?;
-
-        // Write scenes
-        writeln!(buffer, "  \"scenes\": [").map_err(ConversionError::Io)?;
-        writeln!(buffer, "    {{").map_err(ConversionError::Io)?;
-        writeln!(buffer, "      \"nodes\": [0]").map_err(ConversionError::Io)?;
-        writeln!(buffer, "    }}").map_err(ConversionError::Io)?;
-        writeln!(buffer, "  ],").map_err(ConversionError::Io)?;
-
-        // Write nodes
-        writeln!(buffer, "  \"nodes\": [").map_err(ConversionError::Io)?;
-        writeln!(buffer, "    {{").map_err(ConversionError::Io)?;
-        writeln!(buffer, "      \"mesh\": 0").map_err(ConversionError::Io)?;
-        writeln!(buffer, "    }}").map_err(ConversionError::Io)?;
-        writeln!(buffer, "  ]").map_err(ConversionError::Io)?;
-
-        writeln!(buffer, "}}").map_err(ConversionError::Io)?;
-
-        // Note: This creates a glTF JSON file but doesn't include the binary buffer data
-        // A complete implementation would need to base64-encode the binary data or use GLB format
-        // For now, this provides basic structure that can be extended
-
-        Ok(buffer)
+        match self.container {
+            GltfContainer::Gltf => self.write_gltf_embedded(mesh),
+            GltfContainer::Glb => self.write_glb(mesh),
+        }
     }
+}
+
+impl GltfFormat {
+    fn write_gltf_embedded(&self, mesh: &Mesh) -> Result<Vec<u8>> {
+        let (document, _buffer) = self.build_gltf_document(mesh, true)?;
+        let json_bytes = serde_json::to_vec(&document).map_err(|e| {
+            ConversionError::ConversionFailed(format!("Failed to serialize glTF JSON: {}", e))
+        })?;
+        Ok(json_bytes)
+    }
+
+    fn write_glb(&self, mesh: &Mesh) -> Result<Vec<u8>> {
+        let (document, buffer) = self.build_gltf_document(mesh, false)?;
+        let json_bytes = serde_json::to_vec(&document).map_err(|e| {
+            ConversionError::ConversionFailed(format!("Failed to serialize glTF JSON: {}", e))
+        })?;
+        Ok(build_glb(&json_bytes, &buffer))
+    }
+
+    /// Build a minimal glTF 2.0 document and its binary buffer.
+    ///
+    /// If `embed_buffer` is true, the returned document will include a data-URI buffer `uri`
+    /// for `.gltf` single-file export. Otherwise it will omit `uri` (for `.glb`).
+    fn build_gltf_document(&self, mesh: &Mesh, embed_buffer: bool) -> Result<(serde_json::Value, Vec<u8>)> {
+        let vertex_count = mesh.vertices.len();
+        let index_count = mesh.faces.len() * 3;
+
+        let max_index = mesh
+            .faces
+            .iter()
+            .flat_map(|f| f.indices)
+            .max()
+            .unwrap_or(0);
+
+        let use_u32_indices = max_index > (u16::MAX as usize);
+        let index_component_type = if use_u32_indices { 5125 } else { 5123 };
+        let index_component_size = if use_u32_indices { 4 } else { 2 };
+
+        // Build BIN buffer: positions (+ optional normals) + indices.
+        let mut bin = Vec::new();
+
+        let pos_offset = bin.len();
+        for v in &mesh.vertices {
+            bin.extend_from_slice(&v.x.to_le_bytes());
+            bin.extend_from_slice(&v.y.to_le_bytes());
+            bin.extend_from_slice(&v.z.to_le_bytes());
+        }
+        let pos_len = bin.len() - pos_offset;
+        align_to(&mut bin, 4, 0);
+
+        let include_normals = mesh.normals.len() == mesh.vertices.len();
+        let (norm_offset, norm_len, norm_view_idx, norm_accessor_idx) = if include_normals {
+            let o = bin.len();
+            for n in &mesh.normals {
+                bin.extend_from_slice(&n.x.to_le_bytes());
+                bin.extend_from_slice(&n.y.to_le_bytes());
+                bin.extend_from_slice(&n.z.to_le_bytes());
+            }
+            let l = bin.len() - o;
+            align_to(&mut bin, 4, 0);
+            (Some(o), Some(l), Some(1u32), Some(1u32))
+        } else {
+            (None, None, None, None)
+        };
+
+        // Indices
+        align_to(&mut bin, 4, 0);
+        let idx_offset = bin.len();
+        for face in &mesh.faces {
+            for &idx in &face.indices {
+                let idx_u32 = idx as u32;
+                if use_u32_indices {
+                    bin.extend_from_slice(&idx_u32.to_le_bytes());
+                } else {
+                    let idx_u16 = idx_u32 as u16;
+                    bin.extend_from_slice(&idx_u16.to_le_bytes());
+                }
+            }
+        }
+        let idx_len = bin.len() - idx_offset;
+        align_to(&mut bin, 4, 0);
+
+        let total_buffer_len = bin.len();
+
+        let (pos_min, pos_max) = position_min_max(&mesh.vertices);
+
+        let mut accessors = vec![
+            json!({
+                "bufferView": 0,
+                "byteOffset": 0,
+                "componentType": 5126,
+                "count": vertex_count,
+                "type": "VEC3",
+                "min": [pos_min[0], pos_min[1], pos_min[2]],
+                "max": [pos_max[0], pos_max[1], pos_max[2]],
+            }),
+        ];
+
+        let mut buffer_views = vec![
+            json!({
+                "buffer": 0,
+                "byteOffset": pos_offset,
+                "byteLength": pos_len,
+                "target": 34962,
+            }),
+        ];
+
+        let mut attributes = json!({
+            "POSITION": 0
+        });
+
+        if include_normals {
+            buffer_views.push(json!({
+                "buffer": 0,
+                "byteOffset": norm_offset.unwrap(),
+                "byteLength": norm_len.unwrap(),
+                "target": 34962,
+            }));
+            accessors.push(json!({
+                "bufferView": norm_view_idx.unwrap(),
+                "byteOffset": 0,
+                "componentType": 5126,
+                "count": vertex_count,
+                "type": "VEC3"
+            }));
+
+            if let Some(obj) = attributes.as_object_mut() {
+                obj.insert("NORMAL".to_string(), json!(norm_accessor_idx.unwrap()));
+            }
+        }
+
+        let indices_accessor_index = accessors.len() as u32;
+        accessors.push(json!({
+            "bufferView": buffer_views.len() as u32,
+            "byteOffset": 0,
+            "componentType": index_component_type,
+            "count": index_count,
+            "type": "SCALAR",
+            "min": [0],
+            "max": [max_index as u32],
+        }));
+
+        buffer_views.push(json!({
+            "buffer": 0,
+            "byteOffset": idx_offset,
+            "byteLength": idx_len,
+            "target": 34963,
+        }));
+
+        // Buffer (data-URI for `.gltf`, no uri for `.glb`)
+        let buffers = if embed_buffer {
+            let data_uri = format!(
+                "data:application/octet-stream;base64,{}",
+                base64_encode(&bin)
+            );
+            vec![json!({
+                "byteLength": total_buffer_len,
+                "uri": data_uri
+            })]
+        } else {
+            vec![json!({
+                "byteLength": total_buffer_len
+            })]
+        };
+
+        let document = json!({
+            "asset": {
+                "version": "2.0",
+                "generator": "Simple Image Converter"
+            },
+            "scene": 0,
+            "scenes": [{ "nodes": [0] }],
+            "nodes": [{ "mesh": 0 }],
+            "meshes": [{
+                "primitives": [{
+                    "attributes": attributes,
+                    "indices": indices_accessor_index,
+                    "mode": 4
+                }]
+            }],
+            "accessors": accessors,
+            "bufferViews": buffer_views,
+            "buffers": buffers,
+        });
+
+        // Basic sanity checks to avoid generating obviously invalid outputs.
+        if pos_len != vertex_count * 3 * 4 {
+            return Err(ConversionError::ConversionFailed(
+                "Internal error: unexpected position buffer length".to_string(),
+            ));
+        }
+        if idx_len != index_count * index_component_size {
+            return Err(ConversionError::ConversionFailed(
+                "Internal error: unexpected index buffer length".to_string(),
+            ));
+        }
+
+        Ok((document, bin))
+    }
+}
+
+fn position_min_max(vertices: &[Vertex]) -> ([f32; 3], [f32; 3]) {
+    let mut min = [f32::INFINITY, f32::INFINITY, f32::INFINITY];
+    let mut max = [f32::NEG_INFINITY, f32::NEG_INFINITY, f32::NEG_INFINITY];
+
+    for v in vertices {
+        min[0] = min[0].min(v.x);
+        min[1] = min[1].min(v.y);
+        min[2] = min[2].min(v.z);
+        max[0] = max[0].max(v.x);
+        max[1] = max[1].max(v.y);
+        max[2] = max[2].max(v.z);
+    }
+
+    (min, max)
+}
+
+fn align_to(buf: &mut Vec<u8>, align: usize, pad_byte: u8) {
+    let rem = buf.len() % align;
+    if rem != 0 {
+        buf.extend(std::iter::repeat_n(pad_byte, align - rem));
+    }
+}
+
+fn build_glb(json_bytes: &[u8], bin_bytes: &[u8]) -> Vec<u8> {
+    let mut json_chunk = json_bytes.to_vec();
+    // glTF spec: JSON chunk padded with spaces to 4-byte alignment.
+    align_to(&mut json_chunk, 4, 0x20);
+
+    let mut bin_chunk = bin_bytes.to_vec();
+    // glTF spec: BIN chunk padded with zeros to 4-byte alignment.
+    align_to(&mut bin_chunk, 4, 0x00);
+
+    let total_len = 12 + 8 + json_chunk.len() + 8 + bin_chunk.len();
+    let mut out = Vec::with_capacity(total_len);
+
+    // Header
+    out.extend_from_slice(b"glTF");
+    out.extend_from_slice(&2u32.to_le_bytes());
+    out.extend_from_slice(&(total_len as u32).to_le_bytes());
+
+    // JSON chunk
+    out.extend_from_slice(&(json_chunk.len() as u32).to_le_bytes());
+    out.extend_from_slice(b"JSON");
+    out.extend_from_slice(&json_chunk);
+
+    // BIN chunk
+    out.extend_from_slice(&(bin_chunk.len() as u32).to_le_bytes());
+    out.extend_from_slice(b"BIN\0");
+    out.extend_from_slice(&bin_chunk);
+
+    out
+}
+
+fn base64_encode(input: &[u8]) -> String {
+    const TABLE: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+    let mut out = String::with_capacity(((input.len() + 2) / 3) * 4);
+    let mut chunks = input.chunks_exact(3);
+
+    for chunk in &mut chunks {
+        let n = ((chunk[0] as u32) << 16) | ((chunk[1] as u32) << 8) | (chunk[2] as u32);
+        out.push(TABLE[((n >> 18) & 0x3F) as usize] as char);
+        out.push(TABLE[((n >> 12) & 0x3F) as usize] as char);
+        out.push(TABLE[((n >> 6) & 0x3F) as usize] as char);
+        out.push(TABLE[(n & 0x3F) as usize] as char);
+    }
+
+    let rem = chunks.remainder();
+    match rem.len() {
+        0 => {}
+        1 => {
+            let n = (rem[0] as u32) << 16;
+            out.push(TABLE[((n >> 18) & 0x3F) as usize] as char);
+            out.push(TABLE[((n >> 12) & 0x3F) as usize] as char);
+            out.push('=');
+            out.push('=');
+        }
+        2 => {
+            let n = ((rem[0] as u32) << 16) | ((rem[1] as u32) << 8);
+            out.push(TABLE[((n >> 18) & 0x3F) as usize] as char);
+            out.push(TABLE[((n >> 12) & 0x3F) as usize] as char);
+            out.push(TABLE[((n >> 6) & 0x3F) as usize] as char);
+            out.push('=');
+        }
+        _ => unreachable!("chunks_exact remainder is at most 2 bytes"),
+    }
+
+    out
 }
 
 #[cfg(test)]
@@ -381,7 +602,7 @@ mod tests {
     }
 
     #[test]
-    fn test_write_simple_gltf() {
+    fn test_write_gltf_embedded_parses() {
         let format = GltfFormat::new();
         let mesh = create_test_triangle();
 
@@ -389,12 +610,40 @@ mod tests {
         assert!(result.is_ok());
 
         let gltf_data = result.unwrap();
-        let gltf_str = std::str::from_utf8(&gltf_data).unwrap();
+        assert!(!gltf_data.starts_with(b"glTF"));
 
-        // Check that it's valid JSON structure
-        assert!(gltf_str.contains("\"asset\""));
-        assert!(gltf_str.contains("\"meshes\""));
-        assert!(gltf_str.contains("\"version\": \"2.0\""));
+        let (doc, buffers, _images) = gltf::import_slice(&gltf_data).unwrap();
+        let scene = doc.scenes().next().unwrap();
+        let node = scene.nodes().next().unwrap();
+        let mesh_node = node.mesh().unwrap();
+        let primitive = mesh_node.primitives().next().unwrap();
+        let reader = primitive.reader(|buffer| Some(&buffers[buffer.index()]));
+        let positions: Vec<[f32; 3]> = reader.read_positions().unwrap().collect();
+        let indices: Vec<u32> = reader.read_indices().unwrap().into_u32().collect();
+
+        assert_eq!(positions.len(), 3);
+        assert_eq!(indices.len(), 3);
+    }
+
+    #[test]
+    fn test_write_glb_parses() {
+        let format = GltfFormat::new_glb();
+        let mesh = create_test_triangle();
+
+        let glb = format.write(&mesh).unwrap();
+        assert!(glb.starts_with(b"glTF"));
+
+        let (doc, buffers, _images) = gltf::import_slice(&glb).unwrap();
+        let scene = doc.scenes().next().unwrap();
+        let node = scene.nodes().next().unwrap();
+        let mesh_node = node.mesh().unwrap();
+        let primitive = mesh_node.primitives().next().unwrap();
+        let reader = primitive.reader(|buffer| Some(&buffers[buffer.index()]));
+        let positions: Vec<[f32; 3]> = reader.read_positions().unwrap().collect();
+        let indices: Vec<u32> = reader.read_indices().unwrap().into_u32().collect();
+
+        assert_eq!(positions.len(), 3);
+        assert_eq!(indices.len(), 3);
     }
 
     #[test]
@@ -448,15 +697,10 @@ mod tests {
             .build();
         let format = GltfFormat::with_limits(limits);
 
-        // Create glTF data for a triangle (3 vertices - at limit)
+        // Write a triangle (3 vertices - at limit), then read back (should succeed).
         let triangle_mesh = create_test_triangle();
         let gltf_data = format.write(&triangle_mesh).unwrap();
-
-        // Reading should work since triangle is within limit
-        // Note: glTF format might handle this differently, so we test what we can
-        let result = format.read(&gltf_data);
-        // May succeed or fail depending on glTF library behavior
-        assert!(result.is_ok() || result.is_err());
+        assert!(format.read(&gltf_data).is_ok());
     }
 
     #[test]

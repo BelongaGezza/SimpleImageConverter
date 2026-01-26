@@ -4,7 +4,7 @@
 use crate::formats::traits::{ImageData, ImageReader};
 use common::error::{ConversionError, Result};
 use image::GenericImageView;
-use resvg::usvg::{fontdb::Database, Options, Tree};
+use resvg::usvg::{Options, Tree};
 use tiny_skia::Pixmap;
 
 /// SVG format handler (read-only)
@@ -30,7 +30,7 @@ impl SvgFormat {
     /// # Returns
     ///
     /// A `DynamicImage` containing the rasterized SVG
-    fn rasterize(&self, data: &[u8], _dpi: f32) -> Result<image::DynamicImage> {
+    fn rasterize(&self, data: &[u8], dpi: f32) -> Result<image::DynamicImage> {
         // Security: Validate input size before parsing
         use common::limits::ResourceLimits;
         let limits = ResourceLimits::default();
@@ -40,10 +40,12 @@ impl SvgFormat {
         }
 
         // Parse SVG
-        let opt = Options::default();
-        let mut fontdb = Database::new();
-        fontdb.load_system_fonts();
-        let tree = Tree::from_data(data, &opt, &fontdb)
+        let mut opt = Options::<'_> {
+            dpi,
+            ..Default::default()
+        };
+        opt.fontdb_mut().load_system_fonts();
+        let tree = Tree::from_data(data, &opt)
             .map_err(|e| ConversionError::ConversionFailed(format!("SVG parse error: {}", e)))?;
 
         // Get SVG size

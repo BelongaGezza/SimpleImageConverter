@@ -265,7 +265,7 @@ This document outlines the design and implementation plan for a graphical user i
    - Extension-based detection (primary)
    - Magic byte validation (security check)
    - Uses `img_core::FormatRegistry::detect_two_stage()` for images
-   - Uses `mesh_core::FormatRegistry::detect_from_path()` for meshes
+   - Uses `mesh_core::FormatRegistry::detect_two_stage()` for meshes (extension + signature verification where available)
 3. **GUI updates**:
    - Shows file name in "Source File" field
    - Populates format radio buttons (filtered by file type)

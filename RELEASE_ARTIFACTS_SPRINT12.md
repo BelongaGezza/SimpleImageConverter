@@ -3,13 +3,26 @@
 
 **Date:** December 30, 2025  
 **Executed By:** Senior Engineer (Jordan Rivera)  
-**Status:** 🟡 **PREPARATION COMPLETE** - Blocked by Task 1.4 (Security Review)
+**Status:** 🟡 **PREPARATION COMPLETE** - Final packaging pending release gates + sign-offs
+
+---
+
+## Addendum (January 26, 2026): Blocker Update
+
+Since this document was created (Dec 30), the **security audit has been completed and passed** (`SECURITY_AUDIT_v1.0.0.md`, Jan 3).
+
+**Current blockers for producing/publishing final artifacts are now:**
+- 🔴 `cargo fmt --check` gate failing (format drift)
+- 🔴 glTF write correctness decision/remediation (must match `docs/FORMATS.md` + release notes claims)
+- 🟡 Manual testing completion + re-test of fixed UI issues
+
+**Current source of truth:** `AGENT_TASKS/SPRINT_12_A_TASKING.md`
 
 ---
 
 ## Executive Summary
 
-Release artifact preparation has been initiated. Windows binaries have been built successfully. However, Task 2.1 is currently **BLOCKED** by Task 1.4 (Security Review - Final Release Validation), which must be completed before final release artifacts can be created and distributed.
+Release artifact preparation has been initiated. Windows binaries have been built successfully. At the time this report was written (Dec 30), final packaging was **blocked** pending a security review; see the **Addendum (Jan 26)** above for the current blocker set.
 
 **Current Status:**
 - ✅ Windows release binaries built successfully

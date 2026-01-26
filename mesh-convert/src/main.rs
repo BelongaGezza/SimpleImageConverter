@@ -63,9 +63,6 @@ fn main() -> Result<()> {
     let input_path = Path::new(&args.input);
     common::validation::validate_file_path(input_path)?;
 
-    // Detect input format
-    let input_format = FormatRegistry::detect_from_path(input_path)?;
-
     // Detect output format
     let output_format = FormatRegistry::detect_format(&args.format)?;
 
@@ -81,6 +78,9 @@ fn main() -> Result<()> {
 
     // Read input file with size validation
     let input_data = read_file_bytes_checked(input_path, &limits)?;
+
+    // Detect input format (two-stage: extension + signature where possible)
+    let input_format = FormatRegistry::detect_two_stage(input_path, &input_data)?;
 
     // Get format handlers with resource limits
     let reader = FormatRegistry::get_reader_with_limits(input_format, limits.clone())?;

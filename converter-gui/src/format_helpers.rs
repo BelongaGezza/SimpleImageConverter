@@ -163,6 +163,7 @@ pub fn get_mesh_format_extension(format: MeshFormat) -> &'static str {
         MeshFormat::Ply => "ply",
         MeshFormat::Off => "off",
         MeshFormat::Gltf => "gltf",
+        MeshFormat::Glb => "glb",
         MeshFormat::Dxf => "dxf",
         MeshFormat::Step => "step",
     }
@@ -230,6 +231,7 @@ pub fn get_mesh_format_name(format: MeshFormat) -> &'static str {
         MeshFormat::Ply => "PLY",
         MeshFormat::Off => "OFF",
         MeshFormat::Gltf => "glTF",
+        MeshFormat::Glb => "GLB",
         MeshFormat::Dxf => "DXF",
         MeshFormat::Step => "STEP",
     }
