@@ -1,0 +1,31 @@
+[package]
+name = "converter-gui-modern"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "converter-gui-modern"
+path = "src/main.rs"
+
+[dependencies]
+eframe = "0.27"
+egui = "0.27"
+rfd = "0.15"
+open = "5.0"
+rayon = "1.8"
+num_cpus = "1.0"
+uuid = { version = "1.0", features = ["v4"] }
+
+# Reuse existing conversion + queue logic (no UI)
+converter-gui = { path = "../converter-gui" }
+
+# Workspace deps (used directly for detection/typing where needed)
+common = { path = "../common" }
+img-core = { path = "../img-core" }
+mesh-core = { path = "../mesh-core" }
+thiserror = { workspace = true }
+
