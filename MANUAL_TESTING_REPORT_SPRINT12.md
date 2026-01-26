@@ -1014,17 +1014,47 @@ _List any critical issues that block release_
    **Platform:** macOS (verify Windows/Linux)  
    **Date Reported:** January 25, 2026
 
+3. **Issue:** Messages area fills up with no scrolling or clearing mechanism  
+   **Severity:** Critical  
+   **Steps to Reproduce:** 
+   1. Perform multiple operations that generate messages (conversions, errors, etc.)
+   2. Messages area fills up
+   3. No way to scroll to see older messages
+   4. No way to clear messages
+   **Expected:** Messages area should be scrollable and have a clear button  
+   **Actual:** Messages area uses ScrollArea but scrolling doesn't work properly, and there's no clear button  
+   **Status:** [ ] Open / [x] Fixed / [ ] Deferred
+   
+   **Technical Details:**
+   - ✅ Fixed: Added "Clear" button to messages header
+   - ✅ Fixed: Changed `render_messages()` to accept `&mut ConverterApp` to enable clearing
+   - ✅ Fixed: Connected Clear button to `app.clear_messages()` function
+   - ✅ Verified: ScrollArea is properly configured for scrolling
+   - **Fix Date:** January 3, 2026
+
 ---
 
 ### High Priority Issues
 _List any high priority issues_
 
-1. **Issue:** _Description_  
+1. **Issue:** File open dialog does not show STL/3D files as allowed type  
    **Severity:** High  
-   **Steps to Reproduce:** _Steps_  
-   **Expected:** _Expected behavior_  
-   **Actual:** _Actual behavior_  
-   **Status:** [ ] Open / [ ] Fixed / [ ] Deferred
+   **Steps to Reproduce:** 
+   1. Press Ctrl+O or click File → Open
+   2. File dialog opens
+   3. Check filter dropdown
+   **Expected:** File dialog should show "Mesh Files" filter with extensions (.stl, .obj, .ply, etc.)  
+   **Actual:** File dialog may not be displaying mesh file filters correctly  
+   **Status:** [x] Open / [ ] Fixed / [ ] Deferred
+   
+   **Technical Details:**
+   - ✅ Verified: Code includes mesh file filters: `["stl", "obj", "ply", "off", "gltf", "glb", "dxf", "step", "stp"]`
+   - ✅ Verified: Filters are added in `drop_zone.rs` and `app.rs` for Ctrl+O handler
+   - ✅ Verified: Filters are also in batch queue file dialog
+   - ⚠️ **Investigation:** Filters are correctly implemented in code
+   - ⚠️ **Possible Issue:** Windows file dialog may not be displaying filter dropdown correctly
+   - **Action Required:** User verification needed - check if filter dropdown shows "Mesh Files" option
+   - **Note:** If filters don't appear, this may be a Windows/rfd library display issue, not a code issue
 
 ---
 

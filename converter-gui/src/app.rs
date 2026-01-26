@@ -1355,7 +1355,10 @@ impl ConverterApp {
     /// let mut app = ConverterApp::default();
     /// app.clear_messages();
     /// ```
-    #[allow(dead_code)] // May be used for "Clear Messages" button in future UI enhancement
+    /// Clear all messages from the messages list
+    ///
+    /// This is called from the UI when the user clicks the "Clear" button
+    /// in the messages area.
     pub fn clear_messages(&mut self) {
         self.messages.clear();
     }

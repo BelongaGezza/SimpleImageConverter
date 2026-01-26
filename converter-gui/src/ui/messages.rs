@@ -14,12 +14,20 @@ use egui::{ScrollArea, Ui};
 /// - Warning: Yellow
 /// - Error: Red
 /// - Success: Green
-pub fn render_messages(ui: &mut Ui, app: &ConverterApp) {
+pub fn render_messages(ui: &mut Ui, app: &mut ConverterApp) {
     ui.vertical(|ui| {
         ui.horizontal(|ui| {
             ui.label(egui::RichText::new("Messages:").strong());
             if !app.messages.is_empty() {
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                    if ui
+                        .button("Clear")
+                        .on_hover_text("Clear all messages")
+                        .clicked()
+                    {
+                        app.clear_messages();
+                    }
+                    ui.add_space(style::spacing::SMALL);
                     ui.label(
                         egui::RichText::new(format!("{} messages", app.messages.len()))
                             .small()
