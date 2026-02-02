@@ -182,31 +182,88 @@ pub fn validate_output_path_not_system(path: &Path) -> Result<(), String> {
 
 /// Check if a canonicalized path is in a system directory
 fn check_system_directory(path: &Path) -> Result<(), String> {
-    let mut path_str = path.display().to_string().to_lowercase();
+    #[cfg(windows)]
+    {
+        let mut path_str = path.display().to_string().to_lowercase();
 
-    // Strip Windows extended-length path prefix (\\?\)
-    // canonicalize() on Windows can return paths with this prefix
-    if path_str.starts_with("\\\\?\\") {
-        path_str = path_str[4..].to_string();
+        // Strip Windows extended-length path prefix (\\?\)
+        // canonicalize() on Windows can return paths with this prefix
+        if path_str.starts_with("\\\\?\\") {
+            path_str = path_str[4..].to_string();
+        }
+
+        // Normalize: remove trailing backslashes for consistent comparison
+        let path_str = path_str.trim_end_matches('\\');
+
+        // Windows system directories to avoid
+        let system_dirs = [
+            "c:\\windows",
+            "c:\\windows\\system32",
+            "c:\\windows\\syswow64",
+            "c:\\program files",
+            "c:\\program files (x86)",
+            "c:\\programdata",
+            "c:\\system volume information",
+        ];
+
+        for system_dir in &system_dirs {
+            let normalized_dir = system_dir.trim_end_matches('\\');
+            if path_str.starts_with(normalized_dir) {
+                return Err("Cannot write to system directories.".to_string());
+            }
+        }
     }
 
-    // Normalize: remove trailing backslashes for consistent comparison
-    let path_str = path_str.trim_end_matches('\\');
+    #[cfg(unix)]
+    {
+        let path_str = path.to_string_lossy();
+        let path_lower = path_str.to_lowercase();
 
-    // Windows system directories to avoid
-    let system_dirs = [
-        "c:\\windows",
-        "c:\\windows\\system32",
-        "c:\\windows\\syswow64",
-        "c:\\program files",
-        "c:\\program files (x86)",
-        "c:\\programdata",
-        "c:\\system volume information",
-    ];
+        // Linux/Unix system directories to avoid
+        // Check both exact matches and prefix matches
+        let system_dirs = [
+            "/bin",
+            "/sbin",
+            "/usr/bin",
+            "/usr/sbin",
+            "/usr/lib",
+            "/usr/lib64",
+            "/lib",
+            "/lib64",
+            "/etc",
+            "/boot",
+            "/sys",
+            "/proc",
+            "/dev",
+            "/root",
+            "/var/lib",
+            "/var/log",
+            "/var/run",
+            "/var/tmp",
+            "/opt/bin",
+            "/opt/sbin",
+        ];
 
-    for system_dir in &system_dirs {
-        let normalized_dir = system_dir.trim_end_matches('\\');
-        if path_str.starts_with(normalized_dir) {
+        // Check for exact matches or prefix matches (with trailing slash)
+        for system_dir in &system_dirs {
+            if path_lower == *system_dir
+                || path_lower.starts_with(&format!("{}/", system_dir))
+                || path_lower.starts_with(&format!("{}\\", system_dir))
+            {
+                return Err("Cannot write to system directories.".to_string());
+            }
+        }
+
+        // Also check for root-level system directories (case-insensitive)
+        if path_lower == "/bin"
+            || path_lower == "/sbin"
+            || path_lower == "/etc"
+            || path_lower == "/lib"
+            || path_lower == "/lib64"
+            || path_lower == "/usr"
+            || path_lower == "/var"
+            || path_lower == "/opt"
+        {
             return Err("Cannot write to system directories.".to_string());
         }
     }

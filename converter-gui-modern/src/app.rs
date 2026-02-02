@@ -150,12 +150,16 @@ impl ModernApp {
             .clone()
             .unwrap_or_else(|| std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".")));
 
-        let mut batch_defaults = BatchDefaults::default();
-        batch_defaults.output_directory = settings.default_output_directory.clone();
-        batch_defaults.quality = settings.default_quality;
+        let batch_defaults = BatchDefaults {
+            output_directory: settings.default_output_directory.clone(),
+            quality: settings.default_quality,
+            ..Default::default()
+        };
 
-        let mut history = ConversionHistory::default();
-        history.max_entries = settings.max_history_entries;
+        let history = ConversionHistory {
+            max_entries: settings.max_history_entries,
+            ..Default::default()
+        };
 
         Self {
             mode: ProcessingMode::Single,
@@ -539,7 +543,7 @@ impl ModernApp {
     fn max_concurrent(&self) -> usize {
         self.settings
             .max_concurrent_conversions
-            .unwrap_or_else(|| num_cpus::get().min(8).max(1))
+            .unwrap_or_else(|| num_cpus::get().clamp(1, 8))
             .clamp(1, 16)
     }
 

@@ -281,16 +281,15 @@ impl GltfFormat {
     ///
     /// If `embed_buffer` is true, the returned document will include a data-URI buffer `uri`
     /// for `.gltf` single-file export. Otherwise it will omit `uri` (for `.glb`).
-    fn build_gltf_document(&self, mesh: &Mesh, embed_buffer: bool) -> Result<(serde_json::Value, Vec<u8>)> {
+    fn build_gltf_document(
+        &self,
+        mesh: &Mesh,
+        embed_buffer: bool,
+    ) -> Result<(serde_json::Value, Vec<u8>)> {
         let vertex_count = mesh.vertices.len();
         let index_count = mesh.faces.len() * 3;
 
-        let max_index = mesh
-            .faces
-            .iter()
-            .flat_map(|f| f.indices)
-            .max()
-            .unwrap_or(0);
+        let max_index = mesh.faces.iter().flat_map(|f| f.indices).max().unwrap_or(0);
 
         let use_u32_indices = max_index > (u16::MAX as usize);
         let index_component_type = if use_u32_indices { 5125 } else { 5123 };
@@ -344,26 +343,22 @@ impl GltfFormat {
 
         let (pos_min, pos_max) = position_min_max(&mesh.vertices);
 
-        let mut accessors = vec![
-            json!({
-                "bufferView": 0,
-                "byteOffset": 0,
-                "componentType": 5126,
-                "count": vertex_count,
-                "type": "VEC3",
-                "min": [pos_min[0], pos_min[1], pos_min[2]],
-                "max": [pos_max[0], pos_max[1], pos_max[2]],
-            }),
-        ];
+        let mut accessors = vec![json!({
+            "bufferView": 0,
+            "byteOffset": 0,
+            "componentType": 5126,
+            "count": vertex_count,
+            "type": "VEC3",
+            "min": [pos_min[0], pos_min[1], pos_min[2]],
+            "max": [pos_max[0], pos_max[1], pos_max[2]],
+        })];
 
-        let mut buffer_views = vec![
-            json!({
-                "buffer": 0,
-                "byteOffset": pos_offset,
-                "byteLength": pos_len,
-                "target": 34962,
-            }),
-        ];
+        let mut buffer_views = vec![json!({
+            "buffer": 0,
+            "byteOffset": pos_offset,
+            "byteLength": pos_len,
+            "target": 34962,
+        })];
 
         let mut attributes = json!({
             "POSITION": 0
@@ -515,7 +510,7 @@ fn build_glb(json_bytes: &[u8], bin_bytes: &[u8]) -> Vec<u8> {
 fn base64_encode(input: &[u8]) -> String {
     const TABLE: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
-    let mut out = String::with_capacity(((input.len() + 2) / 3) * 4);
+    let mut out = String::with_capacity(input.len().div_ceil(3) * 4);
     let mut chunks = input.chunks_exact(3);
 
     for chunk in &mut chunks {

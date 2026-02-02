@@ -2,7 +2,8 @@
 # Linux GUI Packaging Script
 # Creates a portable TAR.GZ archive for Linux GUI distribution
 
-set -e
+# SECURITY: Exit on error, undefined variables, and pipe failures
+set -euo pipefail
 
 # Extract version from Git tag or Cargo.toml if not provided
 if [ -z "$1" ]; then
