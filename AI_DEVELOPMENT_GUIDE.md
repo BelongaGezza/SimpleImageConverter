@@ -142,6 +142,7 @@ Before marking any task complete:
 - [ ] Error handling implemented
 - [ ] Tests written and passing
 - [ ] No compilation warnings
+- [ ] Path handling uses `Path`/`PathBuf` (no raw separator splitting on `/` or `\`)
 
 ### Sprint Completion Checklist
 
@@ -632,6 +633,13 @@ Update CHANGELOG.md after:
 1. Verify target installed: `rustup target list --installed`
 2. Check cross-compiler: `x86_64-w64-mingw32-gcc --version`
 3. Set linker in `.cargo/config.toml`
+
+**Path separator issues (Windows `\` vs macOS/Linux `/`):**
+1. Tests that hard-code Windows paths (e.g. `"C:\\photos\\file.png"`) fail on Linux CI — `std::path::Path` does not split on `\` there
+2. Use `PathBuf::from(s)` when converting a string to a path; never split on `/` or `\` manually
+3. Construct test paths portably: `Path::new("dir").join("file.png")`
+4. When path strings are compared or parsed outside `Path` APIs (especially in tests), normalize separators first (e.g. `path_str.replace('\\', "/")`); for actual path operations, convert to `PathBuf` and use `Path` methods
+5. See Design Principle 7 in `docs/ARCHITECTURE.md` for the full policy
 
 **Performance issues:**
 1. Profile with `cargo flamegraph`

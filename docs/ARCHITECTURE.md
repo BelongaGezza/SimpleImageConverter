@@ -125,6 +125,16 @@ All external input is treated as untrusted:
 - `common::io::read_file_bytes_checked()` - Size-validated file reading
 - `FormatRegistry::verify_format()` - Magic byte validation
 
+### 7. Cross-platform Path Handling
+
+SimpleImageConverter ships for Windows, macOS, and Linux. All path manipulation uses `std::path::Path` and `PathBuf` — never raw string splitting on `/` or `\`.
+
+**Rules:**
+- Accept paths as `&Path` / `PathBuf` arguments (not raw `&str`) wherever possible, so callers on any OS can pass native paths without conversion.
+- When a path string must be accepted (e.g. from CLI args or user input), convert immediately: `PathBuf::from(s)`.
+- Test fixtures must not hard-code platform-specific separators (e.g. `"C:\\file.png"`). Use `Path::new("dir").join("file.png")` or normalise the separator before asserting on path components.
+- Path sanitisation in `common::validation::sanitize_path()` must handle both `\` and `/` separator styles.
+
 ---
 
 ## Module Architecture
