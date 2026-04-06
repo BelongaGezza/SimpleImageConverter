@@ -1,0 +1,108 @@
+---
+description: "CI/CD and GitHub Actions rules for SimpleImageConverter. Applied when working with workflow files or build/release scripts."
+alwaysApply: false
+globs:
+  - ".github/**"
+  - "scripts/**"
+  - "**/Makefile"
+---
+
+# CI / CD Rules — SimpleImageConverter
+
+## Runner OS Constraints
+
+- Windows builds must use `runs-on: windows-latest`.
+- Linux builds use `runs-on: ubuntu-latest` with explicit system library install.
+- macOS builds and signed releases must use `runs-on: macos-latest`.
+- Never assume the runner matches any local dev machine.
+
+## No Local Paths
+
+Workflow files and scripts must never contain:
+- `/Users/` paths
+- `C:\Users\` paths
+- `/home/<specific-username>/` paths
+
+Use `$GITHUB_WORKSPACE`, `$RUNNER_TEMP`, or relative paths from repo root.
+
+## CI Pattern — Core Rust Jobs
+
+```yaml
+- name: Setup Rust
+  uses: dtolnay/rust-toolchain@stable
+  with:
+    toolchain: stable
+    components: rustfmt, clippy
+
+- name: Cache cargo
+  uses: actions/cache@v4
+  with:
+    path: |
+      ~/.cargo/bin/
+      ~/.cargo/registry/index/
+      ~/.cargo/registry/cache/
+      ~/.cargo/git/db/
+      target/
+    key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+- name: Build
+  run: cargo build --workspace --release
+
+- name: Test
+  run: cargo test --workspace
+
+- name: Format check
+  run: cargo fmt --check
+
+- name: Clippy
+  run: cargo clippy --workspace -- -D warnings
+
+- name: Security audit
+  run: cargo audit
+```
+
+## Linux System Dependencies in CI
+
+When running on `ubuntu-latest`, always install egui/eframe system deps first:
+
+```yaml
+- name: Install Linux system dependencies
+  run: |
+    sudo apt-get update
+    sudo apt-get install -y \
+      libxcb-render0-dev \
+      libxcb-shape0-dev \
+      libxcb-xfixes0-dev \
+      libxkbcommon-dev \
+      libssl-dev \
+      pkg-config
+```
+
+## Matrix Strategy for Cross-Platform Builds
+
+```yaml
+strategy:
+  matrix:
+    os: [ubuntu-latest, windows-latest, macos-latest]
+runs-on: ${{ matrix.os }}
+```
+
+When using a matrix, install Linux system deps conditionally:
+
+```yaml
+- name: Install Linux system dependencies
+  if: runner.os == 'Linux'
+  run: sudo apt-get install -y libxcb-render0-dev ...
+```
+
+## Secrets
+
+- Never hardcode signing credentials, API keys, or tokens.
+- Use GitHub Actions Secrets (`${{ secrets.KEY_NAME }}`).
+- macOS signing certificates must use a secrets-based approach (base64-encoded cert).
+
+## Release Workflow Notes
+
+- See `release.yml` for the existing release automation.
+- Release builds should run on all three platforms before tagging.
+- Binaries must be stripped (already configured in `[profile.release]` in `Cargo.toml`).

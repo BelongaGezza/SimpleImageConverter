@@ -1,0 +1,80 @@
+---
+description: "macOS and Linux platform rules for SimpleImageConverter. Applied when working with platform-specific build config, release scripts, or signing."
+alwaysApply: false
+globs:
+  - "scripts/**"
+  - ".github/workflows/**"
+  - "**/*.sh"
+  - "release/**"
+  - "Cargo.toml"
+  - "**/Cargo.toml"
+---
+
+# macOS and Linux Platform Rules
+
+## macOS Constraint — Signing and Release
+
+Signed macOS `.app` bundles and notarised DMGs can only be produced on a macOS
+machine with a valid Apple Developer account and `xcodebuild` in PATH.
+
+**If the current session is on Windows or Linux:**
+1. Do NOT commit macOS-specific release script changes that require signing.
+2. Document required changes in `PENDING_APPLE_CHANGES.md` at repo root.
+
+```markdown
+## Pending macOS Change — [DATE]
+**File:** [path/to/file]
+**Change required:** [description]
+**Reason:** [signing, entitlement, release packaging, etc.]
+**Action:** [specific steps for the macOS session]
+```
+
+## macOS Build Steps (when on macOS)
+
+```bash
+# Native build
+cargo build --release
+
+# Universal binary (Intel + Apple Silicon)
+rustup target add x86_64-apple-darwin aarch64-apple-darwin
+cargo build --release --target x86_64-apple-darwin
+cargo build --release --target aarch64-apple-darwin
+lipo -create -output SimpleImageConverter \
+  target/x86_64-apple-darwin/release/SimpleImageConverter \
+  target/aarch64-apple-darwin/release/SimpleImageConverter
+```
+
+- After any `Info.plist` or entitlements change (if packaging as `.app`), do a
+  clean build: `cargo clean && cargo build --release`
+- Test on both Retina and non-Retina displays if possible.
+- Verify dark mode and light mode egui appearance.
+
+## Linux Build Steps (when on Linux)
+
+```bash
+# Install system dependencies (Ubuntu/Debian)
+sudo apt-get install -y \
+  libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev \
+  libxkbcommon-dev libssl-dev pkg-config libwayland-dev
+
+# Build
+cargo build --release
+
+# Package as AppImage (see BUILD_LINUX_RELEASES.md for details)
+```
+
+- See `BUILD_LINUX_RELEASES.md` for the full Linux packaging workflow.
+- Test on both Wayland and X11 sessions.
+- Verify egui renders correctly at 96 DPI and 192 DPI (HiDPI).
+
+## Comment Guards for Platform-Specific Code
+
+```rust
+// [PLATFORM: macOS] ─── begin ─────────────────────────────────────────
+#[cfg(target_os = "macos")]
+// [PLATFORM: macOS] ─── end ───────────────────────────────────────────
+
+// [PLATFORM: Linux] ─── begin ─────────────────────────────────────────
+#[cfg(target_os = "linux")]
+// [PLATFORM: Linux] ─── end ───────────────────────────────────────────
+```

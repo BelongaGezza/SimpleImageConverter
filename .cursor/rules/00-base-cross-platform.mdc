@@ -1,0 +1,93 @@
+---
+description: "Core cross-platform development constraints for SimpleImageConverter. Always applied to every AI interaction in this project."
+alwaysApply: true
+globs:
+---
+
+# SimpleImageConverter — Core Cross-Platform Rules
+
+This project targets **Windows 11**, **macOS**, and **Linux (Ubuntu 24.04+)**.
+All three are active desktop targets. There are no iOS, Android, or Web targets.
+Every suggestion must be compatible with all three platforms unless explicitly
+scoped with a `[PLATFORM: X]` guard or `#[cfg(...)]` attribute.
+
+## Stack
+
+| Layer | Technology |
+|---|---|
+| Language | Rust (Edition 2021, MSRV 1.92) |
+| GUI | egui / eframe |
+| 2D formats | `image` crate |
+| 3D formats | `tobj`, `stl_io`, `gltf`, nalgebra |
+| Error handling | `anyhow`, `thiserror` |
+
+## Environment
+
+- Detect the current OS before making platform-specific suggestions.
+- Never hardcode absolute paths. Use relative paths or environment variables only.
+- Windows is the primary dev machine. macOS and Linux are active targets; signed
+  macOS releases require a macOS session with `xcodebuild` available.
+- For macOS-specific signing or release changes that cannot be done on Windows,
+  document them in `PENDING_APPLE_CHANGES.md`.
+
+## Platform Guard Convention
+
+Pair comment guards with Rust `cfg` attributes for platform-specific code:
+
+```rust
+// [PLATFORM: Windows] ─── begin ──────────────────────────────────────
+#[cfg(target_os = "windows")]
+fn platform_specific() { ... }
+// [PLATFORM: Windows] ─── end ────────────────────────────────────────
+
+// [PLATFORM: macOS] ─── begin ─────────────────────────────────────────
+#[cfg(target_os = "macos")]
+fn platform_specific() { ... }
+// [PLATFORM: macOS] ─── end ───────────────────────────────────────────
+
+// [PLATFORM: Linux] ─── begin ─────────────────────────────────────────
+#[cfg(target_os = "linux")]
+fn platform_specific() { ... }
+// [PLATFORM: Linux] ─── end ───────────────────────────────────────────
+```
+
+Valid tags: `Windows`, `macOS`, `Linux`
+
+**Never remove a guard block without explicit confirmation that the feature is
+deprecated on that platform.**
+
+## Security Constraint
+
+**All file input is untrusted.** Validate format, size, and content before
+processing. Do not use `unwrap()` on file I/O. Use `anyhow` or `thiserror`
+for proper error propagation.
+
+## Architecture Constraints
+
+- Before proposing any new crate, check `rust-resources.md` for existing guidance.
+- Verify the crate's platform support (Windows + macOS + Linux) before adding it.
+- Do not add crates with GPL or AGPL licenses. MIT/Apache-2.0 only.
+- Run `cargo audit` before every release; treat high/critical advisories as blocking.
+
+## Code Modification Safety
+
+- When a proposed change affects a `[PLATFORM: X]` guarded block, stop and confirm
+  with the user before proceeding.
+- When refactoring, move guard blocks and `cfg` attributes with the code they annotate.
+- Before marking a feature complete, note which platforms require testing that cannot
+  be done on the current machine.
+
+## CI Awareness
+
+- CI runners differ from local dev OS. Never assume otherwise.
+- Workflow files must not contain local absolute paths.
+- macOS release/signing jobs must use `macos-latest` runners.
+
+## Git Hygiene
+
+- Never commit OS-generated files (`.DS_Store`, `Thumbs.db`, `*.pdb`, `*.user`).
+- Never commit `target/` build artefacts.
+- Document one-time setup steps required on other machines in `SETUP_NOTES.md`.
+
+---
+*For full context see CLAUDE.md at repository root.*

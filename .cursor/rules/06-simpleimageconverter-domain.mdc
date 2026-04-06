@@ -1,0 +1,160 @@
+---
+description: "SimpleImageConverter — project-specific domain rules. Always applied. Covers product goals, workspace architecture, format support, security policy, and acceptance criteria."
+alwaysApply: true
+globs:
+---
+
+# SimpleImageConverter — Domain Rules
+
+## Project Identity
+
+- **Project:** SimpleImageConverter
+- **Type:** Cross-platform desktop CLI + GUI application (Rust cargo workspace)
+- **Purpose:** Batch image and 3D mesh format conversion. Handles 2D formats (PNG, JPEG, BMP, GIF, SVG, TIFF, WebP) and 3D mesh formats (STL, OBJ, PLY, glTF/GLB). Offline, no cloud dependencies.
+- **Tone:** Developer/maker tool. Precise, minimal UI. No unnecessary chrome.
+- **Active targets:** Windows 11, macOS, Linux (Ubuntu 24.04+) — all active, no phasing.
+- **License:** MIT OR Apache-2.0 (dual). All dependencies must be compatible.
+
+## Workspace Architecture
+
+```
+SimpleImageConverter/          Workspace root
+  common/                      Shared utilities (format detection, path helpers)
+  img-core/                    2D image processing library (format decode/encode)
+  img-convert/                 2D CLI binary (wraps img-core)
+  mesh-core/                   3D mesh processing library
+  mesh-convert/                3D CLI binary (wraps mesh-core)
+  converter-gui/               egui/eframe GUI (current)
+  converter-gui-modern/        Modernised egui GUI (in progress)
+  tests/                       Integration tests (shared test data)
+  fuzz/                        Fuzzing targets
+  scripts/                     Build, packaging, and release scripts
+  release/                     Release artefact staging
+  AGENT_TASKS/                 Active and historical agent task briefs
+```
+
+**Crate responsibilities are strict.** Do not add format-handling logic to CLI
+binaries — it belongs in `img-core` or `mesh-core`. Do not add GUI code to library
+crates. Keep the dependency graph clean: binaries depend on libs, not vice versa.
+
+## Code Standards
+
+### Rust (all crates)
+
+- **MSRV:** 1.92 (set in `[workspace.package]`). Do not use features introduced
+  after 1.92 without bumping MSRV and noting it in the PR.
+- **Error handling:** `thiserror` for library error types; `anyhow` for application
+  error propagation in binaries and Tauri commands. No `unwrap()` in production
+  paths — use `?` with proper context.
+- **Documentation:** All public API items must have doc comments with `# Errors`
+  sections on fallible functions.
+- **Testing:** Unit tests in `#[cfg(test)]` modules; integration tests in `tests/`.
+  Add a test for every new format conversion path.
+- **Formatting/lint:** `cargo fmt` and `cargo clippy --workspace -- -D warnings`
+  must pass before every commit. Zero warnings policy.
+- **Benchmarks:** `img-core/benches/` uses Criterion. Add benchmarks for new
+  performance-sensitive conversion paths.
+- **Fuzzing:** `fuzz/` contains libFuzzer targets. Update fuzz targets when adding
+  new format parsers.
+
+### Security (critical — all file input is untrusted)
+
+- **Validate early:** Check file magic bytes / headers before processing. Reject
+  malformed input with a clear error, not a panic.
+- **Size limits:** Enforce maximum input dimensions and file sizes to prevent
+  memory exhaustion (OOM).
+- **No `unsafe` without review:** Any new `unsafe` block requires security specialist
+  sign-off. Document invariants in a comment above the block.
+- **Dependency audit:** Run `cargo audit` before every release. High/critical
+  advisories are blocking. Note: `ply-rs` was removed due to CVE-2020-25573 —
+  use `ply-rs-bw` instead.
+- **Path traversal:** Never construct output paths from user-supplied input without
+  sanitisation. Use `std::path::Path::canonicalize` and validate against expected
+  output roots.
+
+## Format Support Matrix
+
+| Format | Crate | Read | Write | Notes |
+|---|---|---|---|---|
+| PNG | `image` | ✓ | ✓ | |
+| JPEG | `image` | ✓ | ✓ | |
+| BMP | `image` | ✓ | ✓ | |
+| GIF | `image` | ✓ | ✓ | |
+| TIFF | `image` | ✓ | ✓ | |
+| WebP | `image` | ✓ | ✓ | |
+| SVG | `resvg`/`tiny-skia` | ✓ | ✗ | Rasterise to target format |
+| STL | `stl_io` | ✓ | ✓ | Binary and ASCII |
+| OBJ | `tobj` | ✓ | ✓ | |
+| PLY | `ply-rs-bw` | ✓ | ✓ | Not `ply-rs` — see CVE-2020-25573 |
+| glTF/GLB | `gltf` | ✓ | planned | |
+
+Before adding a new format, check `rust-resources.md` for library guidance and verify
+the chosen crate supports Windows + macOS + Linux and has a compatible license.
+
+## GUI (egui/eframe)
+
+- `converter-gui` is the current production GUI. `converter-gui-modern` is under
+  active development as its replacement — confirm with the user which to target.
+- egui renders consistently across platforms via wgpu/OpenGL backends. Platform-specific
+  appearance tweaks (HiDPI, dark mode detection) must use egui's `Context` APIs.
+- Do not add non-Rust dependencies to the GUI crates. egui is self-contained.
+- Test GUI on all three platforms before marking a UI change complete.
+
+## Testing Expectations
+
+- **Unit tests:** In `#[cfg(test)]` modules within each crate. Run: `cargo test --workspace`.
+- **Integration tests:** In `tests/` using real image/mesh fixtures from `tests/data/`.
+- **Benchmarks:** `cargo bench` in `img-core/`. Do not regress existing benchmarks.
+- **Fuzz tests:** `cargo fuzz run <target>` from the `fuzz/` directory. Run locally
+  before adding a new format parser.
+- Use `#[ignore]` for tests that require platform-specific resources unavailable in CI.
+- Document manual test steps in `MANUAL_TESTING_REPORT_SPRINT*.md` for releases.
+
+## Agent Roles (reference)
+
+| Agent | Persona File | Primary Focus |
+|---|---|---|
+| System Architect | `.agents/system-architect.md` | Architecture decisions, crate design, ADRs |
+| Senior Engineer | `.agents/senior-engineer.md` | Core implementation, code review, mentoring |
+| Junior Engineer (2D) | `.agents/junior-engineer-2d.md` | PNG, JPEG, BMP, GIF, SVG format work |
+| Junior Engineer (3D) | `.agents/junior-engineer-3d.md` | PLY, OBJ, STL, glTF mesh format work |
+| Security Specialist | `.agents/security-specialist.md` | Security review, input validation, audits |
+| Documentation Specialist | `.agents/documentation-specialist.md` | API docs, user guides, examples |
+| Researcher | `.agents/researcher.md` | Ecosystem monitoring, `rust-resources.md` maintenance |
+| UI Designer | `.agents/ui-designer.md` | egui GUI design and implementation |
+
+Always read the relevant persona file from `.agents/` and consult `rust-resources.md`
+before beginning work in that agent's domain.
+
+## Consistency Review Commands
+
+**Trigger phrases:** "consistency check", "check project", "project review"
+
+1. Verify all format handlers are covered by at least one integration test.
+2. Run `cargo clippy --workspace -- -D warnings` — zero warnings required.
+3. Run `cargo audit` — no high/critical advisories.
+4. Confirm crate dependency graph is acyclic and respects the lib/bin separation.
+5. Check `AGENT_TASKS/` for any open tasks that may conflict with current work.
+6. Produce a brief findings summary with recommended fixes.
+
+## User Inquiry Triggers
+
+Pause and confirm with the user whenever new work touches these boundaries:
+
+1. Are we adding a new format? Check `rust-resources.md` for crate guidance first.
+2. Does the new crate have a compatible license (MIT/Apache-2.0)?
+3. Does the new crate support all three target platforms?
+4. Does this change touch file I/O or format parsing? Security review required.
+5. Is this a new `unsafe` block? Security specialist sign-off required.
+6. Does this change the public API of a library crate? Check for downstream breakage.
+7. Is this a macOS-specific release or signing change that cannot be done on Windows?
+
+## Version Control Hygiene
+
+- Commit source files, tests, benchmarks, scripts, and documentation.
+- Exclude: `target/`, `*.pdb`, `*.profraw`, `.DS_Store`, `Thumbs.db`.
+- The `.gitignore` at repo root is the authority.
+- `Cargo.lock` is committed (binary/application convention — keeps builds reproducible).
+
+---
+*Last refreshed 2026-04-06. Schema version: 1.0*

@@ -1,0 +1,152 @@
+---
+description: "GitHub sync protection. Always applied — checks for remote changes before allowing edits to tracked files that may conflict with work done on other machines."
+alwaysApply: true
+globs:
+---
+
+# GitHub Sync Protection
+
+## Core Principle
+
+Always check whether GitHub files are newer than local files before making changes
+that could conflict with work done by other developers or on other machines.
+
+## When This Rule Activates
+
+- User requests a pull, fetch, or sync from GitHub
+- User requests edits to files immediately after a sync operation
+- User requests bulk file operations on tracked files
+- Any file modification where remote files might be newer than local
+
+## Required Workflow
+
+### Step 1 — Pre-Sync Fetch
+Before any `git pull`, `git fetch`, or sync operation:
+```bash
+git fetch origin
+git diff --name-only HEAD origin/main
+```
+For each differing file get timestamps:
+- **Remote timestamp**: `git log -1 --format="%ai|%h|%s" origin/main -- <file>`
+- **Local timestamp**: filesystem `LastWriteTime` (Windows) or `stat` (macOS/Linux)
+
+### Step 2 — Timestamp Comparison
+For each differing file, calculate the time difference between local and remote.
+Flag files where remote is newer. If the difference is less than 1 hour, treat as
+the same (likely a timezone offset).
+
+### Step 3 — Priority Status Files
+Check these files first — they carry the most context about recent work:
+- `PROJECT_STATUS.md` — contains `**Last Updated:**` and `**Latest Commit:**`
+- `PROJECT_TODO.md` — contains active task lists and priority indicators
+- Any file with `STATUS`, `TODO`, or `PROJECT` in the name
+
+Extract: dates, commit hashes, status indicators (`In Progress`, `🚧`, `⏳`).
+
+### Step 4 — Generate Comparison Table
+Present a table with columns: **File Path · Local Modified · Remote Modified ·
+Difference · Status · Notes**
+
+Status indicators:
+- 🟢 **Same** — within 1 hour (timezone)
+- 🟡 **Local Older** — 1 hour to 7 days behind remote
+- 🔴 **Remote Newer** — remote has active recent work
+- ⚠️ **Conflict Risk** — both modified within 24 hours
+
+Sort by remote commit time descending, then file path alphabetically.
+
+### Step 5 — User Notification
+
+```
+⚠️ GitHub Sync Protection Alert
+
+Recent changes detected on GitHub that may conflict with local work:
+
+📊 File Comparison (Newest Remote First):
+[Generated comparison table]
+
+📋 Project Status Summary:
+- Last Updated: [from PROJECT_STATUS.md]
+- Latest Commit: [hash] ([date])
+- Active Status: [status indicator]
+- Recent Work: [commit messages]
+
+🔍 Active Tasks Detected:
+[High-priority items from PROJECT_TODO.md]
+
+Choose an action:
+1. ✅ Proceed with caution (compare differences first)
+2. 💾 Stash local changes, then pull
+3. ❌ Cancel and review manually
+```
+
+## Protection Rules
+
+**Block edits** when ALL of the following are true:
+1. Remote file is newer than local
+2. Time difference is greater than 1 hour
+3. File is tracked in git (not in `.gitignore`)
+4. User has not explicitly confirmed after seeing the comparison table
+
+**Allow edits** when ANY of the following are true:
+1. Local file is newer or the same age as remote
+2. Remote is newer but difference is less than 1 hour (timezone)
+3. File is local-only (not yet tracked in git)
+4. User has explicitly confirmed after seeing the comparison table
+5. File is in an ignored directory (`build/`, `.dart_tool/`, etc.)
+
+## Special Cases
+
+**Untracked files:** Always allow creation. Show as 🟢 Local Only in the table.
+
+**Build artifacts:** Ignore timestamps for `build/`, `.dart_tool/`, `*.lock`,
+`*.dill`, `*.stamp` — these are regenerated and timestamps are not meaningful.
+
+**Documentation files:** Give extra attention to `.md` files with `STATUS` or
+`TODO` in the name. Always extract dates and status from these even if the file
+content itself looks unchanged.
+
+## Git Commands Reference
+
+```bash
+# Fetch without merging
+git fetch origin
+
+# List differing files
+git diff --name-only HEAD origin/main
+
+# Get remote file commit info
+git log -1 --format="%ai|%h|%s" origin/main -- <file>
+
+# Get local file status
+git status --porcelain
+
+# Check if file exists on remote
+git ls-tree -r --name-only origin/main | grep <file>
+```
+
+```powershell
+# Windows — get local file timestamp
+(Get-Item <file>).LastWriteTime.ToString("yyyy-MM-dd HH:mm:ss")
+```
+
+## Error Handling
+
+- If timestamp comparison fails: assume remote is newer (safer default); flag as
+  `⚠️ Unable to determine timestamp` in the table; still allow user to proceed.
+- If status files are missing: fall back to git commit messages; show generic
+  warning `"Status files not found, using commit history"`.
+- If network error during fetch: use cached state if available; warn user; allow
+  override with explicit confirmation.
+
+## Important Notes
+
+- Default assumption: remote should be treated as more recent unless local files
+  have demonstrably newer timestamps.
+- This rule is informational and protective, not restrictive — the user always
+  has the final say.
+- When both local and remote have been modified within 24 hours, flag as conflict
+  risk and surface the diff before proceeding.
+
+---
+*Migrated from .cursorrules — DMsGrimoire GitHub Sync Protection*

@@ -101,3 +101,78 @@ When working on this project:
 4. Document public APIs
 5. Consider security implications (all file input is untrusted)
 6. Update rust-resources.md with lessons learned
+
+---
+
+## Cross-Platform Development Rules
+
+> These sections apply on all dev machines. Constraints marked macOS-only apply
+> when the current session is on the macOS M-series MacBook Pro only.
+
+### Platform Target Matrix
+
+| Platform | Status | Notes |
+|---|---|---|
+| Windows 11 | **Active — Primary** | x64; native window decorations, High DPI |
+| macOS | **Active** | Retina support, light/dark mode; build/sign on macOS only |
+| Linux (Ubuntu 24.04+) | **Active** | Wayland + X11; GTK-compatible egui styling |
+
+All three desktop platforms are active targets. There are no iOS, Android, or Web targets.
+
+### Platform Guard Convention — Comment Guards
+
+Mark all platform-specific code with structured comment guards:
+
+```rust
+// [PLATFORM: Windows] ─── begin ──────────────────────────────────────
+// [PLATFORM: Windows] ─── end ────────────────────────────────────────
+
+// [PLATFORM: macOS] ─── begin ─────────────────────────────────────────
+// [PLATFORM: macOS] ─── end ───────────────────────────────────────────
+
+// [PLATFORM: Linux] ─── begin ─────────────────────────────────────────
+// [PLATFORM: Linux] ─── end ───────────────────────────────────────────
+```
+
+Use Rust's `cfg` attributes alongside guards for compile-time branching:
+```rust
+#[cfg(target_os = "windows")]
+#[cfg(target_os = "macos")]
+#[cfg(target_os = "linux")]
+```
+
+**Never remove a guard block without explicit confirmation that the feature is
+deprecated on that platform.**
+
+### Path Policy
+
+**Never hardcode absolute paths** in any committed file. Use relative paths or
+environment variables. Absolute paths containing `/Users/`, `C:\Users\`, or
+`/home/<name>/` are forbidden in committed source, scripts, and workflow files.
+
+### macOS Session Constraint
+
+The macOS M-series MacBook Pro is required for signed macOS builds and releases.
+If the current session is on Windows or Linux:
+- Do NOT commit macOS-specific build configuration or signing changes.
+- Document required changes in `PENDING_APPLE_CHANGES.md` for the next macOS session.
+
+### Subagent Behaviour
+
+All subagents inherit these constraints. Before acting, subagents must:
+- Read this `CLAUDE.md` file in full.
+- Read the relevant persona from `.agents/`.
+- Consult `rust-resources.md` before making library or architecture decisions.
+- Flag any platform-affecting changes before applying them.
+
+### Session Startup Checklist
+
+- [ ] Read `CLAUDE.md` and `rust-resources.md` (if relevant to the task)
+- [ ] Detect current OS (`windows` / `macos` / `linux`)
+- [ ] Note which build/sign targets are available this session
+- [ ] Check `PENDING_APPLE_CHANGES.md` for outstanding macOS items
+- [ ] Check `SETUP_NOTES.md` for any one-time setup steps on this machine
+
+---
+
+*Cross-platform section schema version: 1.0 — 2026-04-06*
