@@ -1300,7 +1300,7 @@ Re-verified May 29, 2026 against current `main`:
 
 | Priority | Test / Issue | Status | Owner |
 |----------|--------------|--------|-------|
-| P1 | 5.3 Edit dialog format + Escape | Fix in code; **re-test pending** | Human tester |
+| P1 | 5.3 Edit dialog format + Escape | **Pass macOS** (May 29, 2026) | Windows re-test pending |
 | P2 | 1.2 Settings persist after restart | Not tested | Human tester |
 | P3 | 1.2 Cmd+S when settings closed | Not tested | Human tester |
 | P4 | High: mesh files in Open dialog (Windows) | Mitigation in code; **Windows re-test pending** | Human tester (Windows) |
@@ -1319,6 +1319,25 @@ Re-verified May 29, 2026 against current `main`:
 ### macOS Partial Results (Carried Forward from Sprint 12)
 
 Tests marked Pass on macOS in Sprint 12 remain valid until re-test: 1.1, 1.2 (partial), 2.1, 3.1–3.4, 4.1–4.2, 5.1–5.2, 3.4/4.2 Escape paths. **Test 5.3 must be re-run** after format-selector fix before Task 3.1 can close.
+
+---
+
+### Manual Run — May 29, 2026 — macOS (Human Tester)
+
+**Tester:** Gerry  
+**Build:** `converter-gui` release (v0.3.0)
+
+| Category | Result | Notes |
+|----------|--------|-------|
+| **Image format conversions** | ✅ **Pass** | Single-file and batch image conversions (PNG/JPEG/BMP paths) verified |
+| **Mesh format conversions** | ⏳ **Pending** | STL/OBJ/PLY load/convert, mixed queues, Open-dialog mesh filters not yet tested |
+| **Keyboard shortcuts (Tests 1.1–5.3, 5.6)** | ✅ **Pass** | All shortcut keys behave as expected on macOS |
+| **Settings persist after restart (1.2 step 4)** | ⏳ Not tested | — |
+| **Help & About (6.1–6.2)** | ⏳ Not tested | — |
+| **UI consistency (7.1–7.5)** | ⏳ Not tested | — |
+| **Windows 11** | ⏳ Not tested | Required for Task 3.1 sign-off |
+
+**Detail recorded in:** `MANUAL_TESTING_CHECKLIST_SPRINT13.md` (macOS ☑ columns).
 
 ---
 

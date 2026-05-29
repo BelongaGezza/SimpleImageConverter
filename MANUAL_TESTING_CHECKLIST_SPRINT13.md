@@ -26,6 +26,15 @@ cargo build --release -p converter-gui
 
 **Record results in:** `MANUAL_TESTING_REPORT_SPRINT12.md` (Sprint 13 addendum section).
 
+### Human Results Summary (May 29, 2026 — macOS)
+
+| Area | macOS status | Notes |
+|------|--------------|-------|
+| **Image format conversions** | ✅ Pass | Single-file and batch image conversions verified |
+| **Mesh format conversions** | ⏳ Pending | STL/OBJ/PLY and mixed queues not yet tested |
+| **Keyboard shortcuts (§1)** | ✅ Pass | Cmd+O, Enter, batch shortcuts, queue keys, Escape/edit dialog, F1 |
+| **Windows 11** | ⏳ Pending | Full pass not run |
+
 ---
 
 ## Automated Verification Summary (May 29, 2026)
@@ -78,7 +87,7 @@ These block Task 3.1 sign-off until human pass on macOS **and** Windows 11.
 
 | ID | Item | Sprint 12 status | Sprint 13 action |
 |----|------|------------------|------------------|
-| P1 | Test 5.3 — Edit queue dialog + Escape | Fix applied (radio_value); re-test pending | **Re-test 🔁 Manual Required ⏳** |
+| P1 | Test 5.3 — Edit queue dialog + Escape | Fix applied (radio_value); re-test pending | **☑ Pass macOS (May 29, 2026)** — Windows ⏳ |
 | P2 | Test 1.2 — Settings persist after restart | Not tested | **Manual Required ⏳** |
 | P3 | Test 1.2 — Cmd+S disabled when settings closed | Not tested | **Manual Required ⏳** |
 | P4 | High — Mesh files visible in Open dialog (Windows) | Fix applied; Windows re-test pending | **Re-test 🔁 Manual Required ⏳** (Windows) |
@@ -99,10 +108,10 @@ Platform modifier: **Cmd** on macOS, **Ctrl** on Windows/Linux. Mark each platfo
 
 | Step | Action | macOS | Windows |
 |------|--------|-------|---------|
-| 1 | Launch app | ☐ | ☐ |
-| 2 | Press modifier+O | ☐ | ☐ |
-| 3 | Native file dialog opens | ☐ | ☐ |
-| 4 | Select PNG image; file loads, format options appear | ☐ | ☐ |
+| 1 | Launch app | ☑ | ☐ |
+| 2 | Press modifier+O | ☑ | ☐ |
+| 3 | Native file dialog opens | ☑ | ☐ |
+| 4 | Select PNG image; file loads, format options appear | ☑ | ☐ |
 | 5 | Repeat with STL mesh; mesh loads | ☐ | ☐ |
 | 6 | Verify "Supported Files" / mesh extensions visible in dialog | ☐ | ☐ |
 
@@ -113,8 +122,8 @@ Platform modifier: **Cmd** on macOS, **Ctrl** on Windows/Linux. Mark each platfo
 | Step | Action | macOS | Windows |
 |------|--------|-------|---------|
 | 1 | Edit → Preferences; change default quality | ☐ | ☐ |
-| 2 | With panel open, press modifier+S; success message | ☐ | ☐ |
-| 3 | With panel **closed**, press modifier+S; no save / no error | ☐ | ☐ |
+| 2 | With panel open, press modifier+S; success message | ☑ | ☐ |
+| 3 | With panel **closed**, press modifier+S; no save / no error | ☑ | ☐ |
 | 4 | Quit app, relaunch; setting persisted | ☐ | ☐ |
 
 ### 2.1 Start Conversion — Enter
@@ -123,63 +132,62 @@ Platform modifier: **Cmd** on macOS, **Ctrl** on Windows/Linux. Mark each platfo
 
 | Step | Action | macOS | Windows |
 |------|--------|-------|---------|
-| 1 | Load file, select output format | ☐ | ☐ |
-| 2 | Press Enter; conversion starts | ☐ | ☐ |
-| 3 | No file selected + Enter → no conversion | ☐ | ☐ |
-| 4 | During active conversion + Enter → no duplicate start | ☐ | ☐ |
+| 1 | Load file, select output format | ☑ | ☐ |
+| 2 | Press Enter; conversion starts | ☑ | ☐ |
+| 3 | No file selected + Enter → no conversion | ☑ | ☐ |
+| 4 | During active conversion + Enter → no duplicate start | ☑ | ☐ |
 
 ### 3.1–3.4 Batch Shortcuts
 
-**Code Verified ✅** (macOS partial pass Sprint 12) | **Re-test 🔁**
+**macOS Pass (May 29, 2026)** — shortcut keys verified by human tester
 
 | Test | Shortcut | Steps | macOS | Windows |
 |------|----------|-------|-------|---------|
-| 3.1 | Ctrl+Enter | Add 3 files (Ctrl+A), start batch | ☐ | ☐ |
-| 3.2 | Ctrl+P | Pause mid-batch, resume | ☐ | ☐ |
-| 3.3 | Space | Pause/resume while batch active | ☐ | ☐ |
-| 3.4 | Escape | Cancel active batch | ☐ | ☐ |
-| — | Ctrl+Enter | Empty queue → no start / graceful | ☐ | ☐ |
+| 3.1 | Ctrl+Enter | Add 3 files (Ctrl+A), start batch | ☑ | ☐ |
+| 3.2 | Ctrl+P | Pause mid-batch, resume | ☑ | ☐ |
+| 3.3 | Space | Pause/resume while batch active | ☑ | ☐ |
+| 3.4 | Escape | Cancel active batch | ☑ | ☐ |
+| — | Ctrl+Enter | Empty queue → no start / graceful | ☑ | ☐ |
 
 ### 4.1–4.2 Queue Management
 
-**Code Verified ✅** (macOS pass Sprint 12) | **Re-test 🔁** on Windows
+**macOS Pass (May 29, 2026)**
 
 | Test | Shortcut | Steps | macOS | Windows |
 |------|----------|-------|-------|---------|
-| 4.1 | Ctrl+A | Multi-select files → queue populated | ☐ | ☐ |
-| 4.2 | Ctrl+Shift+D | Confirm clears queue; cancel preserves; empty queue no-op | ☐ | ☐ |
+| 4.1 | Ctrl+A | Multi-select files → queue populated | ☑ | ☐ |
+| 4.2 | Ctrl+Shift+D | Confirm clears queue; cancel preserves; empty queue no-op | ☑ | ☐ |
 
 ### 5.1 Preferences Toggle
 
-**Code Verified ✅** | **Manual Required ⏳**
+**macOS Pass (May 29, 2026)** — shortcut keys verified
 
 | Step | Action | macOS | Windows |
 |------|--------|-------|---------|
-| 1 | Edit → Preferences opens settings section | ☐ | ☐ |
-| 2 | Edit → Preferences again closes | ☐ | ☐ |
+| 1 | Edit → Preferences opens settings section | ☑ | ☐ |
+| 2 | Edit → Preferences again closes | ☑ | ☐ |
 
 ### 5.2 Reset — Ctrl+R / Cmd+R
 
-**Code Verified ✅** (macOS pass) | **Re-test 🔁**
+**macOS Pass (May 29, 2026)**
 
 | Step | Action | macOS | Windows |
 |------|--------|-------|---------|
-| 1 | Load file + format + options | ☐ | ☐ |
-| 2 | Press modifier+R; selection and options reset | ☐ | ☐ |
+| 1 | Load file + format + options | ☑ | ☐ |
+| 2 | Press modifier+R; selection and options reset | ☑ | ☐ |
 
-### 5.3 Escape — Edit Queue Dialog 🔁 BLOCKING
+### 5.3 Escape — Edit Queue Dialog
 
-**Code Verified ✅** (Escape clears `editing_queue_item`; format selector uses `radio_value`)  
-**Manual Required ⏳** — primary Sprint 13 re-test
+**macOS Pass (May 29, 2026)** — shortcut keys verified (included in shortcut pass)
 
 | Step | Action | macOS | Windows |
 |------|--------|-------|---------|
-| 1 | Add image to batch queue | ☐ | ☐ |
-| 2 | Click **Edit** on item; "Edit Queue Item" dialog opens | ☐ | ☐ |
-| 3 | Click different output format; selection **updates visually** | ☐ | ☐ |
-| 4 | Press Escape; dialog closes | ☐ | ☐ |
-| 5 | Re-open Edit; format unchanged (no spurious save) | ☐ | ☐ |
-| 6 | Change format, click Save; queue item updated | ☐ | ☐ |
+| 1 | Add image to batch queue | ☑ | ☐ |
+| 2 | Click **Edit** on item; "Edit Queue Item" dialog opens | ☑ | ☐ |
+| 3 | Click different output format; selection **updates visually** | ☑ | ☐ |
+| 4 | Press Escape; dialog closes | ☑ | ☐ |
+| 5 | Re-open Edit; format unchanged (no spurious save) | ☑ | ☐ |
+| 6 | Change format, click Save; queue item updated | ☑ | ☐ |
 
 ### 5.4 Tab Navigation
 
@@ -206,8 +214,8 @@ Platform modifier: **Cmd** on macOS, **Ctrl** on Windows/Linux. Mark each platfo
 
 | Step | Action | macOS | Windows |
 |------|--------|-------|---------|
-| 1 | Press F1; Help & Documentation window opens | ☐ | ☐ |
-| 2 | Shortcuts list matches behaviour | ☐ | ☐ |
+| 1 | Press F1; Help & Documentation window opens | ☑ | ☐ |
+| 2 | Shortcuts list matches behaviour | ☑ | ☐ |
 
 ---
 
@@ -283,7 +291,7 @@ Platform modifier: **Cmd** on macOS, **Ctrl** on Windows/Linux. Mark each platfo
 
 | Test | Scenario | macOS | Windows |
 |------|----------|-------|---------|
-| 10.1 | Batch images (PNG/JPEG/BMP) | ☐ | ☐ |
+| 10.1 | Batch images (PNG/JPEG/BMP) | ☑ | ☐ |
 | 10.2 | Batch meshes (STL/OBJ/PLY) | ☐ | ☐ |
 | 10.3 | Mixed image + mesh queue | ☐ | ☐ |
 | 10.4 | Parallel processing (Settings → max concurrent > 1) | ☐ | ☐ |
@@ -309,11 +317,11 @@ Platform modifier: **Cmd** on macOS, **Ctrl** on Windows/Linux. Mark each platfo
 
 | Scenario | macOS | Windows 11 | Ubuntu 24.04+ |
 |----------|-------|------------|---------------|
-| Single-file PNG → JPEG conversion | ☐ | ☐ | ☐ |
+| Single-file PNG → JPEG conversion | ☑ | ☐ | ☐ |
 | Single-file STL → OBJ conversion | ☐ | ☐ | ☐ |
-| Batch: add 3 files, convert all | ☐ | ☐ | ☐ |
-| Batch: pause → resume → complete | ☐ | ☐ | ☐ |
-| Batch: cancel mid-run | ☐ | ☐ | ☐ |
+| Batch: add 3 files, convert all | ☑ | ☐ | ☐ |
+| Batch: pause → resume → complete | ☑ | ☐ | ☐ |
+| Batch: cancel mid-run | ☑ | ☐ | ☐ |
 | Settings persist across restart | ☐ | ☐ | ☐ |
 | Native file dialogs acceptable | ☐ | ☐ | ☐ |
 | HiDPI / Retina layout acceptable | ☐ | ☐ | ☐ |
@@ -336,7 +344,7 @@ Platform modifier: **Cmd** on macOS, **Ctrl** on Windows/Linux. Mark each platfo
 | Role | Name | Date | Task 3.1 | Task 3.2 |
 |------|------|------|----------|----------|
 | UI Designer | Jamie Chen | | ☐ In Progress | ☐ In Progress |
-| Tester (human) | | | ☐ Complete | ☐ Complete |
+| Tester (human) | Gerry | May 29, 2026 | ☐ In Progress (macOS partial) | ☐ In Progress |
 
 **Release gate:** Task 3.1 requires zero open Critical/High issues and all Priority Re-tests (P1–P4) passed on macOS + Windows 11.
 
