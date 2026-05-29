@@ -2,8 +2,11 @@
 ## Rust Image and 3D Mesh Converters
 
 **Date:** December 26, 2025  
-**Language:** Rust 1.92.0  
-**Target:** x86-64 Windows 11
+**Last Updated:** May 29, 2026 (ADR-003 mesh detection policy, workspace status)  
+**Language:** Rust 1.92  
+**Targets:** Windows 11, macOS, Linux (Ubuntu 24.04+) — all active desktop platforms
+
+**Architectural Decision Records:** See `SYSTEM_ARCHITECT_V1.0.0_RELEASE_REVIEW.md` for ADR-001 through ADR-005.
 
 ---
 
@@ -136,11 +139,11 @@ converter-workspace/
     │       └── history_panel.rs
     └── assets/
         └── icons/
-    
-    **Note:** Actual GUI structure follows `GUI_DESIGN_AND_IMPLEMENTATION.md` 
-    rather than the tab-based structure shown above. The implementation uses 
-    component-based UI with drop zones, format selectors, and panels.
 ```
+
+**Note:** Actual GUI structure follows `GUI_DESIGN_AND_IMPLEMENTATION.md`
+rather than the tab-based structure shown above. The implementation uses
+component-based UI with drop zones, format selectors, and panels.
 
 ### 1.2 Workspace Cargo.toml
 
@@ -211,6 +214,29 @@ debug = true
 inherits = "release"
 debug = true
 ```
+
+### 1.3 Implementation Status (May 2026)
+
+The workspace has evolved beyond the original Phase 4 scope. Current members:
+
+| Crate | Role | Status |
+|-------|------|--------|
+| `common` | Shared limits, validation, security, I/O | Production |
+| `img-core` / `img-convert` | 2D library + CLI | Production |
+| `mesh-core` / `mesh-convert` | 3D library + CLI | Production |
+| `converter-gui` | Production GUI (release target) | Production |
+| `converter-gui-modern` | UX shell over `converter-gui` library | Experimental (v1.1 preview; not in release artifacts) |
+
+Additional artefacts outside the workspace manifest:
+
+- `fuzz/` — libFuzzer targets (PNG, JPEG, STL); run locally, not in CI (planned v1.1)
+- `tests/data/` — shared integration test fixtures
+
+**Platform scope:** Originally scoped to x86-64 Windows 11; all three desktop platforms are now active build and release targets. See `.github/workflows/ci.yml` and `scripts/package-*.sh/ps1`.
+
+**ADR-001 (Dual GUI):** v1.0.0 ships `converter-gui` only. See `SYSTEM_ARCHITECT_V1.0.0_RELEASE_REVIEW.md`.
+
+**Note:** §1.2 Cargo.toml above is the original design snapshot. The live workspace manifest is in root `Cargo.toml` (version 0.3.0, seven members including `converter-gui` and `converter-gui-modern`).
 
 ---
 
@@ -2331,49 +2357,98 @@ pub fn read_file_bytes_checked(
 
 ### 12.4 Format Detection Security
 
-Two-stage format detection prevents format spoofing:
+**ADR-003 (May 2026):** Tiered two-stage format detection prevents format spoofing while accommodating formats that lack reliable magic bytes. Both `img-core` and `mesh-core` implement the same policy shape.
+
+#### Policy (Normative)
+
+```
+Stage 1 (always): Extension-based format identification via detect_from_path().
+Stage 2 (when feasible): Signature verification via detect_from_bytes().
+  - If signature detected AND mismatches extension → reject with InvalidFormat.
+  - If signature not detectable → accept extension format; rely on parse-time validation.
+```
+
+Public entry points: `FormatRegistry::detect_two_stage(path, data)` in both registries. CLI tools may additionally call `verify_format` after two-stage detection.
+
+#### Image Formats (`img-core`)
+
+All raster formats have magic-byte signatures. Stage 2 always runs when bytes are available.
+
+| Format | Stage 2 | Signature |
+|--------|---------|-----------|
+| PNG | ✅ | `89 50 4E 47 0D 0A 1A 0A` |
+| JPEG | ✅ | `FF D8 FF` |
+| BMP | ✅ | `42 4D` ("BM") |
+| GIF | ✅ | `47 49 46 38` ("GIF8") |
+| TIFF | ✅ | `II*` / `MM*` |
+| WebP | ✅ | RIFF + WEBP at offset 8 |
+| SVG | ✅ | XML/`<?xml`/`<svg` heuristic |
 
 ```rust
 // img-core/src/formats/registry.rs
 
-/// Magic bytes for format detection
-const PNG_MAGIC: [u8; 8] = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
-const JPEG_MAGIC: [u8; 3] = [0xFF, 0xD8, 0xFF];
-const BMP_MAGIC: [u8; 2] = [0x42, 0x4D];
-const GIF_MAGIC: [u8; 4] = [0x47, 0x49, 0x46, 0x38];
-
 impl FormatRegistry {
-    /// Detect format from magic bytes
-    pub fn detect_from_bytes(data: &[u8]) -> Option<ImageFormat> {
-        if data.len() < 8 { return None; }
-        
-        if data.starts_with(&PNG_MAGIC) {
-            Some(ImageFormat::Png)
-        } else if data.starts_with(&JPEG_MAGIC) {
-            Some(ImageFormat::Jpeg)
-        } else if data.starts_with(&BMP_MAGIC) {
-            Some(ImageFormat::Bmp)
-        } else if data.starts_with(&GIF_MAGIC) {
-            Some(ImageFormat::Gif)
-        } else {
-            None
-        }
-    }
-    
-    /// Verify format matches expected (two-stage detection)
-    pub fn verify_format(data: &[u8], expected: ImageFormat) -> Result<()> {
-        if let Some(detected) = Self::detect_from_bytes(data) {
-            if detected != expected {
+    /// Detect format using two-stage detection (extension + magic bytes)
+    pub fn detect_two_stage(path: &Path, data: &[u8]) -> Result<ImageFormat> {
+        let extension_format = Self::detect_from_path(path)?;
+        if let Some(magic_format) = Self::detect_from_bytes(data) {
+            if magic_format != extension_format {
                 return Err(ConversionError::InvalidFormat(format!(
-                    "File extension suggests {:?} but content is {:?}",
-                    expected, detected
+                    "Format mismatch: extension suggests {:?} but magic bytes indicate {:?}",
+                    extension_format, magic_format
                 )));
             }
         }
-        Ok(())
+        Ok(extension_format)
+    }
+
+    /// Verify format matches expected (optional third check after two-stage)
+    pub fn verify_format(data: &[u8], expected: ImageFormat) -> Result<()> { /* ... */ }
+}
+```
+
+#### Mesh Formats (`mesh-core`)
+
+Mesh formats use a **tiered** policy: signature verification where headers are unambiguous; parse-time validation otherwise.
+
+| Format | Stage 2 | Mechanism |
+|--------|---------|-----------|
+| GLB | ✅ Signature | `glTF` magic bytes (offset 0) |
+| glTF (JSON) | ✅ Heuristic | JSON structure check (`looks_like_gltf_json`) |
+| PLY | ✅ Signature | `ply` header (case-insensitive) |
+| OFF | ✅ Signature | `*OFF` token family (OFF, COFF, NOFF, etc.) |
+| STL | ⚠️ None at detection | Binary/ASCII ambiguous; **parse-validate at read** via `StlFormat::with_limits` |
+| OBJ | ⚠️ None at detection | Text format, no reliable magic; **parse-validate at read** |
+| DXF | ⚠️ None at detection | Text format; **parse-validate at read** |
+| STEP | Extension + feature gate | Parse validation in `StepFormat::with_limits`; requires `--features step` |
+
+```rust
+// mesh-core/src/formats/registry.rs
+
+impl FormatRegistry {
+    /// Detect format using two-stage detection (extension + signature, when available)
+    pub fn detect_two_stage(path: &Path, data: &[u8]) -> Result<MeshFormat> {
+        let extension_format = Self::detect_from_path(path)?;
+        if let Some(signature_format) = Self::detect_from_bytes(data) {
+            if signature_format != extension_format {
+                return Err(ConversionError::InvalidFormat(format!(
+                    "Format mismatch: extension suggests {:?} but signature indicates {:?}",
+                    extension_format, signature_format
+                )));
+            }
+        }
+        Ok(extension_format)
     }
 }
 ```
+
+**Rationale for tiered mesh detection:** STL binary files share no unique magic byte distinguishable from arbitrary binary data at low read cost; OBJ and DXF are text formats without standard headers. Rejecting extension-only formats at detection time would block valid files. Parse-time validation via `get_reader_with_limits` and `ResourceLimits` provides the security backstop.
+
+**Error reporting:** All mismatch errors use `ConversionError::InvalidFormat` with extension vs signature detail. User-facing messages are sanitized per §12.5.
+
+**Testing:** Spoofing and mismatch cases are covered in `img-core/tests/security.rs` and `mesh-core/tests/security.rs` / registry unit tests.
+
+**Reference:** `rust-resources.md` Format Detection Policy; `SYSTEM_ARCHITECT_V1.0.0_RELEASE_REVIEW.md` ADR-003.
 
 ### 12.5 Error Message Sanitization
 

@@ -2,15 +2,17 @@
 ## Living Knowledge Base for Simple Image Converter
 
 **Maintained By:** Researcher (Dr. Taylor Kim)  
-**Last Updated:** January 26, 2026  
+**Last Updated:** May 29, 2026  
 **Update Frequency:** Weekly + as needed  
 **Purpose:** Track Rust ecosystem changes, library updates, and project learnings
 
 **⚠️ IMPORTANT:** All team members must consult this document before implementing features or making decisions.
 
-### Quick Status Summary (as of Jan 26, 2026)
+### Quick Status Summary (as of May 29, 2026)
 
-**Current Project Phase:** Sprint 12_A (v1.0.0 Final Release Preparation)
+**Current Project Phase:** Sprint 13 (v1.0.0 Release Execution)
+
+**Key references:** `SYSTEM_ARCHITECT_V1.0.0_RELEASE_REVIEW.md`, `AGENT_TASKS/SPRINT_13_TASKING.md`
 
 **Technology Audit Completed:** December 27, 2025
 - See `TECHNOLOGY_AUDIT_REPORT.md` for full details
@@ -225,28 +227,42 @@ resvg::render(&tree, resvg::usvg::Transform::default(), &mut pixmap_mut);
 
 ### 3D Mesh Processing (mesh-core)
 
-**Current Status:** mesh-core is in early development. Mesh format dependencies will be added during Sprint 3+.
+**Current Status:** Production — STL, OBJ, PLY, OFF, glTF/GLB, DXF implemented; STEP behind `step` feature.
 
-#### stl_io (v0.7) - ⚠️ OUTDATED
-**License:** MIT OR Apache-2.0
-**Status:** ⚠️ **OUTDATED** - Current version is 0.10.0
-**Current Usage:** Active in mesh-core
+#### Format Detection Policy (ADR-003)
 
-**Update Required:**
-```toml
-# In workspace Cargo.toml
-# Update: stl_io = "0.7"
-# To:
-stl_io = "0.10"
+Mesh format detection follows a **tiered two-stage policy** aligned with `Phase3_Architecture.md` §12.4 and `img-core`:
+
+```
+Stage 1 (always): Extension via FormatRegistry::detect_from_path()
+Stage 2 (when feasible): Signature via FormatRegistry::detect_from_bytes()
+  - Signature detected + mismatches extension → InvalidFormat error
+  - No reliable signature → accept extension; parse-validate at read time
 ```
 
-**Notes (0.7 → 0.10):**
-- The upstream repo does **not** publish GitHub Releases notes; treat this as a “read docs + compile + test” upgrade.
-- The high-level API (`read_stl`, `create_stl_reader`, `write_stl`, `IndexedMesh`) appears stable between docs.rs `0.7.0` and `0.10.0`, but semver is still 0.x so breaking changes are possible.
-- References:
-  - [docs.rs `stl_io` 0.7.0](https://docs.rs/stl_io/0.7.0/stl_io/)
-  - [docs.rs `stl_io` 0.10.0](https://docs.rs/stl_io/0.10.0/stl_io/)
-  - Source: [hmeyer/stl_io](https://github.com/hmeyer/stl_io)
+| Format | Stage 2 | Notes |
+|--------|---------|-------|
+| GLB | ✅ | `glTF` magic at offset 0 |
+| glTF (JSON) | ✅ | `looks_like_gltf_json` heuristic |
+| PLY | ✅ | `ply` header |
+| OFF | ✅ | `*OFF` token family |
+| STL | ⚠️ Parse-validate | Binary/ASCII ambiguous — use `StlFormat::with_limits` at read |
+| OBJ | ⚠️ Parse-validate | Text format — use `ObjFormat::with_limits` at read |
+| DXF | ⚠️ Parse-validate | Text format — use `DxfFormat::with_limits` at read |
+| STEP | Feature gate + parse | Requires `--features step`; `StepFormat::with_limits` |
+
+**Implementation:** `mesh-core/src/formats/registry.rs` — `detect_two_stage`, `detect_from_bytes`.
+
+**CLI/GUI usage:** Always prefer `detect_two_stage(path, data)` over extension-only detection. Inject limits via `get_reader_with_limits`.
+
+**Testing:** Spoofing/mismatch tests in `mesh-core` registry unit tests and security tests.
+
+**Do not** require magic bytes for STL/OBJ/DXF at detection time — this would reject valid files. Security backstop is parse-time validation with `ResourceLimits`.
+
+#### stl_io (v0.10) - ✅ CURRENT
+**License:** MIT OR Apache-2.0
+**Status:** ✅ **CURRENT** — upgraded from 0.7 in Sprint 13 (May 2026)
+**Current Usage:** Active in mesh-core
 
 **Key APIs:**
 ```rust
@@ -816,15 +832,27 @@ let limits = ResourceLimits::builder()
 read_file_bytes_checked(&path, &limits)?;
 ```
 
-**4. Two-Stage Format Detection:**
+**4. Two-Stage Format Detection (ADR-003):**
+
+Both `img-core` and `mesh-core` use tiered two-stage detection. See `Phase3_Architecture.md` §12.4 for the normative policy.
+
 ```rust
-// Security: Always use two-stage detection (extension + magic bytes)
-let input_format = FormatRegistry::detect_two_stage(input_path, &input_data)?;
+// Security: Always use two-stage detection (extension + signature when available)
+// Image (all formats have magic bytes):
+let input_format = img_core::FormatRegistry::detect_two_stage(input_path, &input_data)?;
+
+// Mesh (tiered — STL/OBJ/DXF rely on parse-validate at read):
+let input_format = mesh_core::FormatRegistry::detect_two_stage(input_path, &input_data)?;
+let reader = mesh_core::FormatRegistry::get_reader_with_limits(input_format, limits.clone())?;
 ```
+
+**Image formats:** Stage 2 always runs when magic bytes are available (PNG, JPEG, BMP, GIF, TIFF, WebP, SVG).
+
+**Mesh formats:** Stage 2 runs for GLB, glTF JSON, PLY, OFF. STL, OBJ, DXF use parse-time validation via `with_limits` readers.
 
 **Security Checklist for GUI:**
 - [ ] All file paths validated using `common::validation::validate_file_path()`
-- [ ] Two-stage format detection (extension + magic bytes)
+- [ ] Two-stage format detection (`detect_two_stage`) for both 2D and 3D inputs
 - [ ] File size checked before reading (DoS prevention)
 - [ ] Output paths validated (not in system directories)
 - [ ] Filenames validated (invalid characters, path traversal prevented)

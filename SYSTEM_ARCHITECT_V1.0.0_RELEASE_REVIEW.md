@@ -96,9 +96,9 @@ Stage 2 (when feasible): Signature verification via detect_from_bytes().
 | DXF | ⚠️ None at detection | Parse-validate at read |
 | STEP | Extension + feature gate | Parse validation in `StepFormat::with_limits` |
 
-**Action:** Add this policy to `Phase3_Architecture.md` §12 and `rust-resources.md`.
+**Action:** ~~Add this policy to `Phase3_Architecture.md` §12 and `rust-resources.md`.~~ Done (May 29, 2026, Sprint 13 Task 2.1).
 
-**Status:** ✅ Policy approved; implementation complete; Senior sign-off pending (A.3.3)
+**Status:** ✅ Policy approved and published; implementation complete; Senior sign-off pending (A.3.3 / Task 2.3)
 
 ---
 

@@ -24,11 +24,11 @@ If all roles are In Progress or Complete, STOP — no unclaimed work remains.
 
 | Phase | Status | Completion |
 |-------|--------|------------|
-| Phase 1: Code Hardening | 🟡 In Progress | 0% |
-| Phase 2: Reviews & Sign-off | 🟡 Pending | 0% |
+| Phase 1: Code Hardening | ✅ Complete | 100% |
+| Phase 2: Reviews & Sign-off | 🟡 In Progress | 33% (2.1 done) |
 | Phase 3: Manual Testing | 🔴 Blocking | Incomplete |
 | Phase 4: Release Execution | ⏳ Pending | 0% |
-| Phase 5: Documentation Refresh | 🟡 In Progress | 50% |
+| Phase 5: Documentation Refresh | 🟡 In Progress | 75% (5.2 done) |
 
 **Ship Decision:** CONDITIONAL NO-SHIP (see architect review)
 
@@ -38,7 +38,7 @@ If all roles are In Progress or Complete, STOP — no unclaimed work remains.
 
 | Role | Persona File | Status | Assigned Agent | Owned Tasks |
 |------|--------------|--------|----------------|-------------|
-| System Architect (Alex Chen) | `.agents/system-architect.md` | Available | — | 2.1, 5.1 |
+| System Architect (Alex Chen) | `.agents/system-architect.md` | In Progress | Alex Chen (Task 2.1) | 2.1, 5.1 |
 | Senior Engineer (Jordan Rivera) | `.agents/senior-engineer.md` | In Progress | Sprint 13 subagent | 1.3, 2.2, 2.3, 4.1, 4.2, 4.3 |
 | UI Designer (Jamie Chen) | `.agents/ui-designer.md` | Available | — | 3.1, 3.2 |
 | Junior Engineer 3D (Alex Rivera) | `.agents/junior-engineer-3d.md` | Complete | Alex Rivera (Task 1.1) | 1.1, 2.2 (support) |
@@ -109,12 +109,12 @@ Root `tests/cli_tests.rs` is not attached to any crate and never runs with `carg
 ### Task 2.1: Publish ADR-003 to Architecture Docs
 **Assigned Role:** System Architect  
 **Priority:** HIGH  
-**Status:** [ ] Not Started / [ ] In Progress / [ ] Complete
+**Status:** [x] Complete (May 29, 2026)
 
 **Acceptance Criteria:**
-- [ ] Mesh two-stage detection policy added to `Phase3_Architecture.md` §12
-- [ ] `rust-resources.md` mesh detection section updated
-- [ ] Cross-platform scope and 7-crate workspace noted in Phase3 header
+- [x] Mesh two-stage detection policy added to `Phase3_Architecture.md` §12
+- [x] `rust-resources.md` mesh detection section updated
+- [x] Cross-platform scope and 7-crate workspace noted in Phase3 header
 
 ---
 
