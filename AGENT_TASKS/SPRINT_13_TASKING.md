@@ -26,7 +26,7 @@ If all roles are In Progress or Complete, STOP — no unclaimed work remains.
 |-------|--------|------------|
 | Phase 1: Code Hardening | ✅ Complete | 100% |
 | Phase 2: Reviews & Sign-off | ✅ Complete | 100% (2.1–2.3 done) |
-| Phase 3: Manual Testing | 🔴 Blocking | Incomplete |
+| Phase 3: Manual Testing | 🟡 In Progress | ~25% (3.1 prep done) |
 | Phase 4: Release Execution | ⏳ Pending | 0% |
 | Phase 5: Documentation Refresh | ✅ Complete | 100% (5.2, 5.3 done) |
 
@@ -154,12 +154,25 @@ Root `tests/cli_tests.rs` is not attached to any crate and never runs with `carg
 ### Task 3.1: Execute Manual Testing Re-test
 **Assigned Role:** UI Designer  
 **Priority:** **BLOCKING**  
-**Status:** [ ] Not Started / [ ] In Progress / [ ] Complete
+**Status:** [ ] Not Started / [x] In Progress / [ ] Complete
 
 **Description:**
 Complete re-test of Tasks 2.4/2.5 and remaining Sprint 12 manual checklist items on Windows 11 and macOS.
 
-**Reference:** `MANUAL_TESTING_REPORT_SPRINT12.md`
+**Reference:** `MANUAL_TESTING_REPORT_SPRINT12.md`, `MANUAL_TESTING_CHECKLIST_SPRINT13.md`
+
+**Progress (May 29, 2026 — Jamie Chen):**
+
+| Area | Automated (this session) | Human required |
+|------|--------------------------|----------------|
+| `cargo test -p converter-gui --workspace` | ✅ 194 tests, 0 failed | — |
+| macOS release build | ✅ `cargo build --release -p converter-gui` | — |
+| Shortcut/help code audit | ✅ Handler ↔ help_panel match | Key press on real OS |
+| Sprint 11 + integration tests | ✅ Batch queue edit, settings save | Visual UX |
+| Checklist & report addendum | ✅ Created/updated | Execute checklist |
+| Test 5.3 edit dialog re-test | Code fix verified in tests | 🔁 macOS + Windows |
+| Windows 11 full pass | — | ⏳ Not run this session |
+| Linux GUI | — | ⏳ Out of scope (macOS session) |
 
 **Acceptance Criteria:**
 - [ ] All keyboard shortcut tests (1.1–5.5) Pass
@@ -168,12 +181,16 @@ Complete re-test of Tasks 2.4/2.5 and remaining Sprint 12 manual checklist items
 - [ ] Edit queue, exit-save, batch cleanup re-tests Pass
 - [ ] Zero Critical/High open issues
 
+**Handoff:** Human tester runs `MANUAL_TESTING_CHECKLIST_SPRINT13.md` on macOS and Windows 11; record results in Sprint 12 report Sprint 13 addendum. Do **not** mark Complete until P1–P4 re-tests pass.
+
 ---
 
 ### Task 3.2: Cross-Platform GUI Smoke Test
 **Assigned Role:** UI Designer (+ Senior Engineer for builds)  
 **Priority:** HIGH  
-**Status:** [ ] Not Started / [ ] In Progress / [ ] Complete
+**Status:** [ ] Not Started / [x] In Progress / [ ] Complete
+
+**Progress (May 29, 2026):** Smoke test matrix added to `MANUAL_TESTING_CHECKLIST_SPRINT13.md` §8–§7. macOS release build verified; GUI smoke not executed (requires human). Windows/Linux builds need separate sessions.
 
 **Acceptance Criteria:**
 - [ ] Single-file conversion works on Win/macOS/Linux

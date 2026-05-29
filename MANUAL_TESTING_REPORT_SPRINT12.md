@@ -1263,3 +1263,64 @@ _Add final notes and approval status_
 **Last Updated:** January 25, 2026  
 **Status:** 🟡 In Progress - Paused 2026-01-25 due to open blocker (Edit Queue Item format selection not updating). Resume at Test 5.3 after fix and re-test.
 
+---
+
+## Sprint 13 Addendum (May 29, 2026)
+
+**Agent:** Jamie Chen (UI Designer)  
+**Sprint:** 13 — Task 3.1 prep / Task 3.2 checklist  
+**Session platform:** macOS (automated verification only)
+
+### Automated Test Run
+
+Command: `cargo test -p converter-gui --workspace`
+
+| Suite | Tests | Result |
+|-------|-------|--------|
+| converter-gui unit (lib + bin) | 138 | ✅ Pass |
+| integration_tests | 25 | ✅ Pass |
+| security_tests | 18 | ✅ Pass |
+| sprint11_tests | 13 | ✅ Pass |
+| **converter-gui subtotal** | **194** | **✅ 0 failed** |
+| Full workspace | All crates | ✅ Pass |
+
+macOS release build: `cargo build --release -p converter-gui` — ✅ succeeded.
+
+### Code Re-Audit (Shortcuts & Help)
+
+Re-verified May 29, 2026 against current `main`:
+
+- **Keyboard shortcuts:** All 11 handler shortcuts in `app.rs::handle_keyboard_shortcuts()` match `help_panel.rs` documentation. F1 opens help panel (documented in help content, not in Sprint 12 handler list).
+- **Help menu:** Actual label is **Help → Help & Documentation** (Sprint 12 text referenced "Keyboard Shortcuts..." — update manual steps accordingly).
+- **About version:** Dynamic `CARGO_PKG_VERSION` → **0.3.0** (matches workspace).
+- **Edit queue format fix:** `batch_queue.rs` uses `radio_value` on draft state (Jan 2026 fix); automated `test_batch_queue_item_editing` and `test_queue_item_editing_integration` pass — **human re-test of Test 5.3 still required**.
+- **Exit save:** `on_exit()` flushes settings; File → Exit also saves — **Code Verified ✅**; persistence across restart **Manual Required ⏳**.
+
+### Open Items Blocking Human Sign-Off
+
+| Priority | Test / Issue | Status | Owner |
+|----------|--------------|--------|-------|
+| P1 | 5.3 Edit dialog format + Escape | Fix in code; **re-test pending** | Human tester |
+| P2 | 1.2 Settings persist after restart | Not tested | Human tester |
+| P3 | 1.2 Cmd+S when settings closed | Not tested | Human tester |
+| P4 | High: mesh files in Open dialog (Windows) | Mitigation in code; **Windows re-test pending** | Human tester (Windows) |
+| P5 | 6.1–6.2 Help & About UX | Not manually tested | Human tester |
+| P6 | 5.4–5.5 Tab / Arrow navigation | Not tested | Human tester |
+| P7 | 7.1–7.5 UI visual consistency | Not tested | Human tester |
+| P8 | Task 3.2 cross-platform smoke | Not started | Human tester (Win/macOS/Linux) |
+
+### Sprint 13 Handoff
+
+- **Checklist for human execution:** `MANUAL_TESTING_CHECKLIST_SPRINT13.md`
+- **Task 3.1 status:** In Progress — automated prep complete; awaiting human re-test on macOS + Windows 11
+- **Task 3.2 status:** In Progress — smoke test matrix in checklist Section 8; Linux/Windows sessions required
+- **Cannot claim complete:** Actual key execution, native dialogs, drag-and-drop, visual UI review, cross-platform smoke
+
+### macOS Partial Results (Carried Forward from Sprint 12)
+
+Tests marked Pass on macOS in Sprint 12 remain valid until re-test: 1.1, 1.2 (partial), 2.1, 3.1–3.4, 4.1–4.2, 5.1–5.2, 3.4/4.2 Escape paths. **Test 5.3 must be re-run** after format-selector fix before Task 3.1 can close.
+
+---
+
+**Sprint 13 Addendum Last Updated:** May 29, 2026
+
