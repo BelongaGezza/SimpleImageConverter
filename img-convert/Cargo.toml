@@ -17,3 +17,6 @@ img-core = { path = "../img-core" }
 clap.workspace = true
 anyhow.workspace = true
 
+[dev-dependencies]
+tempfile.workspace = true
+

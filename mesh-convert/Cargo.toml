@@ -17,3 +17,6 @@ mesh-core = { path = "../mesh-core" }
 clap.workspace = true
 anyhow.workspace = true
 
+[dev-dependencies]
+tempfile.workspace = true
+
