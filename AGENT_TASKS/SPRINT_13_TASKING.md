@@ -259,7 +259,18 @@ Verify release notes against `docs/FORMATS.md`, Sprint 13 hardening work, and `V
 
 ---
 
-## Immediate Parallel Dispatch (May 29, 2026)
+## Immediate Parallel Dispatch (May 29, 2026 — Round 2)
+
+| Task | Agent | Result |
+|------|-------|--------|
+| 2.2 glTF Senior review | Senior Engineer | ✅ Complete — `GLTF_SENIOR_REVIEW_SPRINT13.md` |
+| 2.3 Mesh detection sign-off | Senior Engineer | ✅ Complete — ADR-003 verified |
+| 5.3 Release notes review | Documentation Specialist | ✅ Complete — `aaad2a4` |
+| 3.1–3.2 Manual testing prep | UI Designer | 🟡 In Progress — `MANUAL_TESTING_CHECKLIST_SPRINT13.md`; human re-test required |
+
+**Next blocking item:** Human execution of `MANUAL_TESTING_CHECKLIST_SPRINT13.md` (Task 3.1), then Phase 4 release execution.
+
+## Immediate Parallel Dispatch (May 29, 2026 — Round 1)
 
 The following tasks were dispatched to subagents immediately after architect review commit:
 
