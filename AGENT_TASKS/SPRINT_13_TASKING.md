@@ -28,7 +28,7 @@ If all roles are In Progress or Complete, STOP — no unclaimed work remains.
 | Phase 2: Reviews & Sign-off | ✅ Complete | 100% (2.1–2.3 done) |
 | Phase 3: Manual Testing | 🔴 Blocking | Incomplete |
 | Phase 4: Release Execution | ⏳ Pending | 0% |
-| Phase 5: Documentation Refresh | 🟡 In Progress | 75% (5.2 done) |
+| Phase 5: Documentation Refresh | ✅ Complete | 100% (5.2, 5.3 done) |
 
 **Ship Decision:** CONDITIONAL NO-SHIP (see architect review)
 
@@ -43,7 +43,7 @@ If all roles are In Progress or Complete, STOP — no unclaimed work remains.
 | UI Designer (Jamie Chen) | `.agents/ui-designer.md` | In Progress | Sprint 13 dispatch | 3.1, 3.2 |
 | Junior Engineer 3D (Alex Rivera) | `.agents/junior-engineer-3d.md` | Complete | Alex Rivera (Task 1.1) | 1.1, 2.2 (support) |
 | Junior Engineer 2D (Sam Kim) | `.agents/junior-engineer-2d.md` | Complete | Sprint 13 subagent | 1.2 |
-| Documentation Specialist (Sam Parker) | `.agents/documentation-specialist.md` | In Progress | Sprint 13 dispatch | 5.3 |
+| Documentation Specialist (Sam Parker) | `.agents/documentation-specialist.md` | Complete | Sam Parker (Task 5.3) | 5.2, 5.3 |
 | Security Specialist (Casey Morgan) | `.agents/security-specialist.md` | Complete | Sprint 12 | Re-consult if scope changes |
 
 ---
@@ -224,7 +224,21 @@ Update `SYSTEM_ARCHITECT_V1.0.0_RELEASE_REVIEW.md` status to ✅ APPROVED.
 
 ### Task 5.3: Release Notes Final Review
 **Assigned Role:** Documentation Specialist  
+**Priority:** HIGH  
+**Status:** [x] Complete (May 29, 2026)  
 **Reference:** `RELEASE_NOTES_v1.0.0.md`
+
+**Description:**
+Verify release notes against `docs/FORMATS.md`, Sprint 13 hardening work, and `V1.0.0_SCOPE.md`; update checklist documentation gates.
+
+**Acceptance Criteria:**
+- [x] Format matrix verified against `docs/FORMATS.md`
+- [x] Sprint 13 items documented (img-core `get_reader_with_limits`, glTF/GLB/DXF integration tests, CLI tests wired, ADR-003)
+- [x] Incorrect claims corrected (test count, release timeline, CLI examples, credits, STEP feature gate, DXF limitation)
+- [x] `V1.0.0_RELEASE_CHECKLIST.md` documentation section updated
+- [x] Discrepancies recorded in task completion notes
+
+**Resolution (May 29, 2026):** Updated `RELEASE_NOTES_v1.0.0.md` — test count 633→657, release date January→Mid-June 2026, sprint count 12→13, CLI syntax corrected, Sprint 13 hardening section added, security/known-limitations aligned with ADR-003 and scope doc; Junior 3D credit corrected to Alex Rivera.
 
 ---
 

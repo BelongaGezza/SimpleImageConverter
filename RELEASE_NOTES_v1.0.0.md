@@ -1,15 +1,15 @@
 # Simple Image Converter v1.0.0 - First Stable Release
 
-**Release Date:** January 2026 (Target: January 12-15)
+**Release Date:** Mid-June 2026 (Sprint 13 target)
 **Type:** Major Stable Release
 **Version:** 1.0.0
-**Status:** Draft
+**Status:** Draft — pending manual testing and release execution gates
 
 ---
 
 ## Introducing Simple Image Converter v1.0.0
 
-We are thrilled to announce **Simple Image Converter v1.0.0** - our first stable release! After months of development across 12 sprints, we're delivering a production-ready, high-performance image and 3D mesh conversion toolkit.
+We are thrilled to announce **Simple Image Converter v1.0.0** - our first stable release! After months of development across 13 sprints, we're delivering a production-ready, high-performance image and 3D mesh conversion toolkit.
 
 Simple Image Converter is a pure Rust application providing both command-line tools and a modern GUI for converting between image and 3D mesh formats.
 
@@ -18,8 +18,8 @@ Simple Image Converter is a pure Rust application providing both command-line to
 ## Highlights
 
 ### Production-Ready Quality
-- **633 automated tests** - Comprehensive test coverage
-- **Security reviewed** - All security audits passed
+- **657 automated tests** - Comprehensive unit, integration, security, and CLI coverage
+- **Security audit Grade A** - Re-verified May 2026; resource limits enforced in both image and mesh pipelines
 - **Performance optimized** - Parallel processing, efficient memory usage
 - **Cross-platform** - Windows 11, macOS, Linux Ubuntu 24.04+
 
@@ -82,26 +82,43 @@ Simple Image Converter is a pure Rust application providing both command-line to
 #### img-convert (Image Converter)
 ```bash
 # Convert PNG to JPEG with quality setting
-img-convert input.png output.jpg --quality 85
+img-convert input.png jpg --quality 85 --output output.jpg
 
 # Convert with auto-detected output format
-img-convert photo.bmp photo.webp
+img-convert photo.bmp webp --output photo.webp
+
+# Enforce resource limits (propagated to format readers via get_reader_with_limits)
+img-convert large.png jpg --max-file-size-mb 50 --max-dimension 8192
 
 # Batch convert all PNGs in directory
-for f in *.png; do img-convert "$f" "${f%.png}.jpg"; done
+for f in *.png; do img-convert "$f" jpg --output "${f%.png}.jpg"; done
 ```
 
 #### mesh-convert (Mesh Converter)
 ```bash
 # Convert STL to OBJ
-mesh-convert model.stl model.obj
+mesh-convert model.stl obj --output model.obj
 
 # Convert with coordinate transform
-mesh-convert model.ply model.gltf --transform y-up-to-z-up
+mesh-convert model.ply gltf --transform y-up --output model.gltf
 
-# Convert STEP file (FACETED_BREP only)
-mesh-convert assembly.step output.stl
+# Enforce mesh resource limits
+mesh-convert model.stl obj --max-file-size-mb 100 --max-vertices 5000000
+
+# Convert STEP file (FACETED_BREP only; requires --features step build)
+mesh-convert assembly.step stl --output output.stl
 ```
+
+---
+
+## Sprint 13 Release Hardening
+
+Final validation work completed in Sprint 13 (May 2026):
+
+- **Image resource limits** — `img-core::FormatRegistry::get_reader_with_limits` mirrors the mesh-core pattern; `img-convert` `--max-dimension` and `--max-file-size-mb` are enforced in format readers (closes RISK-006)
+- **Integration test coverage** — Round-trip tests added for glTF (embedded), GLB, and DXF in `mesh-core/tests/integration.rs`
+- **CLI integration tests** — Orphaned root tests wired into `img-convert/tests/cli_integration.rs` and `mesh-convert/tests/cli_integration.rs`; all run via `cargo test --workspace`
+- **ADR-003 published** — Tiered two-stage format detection policy documented in `Phase3_Architecture.md` §12 (extension + magic bytes where available; parse-time validation for STL/OBJ/DXF)
 
 ---
 
@@ -158,10 +175,11 @@ mesh-convert assembly.step output.stl
 ## Security
 
 - **Input validation** - All file inputs are validated and sanitized
-- **Resource limits** - Configurable limits prevent DoS attacks
+- **Two-stage format detection** - Extension plus magic-byte verification (ADR-003 tiered policy for mesh formats without reliable signatures)
+- **Resource limits** - Configurable file size, image dimensions, and mesh vertex/face limits; enforced via `get_reader_with_limits` in both `img-core` and `mesh-core`
 - **Path traversal protection** - Secure file path handling
-- **No unsafe code** - Pure safe Rust implementation
-- **Dependency auditing** - All dependencies security-reviewed
+- **No unsafe code** - No `unsafe` blocks in production code paths
+- **Dependency auditing** - Security audit Grade A (`SECURITY_AUDIT_v1.0.0.md`)
 - **Error message sanitization** - No sensitive path information leaked
 
 ---
@@ -205,6 +223,9 @@ cargo build --release
 # Build with 3D viewer (optional)
 cargo build --release --features viewer-3d
 
+# Build with STEP read support (FACETED_BREP only)
+cargo build --release --features step
+
 # Binaries in target/release/
 ```
 
@@ -231,13 +252,17 @@ cargo build --release --features viewer-3d
 
 ## Known Limitations
 
-1. **STEP Format** - Only FACETED_BREP entities supported (pre-tessellated geometry). Full B-Rep support (NURBS, curved surfaces) planned for v1.1.0.
+1. **STEP Format** - Only FACETED_BREP entities supported (pre-tessellated geometry). Read-only. Requires `--features step` at build time. Full B-Rep support (NURBS, curved surfaces) planned for v1.1.0.
 
 2. **3D Viewer** - Requires `viewer-3d` feature flag. Not enabled in default builds.
 
 3. **SVG** - Read-only (rasterization). Cannot write SVG output.
 
 4. **GIF Animation** - Animated GIFs converted as single frame.
+
+5. **DXF Round-Trip** - 3DFACE entities are stored as quads; round-trip conversion may expand vertex and face counts (geometry preserved, counts may differ).
+
+6. **Mesh Format Detection** - STL, OBJ, and DXF rely on extension-based detection with parse-time validation rather than magic-byte verification (documented in ADR-003).
 
 ---
 
@@ -266,7 +291,7 @@ cargo build --release --features viewer-3d
 | v0.2.1 | Dec 30, 2025 | GUI application |
 | v0.2.2 | Dec 30, 2025 | Batch processing |
 | v0.3.0 | Dec 30, 2025 | Parallel processing, 3D viewer |
-| **v1.0.0** | **Jan 2026** | **First stable release** |
+| **v1.0.0** | **Jun 2026** | **First stable release** |
 
 ---
 
@@ -276,7 +301,7 @@ cargo build --release --features viewer-3d
 - System Architect: Alex Chen
 - Senior Engineer: Jordan Rivera
 - Junior Engineer (2D): Sam Kim
-- Junior Engineer (3D): Riley Thompson
+- Junior Engineer (3D): Alex Rivera
 - UI Designer: Jamie Chen
 - Security Specialist: Casey Morgan
 - Documentation Specialist: Sam Parker
@@ -307,7 +332,7 @@ cargo build --release --features viewer-3d
 ## Release Information
 
 **Version:** 1.0.0
-**Release Date:** January 2026 (Target: January 12-15)
+**Release Date:** Mid-June 2026 (Sprint 13)
 **Git Tag:** `v1.0.0`
 **Previous Release:** v0.3.0 (December 30, 2025)
 
