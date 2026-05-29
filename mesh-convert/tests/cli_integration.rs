@@ -45,10 +45,7 @@ fn test_mesh_convert_invalid_file() {
     let nonexistent_file = temp_dir.path().join("nonexistent.stl");
 
     let output = Command::new(mesh_convert_bin())
-        .args([
-            nonexistent_file.to_str().unwrap(),
-            "obj",
-        ])
+        .args([nonexistent_file.to_str().unwrap(), "obj"])
         .output()
         .expect("Failed to execute mesh-convert with missing input");
 
@@ -66,9 +63,7 @@ fn test_mesh_convert_help_includes_new_options() {
     let stdout = String::from_utf8(output.stdout).unwrap();
 
     assert!(stdout.contains("--transform") || stdout.contains("transform"));
-    assert!(
-        stdout.contains("--recalculate-normals") || stdout.contains("recalculate-normals")
-    );
+    assert!(stdout.contains("--recalculate-normals") || stdout.contains("recalculate-normals"));
     assert!(stdout.contains("--validate") || stdout.contains("validate"));
 }
 

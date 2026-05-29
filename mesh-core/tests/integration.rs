@@ -164,7 +164,10 @@ fn test_gltf_round_trip_conversion() {
     // Write mesh to glTF (embedded)
     let gltf_data = writer.write(&original_mesh).unwrap();
     assert!(!gltf_data.is_empty());
-    assert!(!gltf_data.starts_with(b"glTF"), "embedded glTF is JSON, not GLB");
+    assert!(
+        !gltf_data.starts_with(b"glTF"),
+        "embedded glTF is JSON, not GLB"
+    );
 
     // Read glTF back
     let read_result = reader.read(&gltf_data);
@@ -226,7 +229,10 @@ fn test_glb_round_trip_conversion() {
     // Write mesh to GLB
     let glb_data = writer.write(&original_mesh).unwrap();
     assert!(!glb_data.is_empty());
-    assert!(glb_data.starts_with(b"glTF"), "GLB must start with glTF magic");
+    assert!(
+        glb_data.starts_with(b"glTF"),
+        "GLB must start with glTF magic"
+    );
 
     // Read GLB back
     let read_result = reader.read(&glb_data);
@@ -309,7 +315,11 @@ fn test_dxf_round_trip_conversion() {
                 && (original.y - read.y).abs() < 0.001
                 && (original.z - read.z).abs() < 0.001
         });
-        assert!(found, "original vertex ({}, {}, {}) not found after DXF round-trip", original.x, original.y, original.z);
+        assert!(
+            found,
+            "original vertex ({}, {}, {}) not found after DXF round-trip",
+            original.x, original.y, original.z
+        );
     }
 }
 

@@ -66,8 +66,7 @@ fn test_get_reader_with_limits_enforces_custom_max_dimension() {
         .unwrap();
 
     let limits = ResourceLimits::builder().max_image_dimension(10).build();
-    let reader =
-        FormatRegistry::get_reader_with_limits(RegistryFormat::Png, limits).unwrap();
+    let reader = FormatRegistry::get_reader_with_limits(RegistryFormat::Png, limits).unwrap();
 
     let result = reader.read(&buffer);
     assert!(result.is_err());

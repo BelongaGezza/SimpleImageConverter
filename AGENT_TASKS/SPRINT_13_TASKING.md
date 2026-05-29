@@ -211,7 +211,7 @@ Complete re-test of Tasks 2.4/2.5 and remaining Sprint 12 manual checklist items
 **macOS (complete):**
 - [x] `cargo test --workspace`, clippy, fmt — see `RELEASE_BUILD_REPORT_SPRINT13.md`
 - [x] Release build `aarch64-apple-darwin`: `converter-gui`, `img-convert`, `mesh-convert`
-- [x] CLI smoke tests (help + PNG→JPEG, STL→OBJ)
+- [x] CLI smoke tests (help + PNG→BMP, STL→OBJ)
 
 **Other platforms:** ⏳ Not run this session
 
@@ -292,7 +292,7 @@ Verify release notes against `docs/FORMATS.md`, Sprint 13 hardening work, and `V
 | 5.3 Release notes review | Documentation Specialist | ✅ Complete — `aaad2a4` |
 | 3.1–3.2 Manual testing prep | UI Designer | 🟡 In Progress — `MANUAL_TESTING_CHECKLIST_SPRINT13.md`; human re-test required |
 
-**Next blocking item:** Human execution of `MANUAL_TESTING_CHECKLIST_SPRINT13.md` (Task 3.1), then Phase 4 release execution.
+**Next blocking item:** Task 3.1 human manual testing, Task 5.1 architect approval, then Windows/Linux 4.1–4.2 and Task 4.3.
 
 ## Immediate Parallel Dispatch (May 29, 2026 — Round 1)
 
