@@ -3,7 +3,8 @@
 **Sprint Duration:** January 3-10, 2026
 **Sprint Goal:** Complete all remaining tasks for v1.0.0 stable release
 **Target Release:** v1.0.0 (Mid-January 2026)
-**Last Updated:** January 26, 2026
+**Last Updated:** January 26, 2026  
+**Addendum (May 29, 2026):** Automated gates (fmt, clippy, tests) verified green. Addendum A.* implementation largely complete; Senior sign-off pending. Sprint 13 tasking supersedes remaining work — see `AGENT_TASKS/SPRINT_13_TASKING.md` and `SYSTEM_ARCHITECT_V1.0.0_RELEASE_REVIEW.md`.
 
 ---
 
@@ -24,7 +25,7 @@ To keep tasking consistent and avoid “status drift” across older Sprint 12 d
 | Phase | Status | Completion |
 |-------|--------|------------|
 | Phase 1: Critical Fixes (baseline) | ✅ Complete | 100% |
-| Addendum: Release Gate Recovery (A.*) | 🔴 Blocking | 0% |
+| Addendum: Release Gate Recovery (A.*) | 🟡 Pending Senior sign-off | ~90% |
 | Phase 2: Manual Testing | 🟡 In Progress | Incomplete |
 | Phase 3: Security Review | ✅ Complete | 100% |
 | Phase 4: Documentation | ✅ Complete | 100% |
