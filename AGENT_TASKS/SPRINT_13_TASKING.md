@@ -27,7 +27,7 @@ If all roles are In Progress or Complete, STOP — no unclaimed work remains.
 | Phase 1: Code Hardening | ✅ Complete | 100% |
 | Phase 2: Reviews & Sign-off | ✅ Complete | 100% (2.1–2.3 done) |
 | Phase 3: Manual Testing | 🟡 In Progress | ~25% (3.1 prep done) |
-| Phase 4: Release Execution | ⏳ Pending | 0% |
+| Phase 4: Release Execution | 🟡 In Progress | ~40% (macOS 4.1–4.2 done) |
 | Phase 5: Documentation Refresh | ✅ Complete | 100% (5.2, 5.3 done) |
 
 **Ship Decision:** CONDITIONAL NO-SHIP (see architect review)
@@ -204,15 +204,39 @@ Complete re-test of Tasks 2.4/2.5 and remaining Sprint 12 manual checklist items
 ### Task 4.1: Cross-Platform Release Builds
 **Assigned Role:** Senior Engineer  
 **Priority:** **BLOCKING**  
-**Dependencies:** Tasks 2.2, 2.3, 3.1
+**Dependencies:** Tasks 2.2, 2.3, 3.1 (3.1 does not block macOS build prep)
+
+**Status:** 🟡 Partial — **macOS ARM64 complete** (May 29, 2026); Windows/Linux pending
+
+**macOS (complete):**
+- [x] `cargo test --workspace`, clippy, fmt — see `RELEASE_BUILD_REPORT_SPRINT13.md`
+- [x] Release build `aarch64-apple-darwin`: `converter-gui`, `img-convert`, `mesh-convert`
+- [x] CLI smoke tests (help + PNG→JPEG, STL→OBJ)
+
+**Other platforms:** ⏳ Not run this session
+
+---
 
 ### Task 4.2: Packaging + SHA256 Checksums
 **Assigned Role:** Senior Engineer  
 **Scripts:** `scripts/package-windows.ps1`, `package-macos.sh`, `package-linux.sh`
 
+**Status:** 🟡 Partial — **macOS complete** (May 29, 2026); Windows/Linux pending
+
+**macOS (complete):**
+- [x] `bash scripts/package-macos.sh 0.3.0 aarch64-apple-darwin`
+- [x] `bash scripts/package-gui-macos.sh 0.3.0 aarch64-apple-darwin`
+- [x] Archive contents verified; SHA256 in `release/SHA256SUMS-macos-0.3.0.txt`
+
+**Other platforms:** ⏳ Pending respective OS sessions
+
+---
+
 ### Task 4.3: Version Bump, Tag, GitHub Release
 **Assigned Role:** Senior Engineer  
-**Dependencies:** Task 5.1 (Architect approval)
+**Dependencies:** Task 5.1 (Architect approval), Tasks 3.1–3.2, full cross-platform 4.1–4.2
+
+**Status:** ⏳ **Blocked** — do not tag `v1.0.0` or publish GitHub Release until gates green
 
 ---
 
