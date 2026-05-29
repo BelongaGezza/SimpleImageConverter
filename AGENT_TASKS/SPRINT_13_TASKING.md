@@ -41,7 +41,7 @@ If all roles are In Progress or Complete, STOP — no unclaimed work remains.
 | System Architect (Alex Chen) | `.agents/system-architect.md` | Available | — | 2.1, 5.1 |
 | Senior Engineer (Jordan Rivera) | `.agents/senior-engineer.md` | In Progress | Sprint 13 subagent | 1.3, 2.2, 2.3, 4.1, 4.2, 4.3 |
 | UI Designer (Jamie Chen) | `.agents/ui-designer.md` | Available | — | 3.1, 3.2 |
-| Junior Engineer 3D (Alex Rivera) | `.agents/junior-engineer-3d.md` | Available | — | 1.1, 2.2 (support) |
+| Junior Engineer 3D (Alex Rivera) | `.agents/junior-engineer-3d.md` | Complete | Alex Rivera (Task 1.1) | 1.1, 2.2 (support) |
 | Junior Engineer 2D (Sam Kim) | `.agents/junior-engineer-2d.md` | Complete | Sprint 13 subagent | 1.2 |
 | Documentation Specialist (Sam Parker) | `.agents/documentation-specialist.md` | In Progress | Task 5.2 subagent | 5.2, 5.3 |
 | Security Specialist (Casey Morgan) | `.agents/security-specialist.md` | Complete | Sprint 12 | Re-consult if scope changes |
@@ -53,17 +53,17 @@ If all roles are In Progress or Complete, STOP — no unclaimed work remains.
 ### Task 1.1: Add glTF/DXF Integration Tests
 **Assigned Role:** Junior Engineer 3D  
 **Priority:** HIGH  
-**Status:** [ ] Not Started / [ ] In Progress / [ ] Complete
+**Status:** [ ] Not Started / [ ] In Progress / [x] Complete
 
 **Description:**
 Add round-trip integration tests for glTF/GLB and DXF in `mesh-core/tests/integration.rs`. Follow existing STL/OBJ/PLY test patterns.
 
 **Acceptance Criteria:**
-- [ ] glTF embedded write → read round-trip test passes
-- [ ] GLB write → read round-trip test passes
-- [ ] DXF write → read round-trip test passes (or documented limitation)
-- [ ] `cargo test --workspace` passes
-- [ ] `cargo clippy --workspace -- -D warnings` passes
+- [x] glTF embedded write → read round-trip test passes
+- [x] GLB write → read round-trip test passes
+- [x] DXF write → read round-trip test passes (documented limitation: 3DFACE quad triangulation expands 1 triangle → 4 vertices / 2 faces)
+- [x] `cargo test --workspace` passes
+- [x] `cargo clippy --workspace -- -D warnings` passes
 
 **Reference:** `mesh-core/src/formats/gltf.rs`, ADR-002 in architect review
 

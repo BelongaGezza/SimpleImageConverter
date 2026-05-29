@@ -153,6 +153,202 @@ fn test_mesh_converter_obj_round_trip() {
 }
 
 #[test]
+fn test_gltf_round_trip_conversion() {
+    // Create test mesh
+    let original_mesh = create_test_triangle();
+
+    // Get format handlers (embedded base64 buffer per ADR-002)
+    let reader = FormatRegistry::get_reader(MeshFormat::Gltf).unwrap();
+    let writer = FormatRegistry::get_writer(MeshFormat::Gltf).unwrap();
+
+    // Write mesh to glTF (embedded)
+    let gltf_data = writer.write(&original_mesh).unwrap();
+    assert!(!gltf_data.is_empty());
+    assert!(!gltf_data.starts_with(b"glTF"), "embedded glTF is JSON, not GLB");
+
+    // Read glTF back
+    let read_result = reader.read(&gltf_data);
+    assert!(read_result.is_ok());
+
+    let read_mesh = read_result.unwrap();
+
+    // Verify structure matches
+    assert_eq!(read_mesh.vertices.len(), original_mesh.vertices.len());
+    assert_eq!(read_mesh.faces.len(), original_mesh.faces.len());
+
+    // Verify vertices are approximately the same (allowing for floating point precision)
+    for (original, read) in original_mesh.vertices.iter().zip(read_mesh.vertices.iter()) {
+        assert!((original.x - read.x).abs() < 0.001);
+        assert!((original.y - read.y).abs() < 0.001);
+        assert!((original.z - read.z).abs() < 0.001);
+    }
+}
+
+#[test]
+fn test_mesh_converter_gltf_round_trip() {
+    // Create test mesh
+    let original_mesh = create_test_triangle();
+
+    // Get format handlers
+    let reader = FormatRegistry::get_reader(MeshFormat::Gltf).unwrap();
+    let writer = FormatRegistry::get_writer(MeshFormat::Gltf).unwrap();
+
+    // Write mesh to glTF using writer
+    let gltf_data = writer.write(&original_mesh).unwrap();
+
+    // Use MeshConverter for round-trip conversion
+    let converter = MeshConverter::new();
+    let converted_data = converter
+        .convert(&gltf_data, reader.as_ref(), writer.as_ref())
+        .unwrap();
+
+    // Verify converted data is valid glTF
+    assert!(!converted_data.is_empty());
+
+    // Read back the converted data
+    let read_result = reader.read(&converted_data);
+    assert!(read_result.is_ok());
+
+    let read_mesh = read_result.unwrap();
+    assert_eq!(read_mesh.vertices.len(), original_mesh.vertices.len());
+    assert_eq!(read_mesh.faces.len(), original_mesh.faces.len());
+}
+
+#[test]
+fn test_glb_round_trip_conversion() {
+    // Create test mesh
+    let original_mesh = create_test_triangle();
+
+    // Get format handlers (binary GLB container per ADR-002)
+    let reader = FormatRegistry::get_reader(MeshFormat::Glb).unwrap();
+    let writer = FormatRegistry::get_writer(MeshFormat::Glb).unwrap();
+
+    // Write mesh to GLB
+    let glb_data = writer.write(&original_mesh).unwrap();
+    assert!(!glb_data.is_empty());
+    assert!(glb_data.starts_with(b"glTF"), "GLB must start with glTF magic");
+
+    // Read GLB back
+    let read_result = reader.read(&glb_data);
+    assert!(read_result.is_ok());
+
+    let read_mesh = read_result.unwrap();
+
+    // Verify structure matches
+    assert_eq!(read_mesh.vertices.len(), original_mesh.vertices.len());
+    assert_eq!(read_mesh.faces.len(), original_mesh.faces.len());
+
+    // Verify vertices are approximately the same (allowing for floating point precision)
+    for (original, read) in original_mesh.vertices.iter().zip(read_mesh.vertices.iter()) {
+        assert!((original.x - read.x).abs() < 0.001);
+        assert!((original.y - read.y).abs() < 0.001);
+        assert!((original.z - read.z).abs() < 0.001);
+    }
+}
+
+#[test]
+fn test_mesh_converter_glb_round_trip() {
+    // Create test mesh
+    let original_mesh = create_test_triangle();
+
+    // Get format handlers
+    let reader = FormatRegistry::get_reader(MeshFormat::Glb).unwrap();
+    let writer = FormatRegistry::get_writer(MeshFormat::Glb).unwrap();
+
+    // Write mesh to GLB using writer
+    let glb_data = writer.write(&original_mesh).unwrap();
+
+    // Use MeshConverter for round-trip conversion
+    let converter = MeshConverter::new();
+    let converted_data = converter
+        .convert(&glb_data, reader.as_ref(), writer.as_ref())
+        .unwrap();
+
+    // Verify converted data is valid GLB
+    assert!(!converted_data.is_empty());
+    assert!(converted_data.starts_with(b"glTF"));
+
+    // Read back the converted data
+    let read_result = reader.read(&converted_data);
+    assert!(read_result.is_ok());
+
+    let read_mesh = read_result.unwrap();
+    assert_eq!(read_mesh.vertices.len(), original_mesh.vertices.len());
+    assert_eq!(read_mesh.faces.len(), original_mesh.faces.len());
+}
+
+#[test]
+fn test_dxf_round_trip_conversion() {
+    // Create test mesh
+    let original_mesh = create_test_triangle();
+
+    // Get format handlers
+    let reader = FormatRegistry::get_reader(MeshFormat::Dxf).unwrap();
+    let writer = FormatRegistry::get_writer(MeshFormat::Dxf).unwrap();
+
+    // Write mesh to DXF
+    let dxf_data = writer.write(&original_mesh).unwrap();
+    assert!(!dxf_data.is_empty());
+
+    // Read DXF back
+    let read_result = reader.read(&dxf_data);
+    assert!(read_result.is_ok());
+
+    let read_mesh = read_result.unwrap();
+
+    // DXF limitation: each 3DFACE is stored as a quad (4th corner duplicates 3rd for
+    // triangles), and the reader triangulates every quad into two faces. One input
+    // triangle therefore round-trips as two faces with four unique vertex records.
+    assert_eq!(read_mesh.vertices.len(), original_mesh.vertices.len() + 1);
+    assert_eq!(read_mesh.faces.len(), original_mesh.faces.len() * 2);
+
+    // Original triangle vertices must appear in the read mesh (order may differ).
+    for original in &original_mesh.vertices {
+        let found = read_mesh.vertices.iter().any(|read| {
+            (original.x - read.x).abs() < 0.001
+                && (original.y - read.y).abs() < 0.001
+                && (original.z - read.z).abs() < 0.001
+        });
+        assert!(found, "original vertex ({}, {}, {}) not found after DXF round-trip", original.x, original.y, original.z);
+    }
+}
+
+#[test]
+fn test_mesh_converter_dxf_round_trip() {
+    // Create test mesh
+    let original_mesh = create_test_triangle();
+
+    // Get format handlers
+    let reader = FormatRegistry::get_reader(MeshFormat::Dxf).unwrap();
+    let writer = FormatRegistry::get_writer(MeshFormat::Dxf).unwrap();
+
+    // Write mesh to DXF using writer
+    let dxf_data = writer.write(&original_mesh).unwrap();
+
+    // Use MeshConverter for round-trip conversion
+    let converter = MeshConverter::new();
+    let converted_data = converter
+        .convert(&dxf_data, reader.as_ref(), writer.as_ref())
+        .unwrap();
+
+    // Verify converted data is valid DXF
+    assert!(!converted_data.is_empty());
+    let dxf_str = std::str::from_utf8(&converted_data).unwrap();
+    assert!(dxf_str.contains("3DFACE"));
+    assert!(dxf_str.contains("EOF"));
+
+    // Read back the converted data
+    let read_result = reader.read(&converted_data);
+    assert!(read_result.is_ok());
+
+    let read_mesh = read_result.unwrap();
+    // MeshConverter performs read→write→read; each DXF pass expands quads (see
+    // test_dxf_round_trip_conversion). Assert geometry is present, not exact counts.
+    assert!(read_mesh.vertices.len() >= original_mesh.vertices.len());
+    assert!(read_mesh.faces.len() >= original_mesh.faces.len());
+}
+
+#[test]
 fn test_ply_round_trip_conversion() {
     // Create test mesh
     let original_mesh = create_test_triangle();
