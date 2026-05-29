@@ -1,0 +1,2 @@
+d871bb2b7f633e5a61d1463c6ea9c85d20536f5f0536c67e77d3d9867063d56c  simpleimageconverter-0.3.0-macos-arm64.tar.gz
+8a53d502fb3f66a7da1bfe57ed1135136b83dbab416d31ff3f5abf33b3cd459d  simpleimageconverter-gui-0.3.0-macos-arm64.tar.gz
