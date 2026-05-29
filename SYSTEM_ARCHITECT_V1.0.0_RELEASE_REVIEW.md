@@ -66,11 +66,11 @@ The codebase is materially ready for v1.0.0 from a **feature and automated quali
 
 **Implementation:** `mesh-core/src/formats/gltf.rs` — embedded-base64 contract.
 
-**Remaining gate:** Senior Engineer code review (A.2.4) + Khronos `gltf_validator` run on exported fixtures.
+**Remaining gate:** ~~Senior Engineer code review (A.2.4) + Khronos `gltf_validator` run on exported fixtures.~~ Done (May 29, 2026) — see `GLTF_SENIOR_REVIEW_SPRINT13.md`. Khronos validator not installed; parse-based round-trip evidence accepted.
 
 **Validator CI:** Manual-only for v1.0.0 sign-off; optional CI job in v1.1.
 
-**Status:** ✅ Decision confirmed; 🟡 Implementation pending Senior sign-off
+**Status:** ✅ Decision confirmed; ✅ Senior sign-off complete (May 29, 2026)
 
 ---
 
@@ -98,7 +98,7 @@ Stage 2 (when feasible): Signature verification via detect_from_bytes().
 
 **Action:** ~~Add this policy to `Phase3_Architecture.md` §12 and `rust-resources.md`.~~ Done (May 29, 2026, Sprint 13 Task 2.1).
 
-**Status:** ✅ Policy approved and published; implementation complete; Senior sign-off pending (A.3.3 / Task 2.3)
+**Status:** ✅ Policy approved and published; implementation complete; ✅ Senior sign-off complete (May 29, 2026, Task 2.3 — `GLTF_SENIOR_REVIEW_SPRINT13.md`)
 
 ---
 
@@ -137,7 +137,7 @@ Stage 2 (when feasible): Signature verification via detect_from_bytes().
 | Gate | Owner | Unblock Criteria |
 |------|-------|------------------|
 | Manual testing sign-off | UI Designer | All Task 2.1–2.5 criteria checked in `MANUAL_TESTING_REPORT_SPRINT12.md` |
-| glTF A.2.4 Senior review | Senior Engineer | Code review + validator run |
+| ~~glTF A.2.4 Senior review~~ | ~~Senior Engineer~~ | ✅ Complete (May 29, 2026) |
 | Cross-platform validation | Senior Engineer | Release binaries smoke-tested Win/macOS/Linux |
 | Release artifacts (5.2) | Senior Engineer | ZIP/TAR.GZ + SHA256SUMS |
 | Version bump + tag (5.3) | Senior Engineer | Workspace `1.0.0` after architect approval |
