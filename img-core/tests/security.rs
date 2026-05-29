@@ -14,8 +14,8 @@ use img_core::formats::{
 
 #[test]
 fn test_png_reject_oversized_input() {
-    let format = PngFormat::new();
     let limits = ResourceLimits::default();
+    let format = PngFormat::with_limits(limits.clone());
 
     // Create data larger than limit (but still valid PNG header)
     let oversized_size = limits.max_file_size + 1;
@@ -28,9 +28,55 @@ fn test_png_reject_oversized_input() {
 }
 
 #[test]
+fn test_png_reject_custom_max_dimension() {
+    use image::{DynamicImage, ImageFormat};
+
+    // Create a 50x50 PNG (well within default limits)
+    let img = image::ImageBuffer::from_fn(50, 50, |x, y| {
+        image::Rgb([(x * 5) as u8, (y * 5) as u8, 128])
+    });
+    let mut buffer = Vec::new();
+    DynamicImage::ImageRgb8(img)
+        .write_to(&mut std::io::Cursor::new(&mut buffer), ImageFormat::Png)
+        .unwrap();
+
+    let limits = ResourceLimits::builder().max_image_dimension(10).build();
+    let format = PngFormat::with_limits(limits);
+
+    let result = format.read(&buffer);
+    assert!(result.is_err());
+    let err = result.unwrap_err().to_string();
+    assert!(
+        err.contains("exceeds limit") || err.contains("width") || err.contains("height"),
+        "unexpected error: {err}"
+    );
+}
+
+#[test]
+fn test_get_reader_with_limits_enforces_custom_max_dimension() {
+    use image::{DynamicImage, ImageFormat};
+    use img_core::formats::registry::{FormatRegistry, ImageFormat as RegistryFormat};
+
+    let img = image::ImageBuffer::from_fn(50, 50, |x, y| {
+        image::Rgb([(x * 5) as u8, (y * 5) as u8, 128])
+    });
+    let mut buffer = Vec::new();
+    DynamicImage::ImageRgb8(img)
+        .write_to(&mut std::io::Cursor::new(&mut buffer), ImageFormat::Png)
+        .unwrap();
+
+    let limits = ResourceLimits::builder().max_image_dimension(10).build();
+    let reader =
+        FormatRegistry::get_reader_with_limits(RegistryFormat::Png, limits).unwrap();
+
+    let result = reader.read(&buffer);
+    assert!(result.is_err());
+}
+
+#[test]
 fn test_jpeg_reject_oversized_input() {
-    let format = JpegFormat::new();
     let limits = ResourceLimits::default();
+    let format = JpegFormat::with_limits(limits.clone());
 
     let oversized_size = limits.max_file_size + 1;
     let mut oversized_data = vec![0xFF, 0xD8, 0xFF]; // JPEG header
@@ -42,8 +88,8 @@ fn test_jpeg_reject_oversized_input() {
 
 #[test]
 fn test_bmp_reject_oversized_input() {
-    let format = BmpFormat::new();
     let limits = ResourceLimits::default();
+    let format = BmpFormat::with_limits(limits.clone());
 
     let oversized_size = limits.max_file_size + 1;
     let mut oversized_data = vec![0x42, 0x4D]; // BMP header
@@ -55,8 +101,8 @@ fn test_bmp_reject_oversized_input() {
 
 #[test]
 fn test_gif_reject_oversized_input() {
-    let format = GifFormat::new();
     let limits = ResourceLimits::default();
+    let format = GifFormat::with_limits(limits.clone());
 
     let oversized_size = limits.max_file_size + 1;
     let mut oversized_data = vec![0x47, 0x49, 0x46, 0x38]; // GIF header
@@ -152,8 +198,8 @@ fn test_integer_overflow_protection() {
 
 #[test]
 fn test_tiff_reject_oversized_input() {
-    let format = TiffFormat::new();
     let limits = ResourceLimits::default();
+    let format = TiffFormat::with_limits(limits.clone());
 
     let oversized_size = limits.max_file_size + 1;
     // TIFF magic bytes (little-endian)
@@ -203,8 +249,8 @@ fn test_tiff_very_small_input_handled() {
 
 #[test]
 fn test_webp_reject_oversized_input() {
-    let format = WebPFormat::new();
     let limits = ResourceLimits::default();
+    let format = WebPFormat::with_limits(limits.clone());
 
     let oversized_size = limits.max_file_size + 1;
     // WebP magic bytes: RIFF....WEBP
@@ -258,8 +304,8 @@ fn test_webp_very_small_input_handled() {
 
 #[test]
 fn test_svg_reject_oversized_input() {
-    let format = SvgFormat::new();
     let limits = ResourceLimits::default();
+    let format = SvgFormat::with_limits(limits.clone());
 
     let oversized_size = limits.max_file_size + 1;
     let mut oversized_data =

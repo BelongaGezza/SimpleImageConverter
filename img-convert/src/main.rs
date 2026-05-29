@@ -81,7 +81,7 @@ fn main() -> Result<()> {
     }
 
     // Get format handlers
-    let reader = FormatRegistry::get_reader(input_format)?;
+    let reader = FormatRegistry::get_reader_with_limits(input_format, limits.clone())?;
     let writer = FormatRegistry::get_writer(output_format)?;
 
     // Convert

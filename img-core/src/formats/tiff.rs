@@ -4,18 +4,28 @@
 use crate::formats::traits::{ImageData, ImageReader, ImageWriter};
 use crate::quality::QualitySettings;
 use common::error::{ConversionError, Result};
+use common::limits::ResourceLimits;
 use image::{DynamicImage, GenericImageView, ImageFormat, Rgb, Rgba};
 
 /// TIFF format handler
 ///
 /// Supports reading and writing TIFF images. For multi-page TIFF files,
 /// only the first page is read.
-pub struct TiffFormat;
+pub struct TiffFormat {
+    limits: ResourceLimits,
+}
 
 impl TiffFormat {
-    /// Create a new TIFF format handler
+    /// Create a new TIFF format handler with default resource limits
     pub fn new() -> Self {
-        Self
+        Self {
+            limits: ResourceLimits::default(),
+        }
+    }
+
+    /// Create a new TIFF format handler with custom resource limits
+    pub fn with_limits(limits: ResourceLimits) -> Self {
+        Self { limits }
     }
 }
 
@@ -28,9 +38,7 @@ impl Default for TiffFormat {
 impl ImageReader for TiffFormat {
     fn read(&self, data: &[u8]) -> Result<ImageData> {
         // Security: Validate input size before parsing to prevent memory exhaustion
-        use common::limits::ResourceLimits;
-        let limits = ResourceLimits::default();
-        if let Err(e) = limits.check_file_size(data.len()) {
+        if let Err(e) = self.limits.check_file_size(data.len()) {
             common::security::log_security_error(&e, None);
             return Err(e);
         }
@@ -44,6 +52,7 @@ impl ImageReader for TiffFormat {
         })?;
 
         let (width, height) = img.dimensions();
+        self.limits.check_image_dimensions(width, height)?;
         let color_type = match img {
             DynamicImage::ImageLuma8(_) => crate::formats::traits::ColorType::Grayscale,
             DynamicImage::ImageLumaA8(_) => crate::formats::traits::ColorType::GrayscaleAlpha,

@@ -4,15 +4,25 @@
 use crate::formats::traits::{ImageData, ImageReader, ImageWriter};
 use crate::quality::QualitySettings;
 use common::error::{ConversionError, Result};
+use common::limits::ResourceLimits;
 use image::{DynamicImage, GenericImageView, ImageFormat, Rgb, Rgba};
 
 /// BMP format handler
-pub struct BmpFormat;
+pub struct BmpFormat {
+    limits: ResourceLimits,
+}
 
 impl BmpFormat {
-    /// Create a new BMP format handler
+    /// Create a new BMP format handler with default resource limits
     pub fn new() -> Self {
-        Self
+        Self {
+            limits: ResourceLimits::default(),
+        }
+    }
+
+    /// Create a new BMP format handler with custom resource limits
+    pub fn with_limits(limits: ResourceLimits) -> Self {
+        Self { limits }
     }
 }
 
@@ -25,9 +35,7 @@ impl Default for BmpFormat {
 impl ImageReader for BmpFormat {
     fn read(&self, data: &[u8]) -> Result<ImageData> {
         // Security: Validate input size before parsing to prevent memory exhaustion
-        use common::limits::ResourceLimits;
-        let limits = ResourceLimits::default();
-        if let Err(e) = limits.check_file_size(data.len()) {
+        if let Err(e) = self.limits.check_file_size(data.len()) {
             common::security::log_security_error(&e, None);
             return Err(e);
         }
@@ -41,6 +49,7 @@ impl ImageReader for BmpFormat {
         })?;
 
         let (width, height) = img.dimensions();
+        self.limits.check_image_dimensions(width, height)?;
         let color_type = match img {
             DynamicImage::ImageLuma8(_) => crate::formats::traits::ColorType::Grayscale,
             DynamicImage::ImageLumaA8(_) => crate::formats::traits::ColorType::GrayscaleAlpha,

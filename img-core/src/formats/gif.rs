@@ -4,18 +4,28 @@
 use crate::formats::traits::{ImageData, ImageReader, ImageWriter};
 use crate::quality::QualitySettings;
 use common::error::{ConversionError, Result};
+use common::limits::ResourceLimits;
 use image::{DynamicImage, GenericImageView, ImageFormat, Rgb, Rgba};
 
 /// GIF format handler
 ///
 /// Note: Animated GIFs are supported by extracting the first frame only.
 /// This is a limitation for Sprint 2; full animation support may be added in Phase 2.
-pub struct GifFormat;
+pub struct GifFormat {
+    limits: ResourceLimits,
+}
 
 impl GifFormat {
-    /// Create a new GIF format handler
+    /// Create a new GIF format handler with default resource limits
     pub fn new() -> Self {
-        Self
+        Self {
+            limits: ResourceLimits::default(),
+        }
+    }
+
+    /// Create a new GIF format handler with custom resource limits
+    pub fn with_limits(limits: ResourceLimits) -> Self {
+        Self { limits }
     }
 }
 
@@ -28,9 +38,7 @@ impl Default for GifFormat {
 impl ImageReader for GifFormat {
     fn read(&self, data: &[u8]) -> Result<ImageData> {
         // Security: Validate input size before parsing to prevent memory exhaustion
-        use common::limits::ResourceLimits;
-        let limits = ResourceLimits::default();
-        if let Err(e) = limits.check_file_size(data.len()) {
+        if let Err(e) = self.limits.check_file_size(data.len()) {
             common::security::log_security_error(&e, None);
             return Err(e);
         }
@@ -45,6 +53,7 @@ impl ImageReader for GifFormat {
         })?;
 
         let (width, height) = img.dimensions();
+        self.limits.check_image_dimensions(width, height)?;
 
         // GIF supports transparency via palette, which is converted to RGBA by the image crate
         // We need to check if the image has transparency and preserve it

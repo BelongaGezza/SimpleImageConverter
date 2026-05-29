@@ -3,6 +3,7 @@
 
 use crate::formats::traits::{ImageData, ImageReader};
 use common::error::{ConversionError, Result};
+use common::limits::ResourceLimits;
 use image::GenericImageView;
 use resvg::usvg::{Options, Tree};
 use tiny_skia::Pixmap;
@@ -12,12 +13,21 @@ use tiny_skia::Pixmap;
 /// Supports reading SVG files by rasterizing them to bitmap images.
 /// SVG is a vector format, so we can only read (rasterize) it, not write it.
 /// The default rasterization DPI is 96 (standard screen resolution).
-pub struct SvgFormat;
+pub struct SvgFormat {
+    limits: ResourceLimits,
+}
 
 impl SvgFormat {
-    /// Create a new SVG format handler
+    /// Create a new SVG format handler with default resource limits
     pub fn new() -> Self {
-        Self
+        Self {
+            limits: ResourceLimits::default(),
+        }
+    }
+
+    /// Create a new SVG format handler with custom resource limits
+    pub fn with_limits(limits: ResourceLimits) -> Self {
+        Self { limits }
     }
 
     /// Rasterize SVG data to a bitmap image
@@ -32,9 +42,7 @@ impl SvgFormat {
     /// A `DynamicImage` containing the rasterized SVG
     fn rasterize(&self, data: &[u8], dpi: f32) -> Result<image::DynamicImage> {
         // Security: Validate input size before parsing
-        use common::limits::ResourceLimits;
-        let limits = ResourceLimits::default();
-        if let Err(e) = limits.check_file_size(data.len()) {
+        if let Err(e) = self.limits.check_file_size(data.len()) {
             common::security::log_security_error(&e, None);
             return Err(e);
         }
@@ -51,16 +59,17 @@ impl SvgFormat {
         // Get SVG size
         let size = tree.size();
         let pixmap_size = size.to_int_size();
+        let width = pixmap_size.width();
+        let height = pixmap_size.height();
+        self.limits.check_image_dimensions(width, height)?;
 
         // Create pixmap for rendering
-        let mut pixmap =
-            Pixmap::new(pixmap_size.width(), pixmap_size.height()).ok_or_else(|| {
-                ConversionError::ConversionFailed(format!(
-                    "Failed to create pixmap ({}x{})",
-                    pixmap_size.width(),
-                    pixmap_size.height()
-                ))
-            })?;
+        let mut pixmap = Pixmap::new(width, height).ok_or_else(|| {
+            ConversionError::ConversionFailed(format!(
+                "Failed to create pixmap ({}x{})",
+                width, height
+            ))
+        })?;
 
         // Render SVG to pixmap
         let mut pixmap_mut = pixmap.as_mut();

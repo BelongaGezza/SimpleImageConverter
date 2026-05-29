@@ -7,6 +7,7 @@ use crate::formats::{
 };
 use common::error::{ConversionError, Result};
 use common::io::get_extension;
+use common::limits::ResourceLimits;
 use std::path::Path;
 
 /// Format registry for detecting and getting format handlers
@@ -140,6 +141,34 @@ impl FormatRegistry {
             ImageFormat::Tiff => Ok(Box::new(TiffFormat::new())),
             ImageFormat::WebP => Ok(Box::new(WebPFormat::new())),
             ImageFormat::Svg => Ok(Box::new(SvgFormat::new())),
+        }
+    }
+
+    /// Get reader for a format with custom resource limits
+    ///
+    /// Returns a boxed `ImageReader` trait object configured with resource limits
+    /// for security validation.
+    ///
+    /// # Arguments
+    ///
+    /// * `format` - The image format to get a reader for
+    /// * `limits` - Resource limits for validation
+    ///
+    /// # Returns
+    ///
+    /// A boxed reader instance with configured limits.
+    pub fn get_reader_with_limits(
+        format: ImageFormat,
+        limits: ResourceLimits,
+    ) -> Result<Box<dyn ImageReader>> {
+        match format {
+            ImageFormat::Png => Ok(Box::new(PngFormat::with_limits(limits))),
+            ImageFormat::Jpeg => Ok(Box::new(JpegFormat::with_limits(limits))),
+            ImageFormat::Bmp => Ok(Box::new(BmpFormat::with_limits(limits))),
+            ImageFormat::Gif => Ok(Box::new(GifFormat::with_limits(limits))),
+            ImageFormat::Tiff => Ok(Box::new(TiffFormat::with_limits(limits))),
+            ImageFormat::WebP => Ok(Box::new(WebPFormat::with_limits(limits))),
+            ImageFormat::Svg => Ok(Box::new(SvgFormat::with_limits(limits))),
         }
     }
 
@@ -444,6 +473,13 @@ mod tests {
     fn test_detect_from_path_no_extension() {
         let path = Path::new("test");
         assert!(FormatRegistry::detect_from_path(path).is_err());
+    }
+
+    #[test]
+    fn test_get_reader_with_limits_png() {
+        let limits = ResourceLimits::builder().max_image_dimension(4096).build();
+        let reader = FormatRegistry::get_reader_with_limits(ImageFormat::Png, limits);
+        assert!(reader.is_ok());
     }
 
     #[test]
