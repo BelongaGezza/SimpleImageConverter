@@ -1,19 +1,22 @@
 # Project Roadmap
 ## Simple Image Converter
 
-**Last Updated:** January 26, 2026
+**Last Updated:** May 29, 2026
 **Current Version:** v0.3.0
-**Next Release:** v1.0.0 (First Stable Release - Mid-January 2026)
+**Next Release:** v1.0.0 (First Stable Release — Mid-June 2026)
 
 ---
 
-## 🎯 Current Status: Sprint 12_A - v1.0.0 Final Release Preparation
+## 🎯 Current Status: Sprint 13 — v1.0.0 Release Execution
 
 ### Status Overview
 
-**Current Phase:** Sprint 12_A - Final v1.0.0 Release Preparation
-**Sprint Goal:** Complete all remaining tasks for v1.0.0 stable release
-**Target Release:** v1.0.0 (January 12-15, 2026)
+**Current Phase:** Sprint 13 — v1.0.0 Release Execution
+**Sprint Goal:** Complete all remaining gates for v1.0.0 stable release
+**Sprint Duration:** May 29 – June 12, 2026
+**Target Release:** v1.0.0 (Mid-June 2026)
+**Detailed Tasking:** [`AGENT_TASKS/SPRINT_13_TASKING.md`](AGENT_TASKS/SPRINT_13_TASKING.md)
+**Architect Review:** [`SYSTEM_ARCHITECT_V1.0.0_RELEASE_REVIEW.md`](SYSTEM_ARCHITECT_V1.0.0_RELEASE_REVIEW.md) — CONDITIONAL NO-SHIP pending manual testing + review gates
 
 ### Completed Releases
 
@@ -37,14 +40,15 @@
 | Sprint 10/10_A | 3D viewer, testing | ✅ Complete |
 | Sprint 11 | GUI polish, quality | ✅ Complete |
 | Sprint 12 | Documentation | ✅ Complete |
-| **Sprint 12_A** | **v1.0.0 final prep** | **🟡 In Progress** |
+| Sprint 12_A | v1.0.0 final prep | ✅ Complete (gates A.1–A.3 impl; Senior review deferred to Sprint 13) |
+| **Sprint 13** | **v1.0.0 release execution** | **🟡 In Progress** |
 
 ---
 
 ## 🎯 v1.0.0 Scope Definition
 
 **Status:** ✅ **SCOPE DEFINED** (December 30, 2025)
-**Target Release:** Mid-January 2026
+**Target Release:** Mid-June 2026 (Sprint 13)
 
 ### Included in v1.0.0
 
@@ -62,37 +66,73 @@
 
 ---
 
-## 🔥 Sprint 12_A Tasks (Current)
+## 🔥 Sprint 13 Tasks (Current)
+
+See [`AGENT_TASKS/SPRINT_13_TASKING.md`](AGENT_TASKS/SPRINT_13_TASKING.md) for full role assignments and acceptance criteria.
+
+### Phase 1: Code Hardening 🟡
+- [ ] glTF/DXF integration tests (Task 1.1)
+- [ ] `get_reader_with_limits` in img-core (Task 1.2)
+- [x] Wire orphaned CLI tests (Task 1.3 — complete May 29, 2026)
+
+### Phase 2: Reviews & Sign-off 🟡
+- [ ] Publish ADR-003 to architecture docs (Task 2.1)
+- [ ] glTF Senior review + Khronos validator run (Task 2.2 — **BLOCKING**)
+- [ ] Mesh detection sign-off (Task 2.3)
+
+### Phase 3: Manual Testing 🔴
+- [ ] Execute manual testing re-test (Task 3.1 — **BLOCKING**, human required)
+- [ ] Cross-platform GUI smoke test (Task 3.2)
+
+### Phase 4: Release Execution ⏳
+- [ ] Cross-platform release builds (Task 4.1)
+- [ ] Packaging + SHA256 checksums (Task 4.2)
+- [ ] Version bump, tag, GitHub Release (Task 4.3)
+
+### Phase 5: Documentation 🟡
+- [ ] Architect formal sign-off (Task 5.1)
+- [x] Refresh stale status docs (Task 5.2 — complete May 29, 2026)
+- [ ] Release notes final review (Task 5.3)
+
+### Sprint 12_A Completed Gates ✅
+- [x] Restore `cargo fmt --check` compliance (Addendum A.1)
+- [x] glTF write implementation (Addendum A.2 — Senior review pending)
+- [x] Mesh two-stage detection implementation (Addendum A.3 — Senior sign-off pending)
+- [x] Final security audit (`SECURITY_AUDIT_v1.0.0.md`, Grade A)
+- [x] Release notes draft (`RELEASE_NOTES_v1.0.0.md`)
+
+**Historical Sprint 12_A tasking:** [`AGENT_TASKS/SPRINT_12_A_TASKING.md`](AGENT_TASKS/SPRINT_12_A_TASKING.md)
+
+---
+
+## 🔥 Sprint 12_A Tasks (Previous — Superseded by Sprint 13)
 
 ### Phase 1: Critical Fixes ✅
 - [x] Fix license configuration in deny.toml (OFL-1.1, UFL-1.0 for egui fonts)
 - [x] Assess dependency future-compatibility (ashpd Rust 2024 warning)
-- [ ] **P0** Restore `cargo fmt --check` compliance (formatting drift)
-- [ ] **P0** glTF write correctness decision + remediation (valid output or explicitly read-only)
-- [ ] **P1** Align mesh format detection with two-stage verification where feasible (extension + signature)
+- [x] **P0** Restore `cargo fmt --check` compliance (formatting drift) — complete May 29, 2026
+- [x] **P0** glTF write correctness decision + remediation — implementation complete; Senior review pending
+- [x] **P1** Align mesh format detection with two-stage verification — implementation complete; Senior sign-off pending
 
 ### Phase 2: Manual Testing 🟡
 - [ ] Execute manual testing checklist (50+ test cases)
 - [ ] Fix any critical/high-priority issues found
 - [ ] Cross-platform validation (Windows, macOS, Linux)
 
-### Phase 3: Security Review
+### Phase 3: Security Review ✅
 - [x] Final security audit (`SECURITY_AUDIT_v1.0.0.md`)
 - [x] Security documentation review (included in audit)
-  - Note: Re-validate format-detection consistency after Sprint 12_A Addendum Task (mesh two-stage detection)
 
-### Phase 4: Documentation
+### Phase 4: Documentation ✅
 - [x] Update stale ROADMAP.md
 - [x] Update docs/FORMATS.md for v0.3.0 features
 - [x] Draft v1.0.0 release notes (`RELEASE_NOTES_v1.0.0.md`)
 
-### Phase 5: Approval & Release Execution
+### Phase 5: Approval & Release Execution ⏳
 - [ ] System Architect final review and approval
 - [ ] Final release artifacts (archives + SHA256SUMS)
 - [ ] Version bump + tag `v1.0.0`
 - [ ] GitHub Release published with artifacts
-
-**Detailed Tasking:** See `AGENT_TASKS/SPRINT_12_A_TASKING.md`
 
 ---
 
@@ -124,7 +164,7 @@
 
 ## 🔮 Future Releases
 
-### v1.0.0 - First Stable Release (Target: Mid-January 2026)
+### v1.0.0 - First Stable Release (Target: Mid-June 2026)
 - All current features production-ready
 - Complete documentation
 - Full test coverage
@@ -167,20 +207,21 @@
 
 | Metric | Current Status |
 |--------|----------------|
-| Test Count | 633 tests |
-| Test Status | ✅ All passing |
-| rustfmt | 🔴 `cargo fmt --check` failing (formatting drift) |
-| Clippy | 🟡 Warnings present (see Sprint 12_A addendum) |
+| Test Count | 620+ tests |
+| Test Status | ✅ All passing (verified May 29, 2026) |
+| rustfmt | ✅ `cargo fmt --all --check` passing |
+| Clippy | ✅ `cargo clippy --workspace --all-targets -D warnings` clean |
 | Security Audit | ✅ Passing (Grade A) |
 | License Check | ✅ Passing |
-| CI/CD | 🟡 Needs re-run/verification after formatting drift |
+| CI/CD | 🟡 Re-run after Sprint 13 gates complete |
 
 ---
 
 ## 📁 Key Reference Documents
 
 ### Current Sprint
-- `AGENT_TASKS/SPRINT_12_A_TASKING.md` - Current sprint tasking
+- `AGENT_TASKS/SPRINT_13_TASKING.md` - Current sprint tasking
+- `AGENT_TASKS/SPRINT_12_A_TASKING.md` - Previous sprint (historical)
 
 ### Architecture
 - `docs/ARCHITECTURE.md` - System architecture

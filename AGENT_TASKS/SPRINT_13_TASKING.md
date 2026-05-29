@@ -28,7 +28,7 @@ If all roles are In Progress or Complete, STOP — no unclaimed work remains.
 | Phase 2: Reviews & Sign-off | 🟡 Pending | 0% |
 | Phase 3: Manual Testing | 🔴 Blocking | Incomplete |
 | Phase 4: Release Execution | ⏳ Pending | 0% |
-| Phase 5: Documentation Refresh | 🟡 In Progress | 0% |
+| Phase 5: Documentation Refresh | 🟡 In Progress | 50% |
 
 **Ship Decision:** CONDITIONAL NO-SHIP (see architect review)
 
@@ -39,11 +39,11 @@ If all roles are In Progress or Complete, STOP — no unclaimed work remains.
 | Role | Persona File | Status | Assigned Agent | Owned Tasks |
 |------|--------------|--------|----------------|-------------|
 | System Architect (Alex Chen) | `.agents/system-architect.md` | Available | — | 2.1, 5.1 |
-| Senior Engineer (Jordan Rivera) | `.agents/senior-engineer.md` | Available | — | 1.3, 2.2, 2.3, 4.1, 4.2, 4.3 |
+| Senior Engineer (Jordan Rivera) | `.agents/senior-engineer.md` | In Progress | Sprint 13 subagent | 1.3, 2.2, 2.3, 4.1, 4.2, 4.3 |
 | UI Designer (Jamie Chen) | `.agents/ui-designer.md` | Available | — | 3.1, 3.2 |
 | Junior Engineer 3D (Alex Rivera) | `.agents/junior-engineer-3d.md` | Available | — | 1.1, 2.2 (support) |
-| Junior Engineer 2D (Sam Kim) | `.agents/junior-engineer-2d.md` | Available | — | 1.2 |
-| Documentation Specialist (Sam Parker) | `.agents/documentation-specialist.md` | Available | — | 5.2, 5.3 |
+| Junior Engineer 2D (Sam Kim) | `.agents/junior-engineer-2d.md` | Complete | Sprint 13 subagent | 1.2 |
+| Documentation Specialist (Sam Parker) | `.agents/documentation-specialist.md` | In Progress | Task 5.2 subagent | 5.2, 5.3 |
 | Security Specialist (Casey Morgan) | `.agents/security-specialist.md` | Complete | Sprint 12 | Re-consult if scope changes |
 
 ---
@@ -72,17 +72,17 @@ Add round-trip integration tests for glTF/GLB and DXF in `mesh-core/tests/integr
 ### Task 1.2: Implement `get_reader_with_limits` in img-core
 **Assigned Role:** Junior Engineer 2D  
 **Priority:** HIGH  
-**Status:** [ ] Not Started / [ ] In Progress / [ ] Complete
+**Status:** [ ] Not Started / [ ] In Progress / [x] Complete
 
 **Description:**
 Mirror the `mesh-core` pattern: add `FormatRegistry::get_reader_with_limits` and propagate CLI `--max-dimension` / `--max-file-size-mb` from `img-convert` into format readers.
 
 **Acceptance Criteria:**
-- [ ] `get_reader_with_limits` added to `img-core/src/formats/registry.rs`
-- [ ] All format readers accept injected `ResourceLimits`
-- [ ] `img-convert` CLI passes configured limits to readers
-- [ ] Existing security tests pass; add test for custom max-dimension enforcement
-- [ ] `cargo test --workspace` and clippy pass
+- [x] `get_reader_with_limits` added to `img-core/src/formats/registry.rs`
+- [x] All format readers accept injected `ResourceLimits`
+- [x] `img-convert` CLI passes configured limits to readers
+- [x] Existing security tests pass; add test for custom max-dimension enforcement
+- [x] `cargo test --workspace` and clippy pass
 
 **Reference:** `mesh-core/src/formats/registry.rs` (pattern to follow)
 
@@ -91,14 +91,16 @@ Mirror the `mesh-core` pattern: add `FormatRegistry::get_reader_with_limits` and
 ### Task 1.3: Wire or Remove Orphaned CLI Tests
 **Assigned Role:** Senior Engineer  
 **Priority:** MEDIUM  
-**Status:** [ ] Not Started / [ ] In Progress / [ ] Complete
+**Status:** [ ] Not Started / [ ] In Progress / [x] Complete
 
 **Description:**
 Root `tests/cli_tests.rs` is not attached to any crate and never runs with `cargo test --workspace`. Wire into `img-convert/tests/` and `mesh-convert/tests/`, or delete if redundant.
 
 **Acceptance Criteria:**
-- [ ] CLI tests run via `cargo test --workspace` OR file removed with justification
-- [ ] No duplicate coverage without reason
+- [x] CLI tests run via `cargo test --workspace` OR file removed with justification
+- [x] No duplicate coverage without reason
+
+**Resolution (May 29, 2026):** Wired — split orphaned tests into `img-convert/tests/cli_integration.rs` (2 tests) and `mesh-convert/tests/cli_integration.rs` (8 tests). Removed `#[ignore]` and use `CARGO_BIN_EXE_*` for reliable binary discovery. Deleted root `tests/cli_tests.rs`.
 
 ---
 
@@ -206,13 +208,13 @@ Update `SYSTEM_ARCHITECT_V1.0.0_RELEASE_REVIEW.md` status to ✅ APPROVED.
 ### Task 5.2: Refresh Stale Status Docs
 **Assigned Role:** Documentation Specialist  
 **Priority:** HIGH  
-**Status:** [ ] Not Started / [ ] In Progress / [ ] Complete
+**Status:** [x] Complete (May 29, 2026)
 
 **Acceptance Criteria:**
-- [ ] `AGENT_TASKS/SPRINT_12_A_TASKING.md` gate statuses updated (A.1 complete, A.2/A.3 impl complete pending review)
-- [ ] `ROADMAP.md` dates and sprint status current
-- [ ] `V1.0.0_RELEASE_CHECKLIST.md` checkboxes reflect May 2026 reality
-- [ ] `SECURITY_RISK_REGISTER.md` Last Updated → May 29, 2026; RISK-006–009 added
+- [x] `AGENT_TASKS/SPRINT_12_A_TASKING.md` gate statuses updated (A.1 complete, A.2/A.3 impl complete pending review)
+- [x] `ROADMAP.md` dates and sprint status current
+- [x] `V1.0.0_RELEASE_CHECKLIST.md` checkboxes reflect May 2026 reality
+- [x] `SECURITY_RISK_REGISTER.md` Last Updated → May 29, 2026; RISK-006–009 added
 
 ---
 
