@@ -341,7 +341,7 @@ impl BatchQueue {
             .collect();
 
         // Sort by priority (High first, then Medium, then Low)
-        pending.sort_by(|a, b| b.1.cmp(&a.1));
+        pending.sort_by_key(|b| std::cmp::Reverse(b.1));
 
         pending.into_iter().take(limit).map(|(id, _)| id).collect()
     }
