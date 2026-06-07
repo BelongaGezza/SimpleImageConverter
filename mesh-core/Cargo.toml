@@ -31,7 +31,6 @@ dxf = "0.6"
 truck-modeling = { version = "0.3.0", optional = true }
 truck-polymesh = { version = "0.3.0", optional = true }
 truck-stepio = { version = "0.3.0", optional = true }
-truck-meshalgo = { version = "0.4.0", optional = true }
 # ruststep for STEP file parsing (hybrid approach)
 # Enable AP203 feature for 3D design STEP files
 ruststep = { version = "0.4", optional = true, features = ["ap203"] }
@@ -50,7 +49,6 @@ step = [
     "truck-modeling",
     "truck-polymesh",
     "truck-stepio",
-    "truck-meshalgo",
     "ruststep",
 ]
 # Enable full STEP B-Rep support via opencascade-rs (requires OCCT installation)
