@@ -31,7 +31,7 @@ cargo build --release -p converter-gui
 | Area | macOS status | Notes |
 |------|--------------|-------|
 | **Image format conversions** | ✅ Pass | Single-file and batch image conversions verified |
-| **Mesh format conversions** | ⏳ Pending | STL/OBJ/PLY and mixed queues not yet tested |
+| **Mesh format conversions** | ⏳ Pending | Automated GUI tests pass (STL→OBJ/PLY); human manual sign-off still required |
 | **Keyboard shortcuts (§1)** | ✅ Pass | Cmd+O, Enter, batch shortcuts, queue keys, Escape/edit dialog, F1 |
 | **Windows 11** | ⏳ Pending | Full pass not run |
 

@@ -172,7 +172,7 @@ Complete re-test of Tasks 2.4/2.5 and remaining Sprint 12 manual checklist items
 | Checklist & report addendum | ✅ Created/updated | Execute checklist |
 | Test 5.3 edit dialog re-test | ✅ Pass macOS (shortcuts pass) | ⏳ Windows |
 | Image conversions (single + batch) | ✅ Pass macOS | — |
-| Mesh conversions | — | ⏳ Pending |
+| Mesh conversions | ✅ Automated GUI tests (STL→OBJ/PLY) | ⏳ Human manual sign-off pending |
 | Keyboard shortcuts §1 | ✅ Pass macOS | ⏳ Windows |
 | Windows 11 full pass | — | ⏳ Not run this session |
 | Linux GUI | — | ⏳ Out of scope (macOS session) |

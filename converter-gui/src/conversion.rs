@@ -109,8 +109,8 @@ pub fn convert_image(
     // Two-stage format detection (extension + magic bytes for security)
     let input_format = FormatRegistry::detect_two_stage(input_path, &input_data)?;
 
-    // Get format handlers
-    let reader = FormatRegistry::get_reader(input_format)?;
+    // Get format handlers with injected resource limits
+    let reader = FormatRegistry::get_reader_with_limits(input_format, limits.clone())?;
     let writer = FormatRegistry::get_writer(output_format)?;
 
     // Convert image
@@ -226,7 +226,7 @@ mod tests {
 ///
 /// This function performs a complete mesh conversion using direct library
 /// integration with `mesh-core`. It includes:
-/// - Format detection using `mesh-core::FormatRegistry`
+/// - Two-stage format detection (extension + signature when available, ADR-003)
 /// - Resource limits enforcement (vertices, faces, file size)
 /// - Support for conversion options (transform, validate, recalculate-normals)
 /// - Comprehensive error handling with user-friendly messages
@@ -317,8 +317,8 @@ pub fn convert_mesh(
     // Read input file with size validation (DoS prevention)
     let input_data = read_file_bytes_checked(input_path, &mesh_limits)?;
 
-    // Format detection using mesh-core::FormatRegistry
-    let input_format = MeshFormatRegistry::detect_from_path(input_path)?;
+    // Two-stage format detection (extension + signature when available, per ADR-003)
+    let input_format = MeshFormatRegistry::detect_two_stage(input_path, &input_data)?;
 
     // Get format handlers with resource limits
     let reader = MeshFormatRegistry::get_reader_with_limits(input_format, mesh_limits.clone())?;
