@@ -6,7 +6,7 @@ use crate::formats::traits::{ImageData, ImageReader, ImageWriter};
 use crate::quality::QualitySettings;
 use common::error::{ConversionError, Result};
 use common::limits::ResourceLimits;
-use image::{DynamicImage, GenericImageView, ImageFormat};
+use image::{DynamicImage, ImageFormat};
 
 /// WebP format handler
 ///
@@ -38,39 +38,9 @@ impl Default for WebPFormat {
 
 impl ImageReader for WebPFormat {
     fn read(&self, data: &[u8]) -> Result<ImageData> {
-        // Security: Validate input size before parsing to prevent memory exhaustion
-        if let Err(e) = self.limits.check_file_size(data.len()) {
-            common::security::log_security_error(&e, None);
-            return Err(e);
-        }
-
-        let img = image::load_from_memory_with_format(data, ImageFormat::WebP).map_err(|e| {
-            ConversionError::ConversionFailed(format!(
-                "Failed to read WebP image ({} bytes): {}",
-                data.len(),
-                e
-            ))
-        })?;
-
-        let (width, height) = img.dimensions();
-        self.limits.check_image_dimensions(width, height)?;
-
-        // WebP supports transparency, so preserve RGBA if present
-        // Otherwise convert to RGB
-        let (data, color_type) = if img.color().has_alpha() {
-            let rgba = img.to_rgba8();
-            (rgba.into_raw(), crate::formats::traits::ColorType::Rgba)
-        } else {
-            let rgb = img.to_rgb8();
-            (rgb.into_raw(), crate::formats::traits::ColorType::Rgb)
-        };
-
-        Ok(ImageData {
-            width,
-            height,
-            data,
-            color_type,
-        })
+        let img = crate::formats::decode::read_dynamic_image(data, ImageFormat::WebP, &self.limits)
+            .inspect_err(|e| common::security::log_security_error(e, None))?;
+        crate::formats::decode::dynamic_to_webp_image_data(img, &self.limits)
     }
 }
 

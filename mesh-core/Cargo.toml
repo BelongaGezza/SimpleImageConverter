@@ -25,7 +25,7 @@ gltf = "1.4"
 dxf = "0.6"
 
 # Optional format support (feature-gated)
-# STEP support via truck (pure Rust)
+# STEP support via ruststep with optional truck data model crates
 # Note: truck crates are optional and only available when step feature is enabled
 # Version 0.3 is the latest available as of 2025-12-27
 truck-modeling = { version = "0.3.0", optional = true }
@@ -44,7 +44,7 @@ common = { path = "../common" }
 
 [features]
 default = []
-# Enable STEP format support (requires truck crates and ruststep)
+# Enable STEP format support (requires ruststep and truck STEP data model crates)
 step = [
     "truck-modeling",
     "truck-polymesh",

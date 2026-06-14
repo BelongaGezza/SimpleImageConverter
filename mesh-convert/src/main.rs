@@ -3,8 +3,9 @@
 
 use clap::Parser;
 use common::error::Result;
-use common::io::{read_file_bytes_checked, write_file_bytes};
+use common::io::{read_file_bytes_checked, write_file_bytes_atomic};
 use common::limits::ResourceLimits;
+use common::validation::{validate_output_path, OutputWritePolicy};
 use mesh_core::{
     parse_coordinate_system, ConversionOptions, CoordinateSystem, FormatRegistry, MeshConverter,
 };
@@ -47,6 +48,14 @@ struct Args {
     /// Maximum faces (default: 10,000,000)
     #[arg(long, default_value_t = 10_000_000)]
     max_faces: usize,
+
+    /// Maximum vertices per polygon before triangulation (default: 64)
+    #[arg(long, default_value_t = 64)]
+    max_vertices_per_polygon: usize,
+
+    /// Allow overwriting an existing output file
+    #[arg(long)]
+    overwrite: bool,
 }
 
 fn main() -> Result<()> {
@@ -54,9 +63,10 @@ fn main() -> Result<()> {
 
     // Build resource limits from CLI args
     let limits = ResourceLimits::builder()
-        .max_file_size_mb(args.max_file_size_mb)
+        .try_max_file_size_mb(args.max_file_size_mb)?
         .max_vertices(args.max_vertices)
         .max_faces(args.max_faces)
+        .max_vertices_per_polygon(args.max_vertices_per_polygon)
         .build();
 
     // Validate input file using common validation
@@ -129,7 +139,12 @@ fn main() -> Result<()> {
     )?;
 
     // Write output file
-    write_file_bytes(&output_path, &output_data)?;
+    let output_policy = OutputWritePolicy {
+        allow_overwrite: args.overwrite,
+        ..OutputWritePolicy::default()
+    };
+    let validated_output = validate_output_path(&output_path, &output_policy)?;
+    write_file_bytes_atomic(&validated_output, &output_data, &output_policy)?;
 
     // Security: Validate output file by verifying it can be read back
     // This ensures the conversion produced a valid file

@@ -15,6 +15,8 @@ use std::io::{Cursor, Write};
 // Use ply-rs-bw (security-patched fork) - CVE-2020-25573 fixed
 use ply_rs_bw;
 
+const PLY_HEADER_SCAN_LIMIT: usize = 1024 * 1024;
+
 /// PLY format handler
 pub struct PlyFormat {
     limits: ResourceLimits,
@@ -48,6 +50,8 @@ impl MeshReader for PlyFormat {
             return Err(e);
         }
 
+        preflight_ply(data, &self.limits)?;
+
         let mut cursor = Cursor::new(data);
 
         // Use ply_rs_bw to read PLY file
@@ -59,6 +63,11 @@ impl MeshReader for PlyFormat {
                 e
             ))
         })?;
+
+        let declared_vertices = ply.payload.get("vertex").map_or(0, Vec::len);
+        let declared_faces = ply.payload.get("face").map_or(0, Vec::len);
+        self.limits
+            .check_mesh_resources(declared_vertices, declared_faces)?;
 
         let mut mesh = Mesh::new();
 
@@ -179,6 +188,14 @@ impl MeshReader for PlyFormat {
                             "PLY face has fewer than 3 vertices".to_string(),
                         ));
                     }
+                    self.limits.check_polygon_vertices(indices.len())?;
+                    let additional_faces = indices.len().checked_sub(2).ok_or_else(|| {
+                        ConversionError::ResourceLimitExceeded(
+                            "PLY triangulated face calculation underflowed".to_string(),
+                        )
+                    })?;
+                    self.limits
+                        .check_triangulated_face_budget(mesh.faces.len(), additional_faces)?;
 
                     // Create triangles from polygon using fan triangulation
                     for i in 1..(indices.len() - 1) {
@@ -230,6 +247,216 @@ impl MeshReader for PlyFormat {
 
         Ok(mesh)
     }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum PlyEncoding {
+    Ascii,
+    BinaryLittleEndian,
+    BinaryBigEndian,
+}
+
+#[derive(Debug)]
+struct PlyHeaderPreflight {
+    encoding: PlyEncoding,
+    header_end: usize,
+    vertex_count: Option<usize>,
+    face_count: Option<usize>,
+    face_first_property_is_list: bool,
+}
+
+fn preflight_ply(data: &[u8], limits: &ResourceLimits) -> Result<()> {
+    let header = parse_ply_header(data, limits)?;
+
+    if header.encoding == PlyEncoding::Ascii && header.face_first_property_is_list {
+        if let Some(face_count) = header.face_count {
+            preflight_ascii_ply_face_counts(
+                data,
+                header.header_end,
+                header.vertex_count.unwrap_or(0),
+                face_count,
+                limits,
+            )?;
+        }
+    }
+
+    Ok(())
+}
+
+fn parse_ply_header(data: &[u8], limits: &ResourceLimits) -> Result<PlyHeaderPreflight> {
+    let (lines, header_end) = collect_ply_header_lines(data)?;
+    if lines.first().map(|line| line.trim()) != Some("ply") {
+        return Err(ConversionError::InvalidInput(
+            "PLY file must start with a ply header".to_string(),
+        ));
+    }
+
+    let mut encoding = None;
+    let mut current_element: Option<&str> = None;
+    let mut vertex_count = None;
+    let mut face_count = None;
+    let mut face_property_count = 0usize;
+    let mut face_first_property_is_list = false;
+
+    for line in lines.iter().skip(1) {
+        let line = line.trim();
+        if line.is_empty() || line.starts_with("comment") || line.starts_with("obj_info") {
+            continue;
+        }
+
+        let tokens = line.split_whitespace().collect::<Vec<_>>();
+        match tokens.as_slice() {
+            ["format", format, _version] => {
+                encoding = Some(match *format {
+                    "ascii" => PlyEncoding::Ascii,
+                    "binary_little_endian" => PlyEncoding::BinaryLittleEndian,
+                    "binary_big_endian" => PlyEncoding::BinaryBigEndian,
+                    _ => {
+                        return Err(ConversionError::InvalidInput(
+                            "Unsupported PLY encoding".to_string(),
+                        ));
+                    }
+                });
+            }
+            ["element", name, count] => {
+                let parsed_count = count.parse::<usize>().map_err(|_| {
+                    ConversionError::InvalidInput("PLY element count is invalid".to_string())
+                })?;
+
+                match *name {
+                    "vertex" => {
+                        limits.check_vertex_count(parsed_count)?;
+                        vertex_count = Some(parsed_count);
+                    }
+                    "face" => {
+                        limits.check_face_count(parsed_count)?;
+                        face_count = Some(parsed_count);
+                    }
+                    _ => {}
+                }
+
+                current_element = Some(*name);
+                face_property_count = 0;
+            }
+            ["property", rest @ ..] if current_element == Some("face") => {
+                if face_property_count == 0 {
+                    face_first_property_is_list = rest.first() == Some(&"list");
+                }
+                face_property_count = face_property_count.saturating_add(1);
+            }
+            ["property", ..] => {}
+            ["end_header"] => break,
+            _ => {}
+        }
+    }
+
+    let encoding = encoding.ok_or_else(|| {
+        ConversionError::InvalidInput("PLY header is missing a format declaration".to_string())
+    })?;
+
+    Ok(PlyHeaderPreflight {
+        encoding,
+        header_end,
+        vertex_count,
+        face_count,
+        face_first_property_is_list,
+    })
+}
+
+fn collect_ply_header_lines(data: &[u8]) -> Result<(Vec<String>, usize)> {
+    let scan_limit = data.len().min(PLY_HEADER_SCAN_LIMIT);
+    let mut lines = Vec::new();
+    let mut offset = 0usize;
+
+    while offset < scan_limit {
+        let Some(relative_newline) = data[offset..scan_limit]
+            .iter()
+            .position(|byte| *byte == b'\n')
+        else {
+            break;
+        };
+
+        let line_end = offset + relative_newline;
+        let line_bytes = data[offset..line_end]
+            .strip_suffix(b"\r")
+            .unwrap_or(&data[offset..line_end]);
+        let line = std::str::from_utf8(line_bytes)
+            .map_err(|_| ConversionError::InvalidInput("PLY header is not UTF-8".to_string()))?
+            .to_string();
+        let next_offset = line_end + 1;
+        let is_end_header = line.trim() == "end_header";
+        lines.push(line);
+        offset = next_offset;
+
+        if is_end_header {
+            return Ok((lines, next_offset));
+        }
+    }
+
+    Err(ConversionError::InvalidInput(
+        "PLY header is missing end_header within the scan limit".to_string(),
+    ))
+}
+
+fn preflight_ascii_ply_face_counts(
+    data: &[u8],
+    header_end: usize,
+    vertex_count: usize,
+    face_count: usize,
+    limits: &ResourceLimits,
+) -> Result<()> {
+    let body = std::str::from_utf8(&data[header_end..])
+        .map_err(|_| ConversionError::InvalidInput("ASCII PLY body is not UTF-8".to_string()))?;
+    let mut lines = body.lines();
+
+    for _ in 0..vertex_count {
+        if lines.next().is_none() {
+            return Err(ConversionError::InvalidInput(
+                "PLY file ended before declared vertices were present".to_string(),
+            ));
+        }
+    }
+
+    let mut projected_faces = 0usize;
+    for _ in 0..face_count {
+        let line = lines.next().ok_or_else(|| {
+            ConversionError::InvalidInput(
+                "PLY file ended before declared faces were present".to_string(),
+            )
+        })?;
+        let count = line
+            .split_whitespace()
+            .next()
+            .ok_or_else(|| {
+                ConversionError::InvalidInput("PLY face list count is missing".to_string())
+            })?
+            .parse::<usize>()
+            .map_err(|_| {
+                ConversionError::InvalidInput("PLY face list count is invalid".to_string())
+            })?;
+
+        if count < 3 {
+            return Err(ConversionError::InvalidInput(
+                "PLY face has fewer than 3 vertices".to_string(),
+            ));
+        }
+        limits.check_polygon_vertices(count)?;
+        let additional_faces = count.checked_sub(2).ok_or_else(|| {
+            ConversionError::ResourceLimitExceeded(
+                "PLY triangulated face calculation underflowed".to_string(),
+            )
+        })?;
+        limits.check_triangulated_face_budget(projected_faces, additional_faces)?;
+        projected_faces = projected_faces
+            .checked_add(additional_faces)
+            .ok_or_else(|| {
+                ConversionError::ResourceLimitExceeded(
+                    "PLY triangulated face count calculation overflowed".to_string(),
+                )
+            })?;
+    }
+
+    Ok(())
 }
 
 impl MeshWriter for PlyFormat {
@@ -764,6 +991,52 @@ mod tests {
         let result = format.read(&ply_data);
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("Face count"));
+    }
+
+    #[test]
+    fn test_ply_header_preflight_rejects_declared_vertices_before_parse() {
+        let limits = ResourceLimits::builder()
+            .max_vertices(3)
+            .max_faces(10)
+            .build();
+        let format = PlyFormat::with_limits(limits);
+        let ply_data = b"ply\nformat ascii 1.0\nelement vertex 4\nproperty float x\nproperty float y\nproperty float z\nelement face 0\nproperty list uchar int vertex_indices\nend_header\n";
+
+        let result = format.read(ply_data);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Vertex count"));
+    }
+
+    #[test]
+    fn test_ply_header_preflight_rejects_declared_faces_before_parse() {
+        let limits = ResourceLimits::builder()
+            .max_vertices(10)
+            .max_faces(1)
+            .build();
+        let format = PlyFormat::with_limits(limits);
+        let ply_data = b"ply\nformat binary_little_endian 1.0\nelement vertex 3\nproperty float x\nproperty float y\nproperty float z\nelement face 2\nproperty list uchar int vertex_indices\nend_header\n";
+
+        let result = format.read(ply_data);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Face count"));
+    }
+
+    #[test]
+    fn test_ascii_ply_preflight_rejects_face_list_count_before_parse() {
+        let limits = ResourceLimits::builder()
+            .max_vertices(10)
+            .max_faces(10)
+            .max_vertices_per_polygon(4)
+            .build();
+        let format = PlyFormat::with_limits(limits);
+        let ply_data = b"ply\nformat ascii 1.0\nelement vertex 0\nelement face 1\nproperty list uchar int vertex_indices\nend_header\n5 0 1 2 3 4\n";
+
+        let result = format.read(ply_data);
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Polygon vertex count"));
     }
 
     #[test]

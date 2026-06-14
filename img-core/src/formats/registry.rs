@@ -133,15 +133,7 @@ impl FormatRegistry {
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
     pub fn get_reader(format: ImageFormat) -> Result<Box<dyn ImageReader>> {
-        match format {
-            ImageFormat::Png => Ok(Box::new(PngFormat::new())),
-            ImageFormat::Jpeg => Ok(Box::new(JpegFormat::new())),
-            ImageFormat::Bmp => Ok(Box::new(BmpFormat::new())),
-            ImageFormat::Gif => Ok(Box::new(GifFormat::new())),
-            ImageFormat::Tiff => Ok(Box::new(TiffFormat::new())),
-            ImageFormat::WebP => Ok(Box::new(WebPFormat::new())),
-            ImageFormat::Svg => Ok(Box::new(SvgFormat::new())),
-        }
+        Self::get_reader_with_limits(format, ResourceLimits::default())
     }
 
     /// Get reader for a format with custom resource limits

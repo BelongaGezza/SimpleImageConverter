@@ -7,6 +7,11 @@ use common::error::{ConversionError, Result};
 use common::limits::ResourceLimits;
 use std::io::{Cursor, Write};
 
+const STL_BINARY_HEADER_BYTES: usize = 80;
+const STL_BINARY_COUNT_BYTES: usize = 4;
+const STL_BINARY_PREFIX_BYTES: usize = STL_BINARY_HEADER_BYTES + STL_BINARY_COUNT_BYTES;
+const STL_BINARY_TRIANGLE_BYTES: usize = 50;
+
 /// STL format handler
 pub struct StlFormat {
     limits: ResourceLimits,
@@ -39,6 +44,8 @@ impl MeshReader for StlFormat {
             common::security::log_security_error(&e, None);
             return Err(e);
         }
+
+        preflight_stl(data, &self.limits)?;
 
         let mut cursor = Cursor::new(data);
 
@@ -210,6 +217,71 @@ impl MeshWriter for StlFormat {
 
         Ok(buffer)
     }
+}
+
+fn preflight_stl(data: &[u8], limits: &ResourceLimits) -> Result<()> {
+    if data.len() >= STL_BINARY_PREFIX_BYTES {
+        let triangle_count = u32::from_le_bytes([
+            data[STL_BINARY_HEADER_BYTES],
+            data[STL_BINARY_HEADER_BYTES + 1],
+            data[STL_BINARY_HEADER_BYTES + 2],
+            data[STL_BINARY_HEADER_BYTES + 3],
+        ]) as usize;
+        let expected_len_result = triangle_count
+            .checked_mul(STL_BINARY_TRIANGLE_BYTES)
+            .and_then(|triangle_bytes| STL_BINARY_PREFIX_BYTES.checked_add(triangle_bytes))
+            .ok_or_else(|| {
+                ConversionError::ResourceLimitExceeded(
+                    "STL triangle byte length calculation overflowed".to_string(),
+                )
+            });
+
+        if let Ok(expected_len) = &expected_len_result {
+            if *expected_len == data.len() {
+                limits.check_face_count(triangle_count)?;
+                return Ok(());
+            }
+        }
+
+        if looks_like_ascii_stl(data) {
+            return preflight_ascii_stl(data, limits);
+        }
+
+        limits.check_face_count(triangle_count)?;
+        let expected_len = expected_len_result?;
+        return Err(ConversionError::InvalidInput(format!(
+            "Binary STL declared length mismatch: expected {} bytes, got {} bytes",
+            expected_len,
+            data.len()
+        )));
+    }
+
+    if looks_like_ascii_stl(data) {
+        preflight_ascii_stl(data, limits)
+    } else {
+        Err(ConversionError::InvalidInput(
+            "STL file is too small to contain a binary header".to_string(),
+        ))
+    }
+}
+
+fn looks_like_ascii_stl(data: &[u8]) -> bool {
+    let Ok(text) = std::str::from_utf8(data) else {
+        return false;
+    };
+    let text = text.trim_start();
+    text.starts_with("solid") && (text.contains("facet") || text.contains("endsolid"))
+}
+
+fn preflight_ascii_stl(data: &[u8], limits: &ResourceLimits) -> Result<()> {
+    let text = std::str::from_utf8(data).map_err(|_| {
+        ConversionError::InvalidInput("ASCII STL header is not valid UTF-8".to_string())
+    })?;
+    let facet_count = text
+        .lines()
+        .filter(|line| line.trim_start().starts_with("facet normal"))
+        .count();
+    limits.check_face_count(facet_count)
 }
 
 /// Calculate face normal from three vertices using cross product
@@ -566,7 +638,10 @@ mod tests {
 
     #[test]
     fn test_limits_with_permissive() {
-        let limits = ResourceLimits::permissive();
+        let limits = ResourceLimits::builder()
+            .max_vertices(1_000_000)
+            .max_faces(1_000_000)
+            .build();
         let format = StlFormat::with_limits(limits);
 
         let mesh = create_test_cube();
@@ -719,6 +794,56 @@ mod tests {
         let result = format.read(&stl_data);
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("Face count"));
+    }
+
+    #[test]
+    fn test_binary_stl_preflight_rejects_declared_face_count_before_parse() {
+        let limits = ResourceLimits::builder()
+            .max_file_size(1024)
+            .max_faces(5)
+            .build();
+        let format = StlFormat::with_limits(limits);
+        let mut stl_data = vec![0u8; STL_BINARY_PREFIX_BYTES];
+        stl_data[STL_BINARY_HEADER_BYTES..STL_BINARY_PREFIX_BYTES]
+            .copy_from_slice(&6u32.to_le_bytes());
+
+        let result = format.read(&stl_data);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Face count"));
+    }
+
+    #[test]
+    fn test_binary_stl_preflight_rejects_length_mismatch_before_parse() {
+        let format = StlFormat::new();
+        let mut stl_data = vec![0u8; STL_BINARY_PREFIX_BYTES];
+        stl_data[STL_BINARY_HEADER_BYTES..STL_BINARY_PREFIX_BYTES]
+            .copy_from_slice(&1u32.to_le_bytes());
+
+        let result = format.read(&stl_data);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("length mismatch"));
+    }
+
+    #[test]
+    fn test_ascii_stl_preflight_preserves_ascii_fallback() {
+        let limits = ResourceLimits::builder()
+            .max_file_size(1024)
+            .max_faces(1)
+            .build();
+        let format = StlFormat::with_limits(limits);
+        let ascii_stl = b"solid ascii
+facet normal 0 0 1
+outer loop
+vertex 0 0 0
+vertex 1 0 0
+vertex 0 1 0
+endloop
+endfacet
+endsolid ascii
+";
+
+        let result = format.read(ascii_stl);
+        assert!(result.is_ok());
     }
 
     #[test]

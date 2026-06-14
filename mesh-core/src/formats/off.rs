@@ -153,6 +153,9 @@ impl OffFormat {
                     line_idx, e
                 ))
             })?;
+            self.limits.check_polygon_vertices(num_face_vertices)?;
+            self.limits
+                .check_triangulated_face_budget(mesh.faces.len(), num_face_vertices)?;
 
             if num_face_vertices < 3 {
                 return Err(ConversionError::InvalidInput(format!(

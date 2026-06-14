@@ -7,11 +7,10 @@
 //! library integration with `img-core` and `mesh-core`. All conversions use
 //! format detection for security validation.
 
-use crate::utils::{validate_output_filename, validate_output_path_not_system};
 use common::error::Result;
-use common::io::{read_file_bytes_checked, write_file_bytes};
+use common::io::{read_file_bytes_checked, write_file_bytes_atomic};
 use common::limits::ResourceLimits;
-use common::validation::validate_file_path;
+use common::validation::{validate_file_path, validate_output_path, OutputWritePolicy};
 use img_core::{FormatRegistry, ImageConverter, ImageFormat, QualitySettings};
 use mesh_core::{
     ConversionOptions, FormatRegistry as MeshFormatRegistry, MeshConverter, MeshFormat,
@@ -71,30 +70,35 @@ pub fn convert_image(
     quality: u8,
     limits: &ResourceLimits,
 ) -> Result<PathBuf> {
+    convert_image_with_policy(
+        input_path,
+        output_path,
+        output_format,
+        quality,
+        limits,
+        &OutputWritePolicy::default(),
+    )
+}
+
+/// Convert an image file using an explicit output write policy.
+///
+/// Callers must pass a policy with `allow_overwrite: true` only after a verified
+/// user confirmation path. The default `convert_image` wrapper denies overwrite.
+///
+/// # Errors
+///
+/// Returns an error for invalid paths, unsafe output policy, unsupported formats,
+/// resource-limit violations, conversion failures, or write failures.
+pub fn convert_image_with_policy(
+    input_path: &Path,
+    output_path: &Path,
+    output_format: ImageFormat,
+    quality: u8,
+    limits: &ResourceLimits,
+    output_policy: &OutputWritePolicy,
+) -> Result<PathBuf> {
     // Validate input file path (security check)
     validate_file_path(input_path)?;
-
-    // Validate output filename (no invalid characters, no path traversal)
-    if let Some(filename) = output_path.file_name().and_then(|n| n.to_str()) {
-        validate_output_filename(filename).map_err(|e| {
-            common::error::ConversionError::InvalidInput(format!(
-                "Output filename validation failed: {}",
-                e
-            ))
-        })?;
-    } else {
-        return Err(common::error::ConversionError::InvalidInput(
-            "Invalid output filename.".to_string(),
-        ));
-    }
-
-    // Validate output path is not in system directories (security check)
-    validate_output_path_not_system(output_path)
-        .map_err(common::error::ConversionError::ValidationFailed)?;
-
-    // Check if output file already exists (for user confirmation later)
-    // Note: We don't fail here, but the UI should warn the user
-    // The actual file write will overwrite if it exists
 
     // Validate quality value (must be 1-100)
     if quality == 0 || quality > 100 {
@@ -102,6 +106,8 @@ pub fn convert_image(
             "Quality must be between 1 and 100.".to_string(),
         ));
     }
+
+    let validated_output = validate_output_path(output_path, output_policy)?;
 
     // Read input file with size validation (DoS prevention)
     let input_data = read_file_bytes_checked(input_path, limits)?;
@@ -124,7 +130,7 @@ pub fn convert_image(
     )?;
 
     // Write output file
-    write_file_bytes(output_path, &output_data)?;
+    write_file_bytes_atomic(&validated_output, &output_data, output_policy)?;
 
     Ok(output_path.to_path_buf())
 }
@@ -218,6 +224,24 @@ mod tests {
         // Should be caught by validate_file_path
     }
 
+    #[test]
+    fn test_convert_image_denies_overwrite_by_default() {
+        let limits = ResourceLimits::default();
+        let input_file = tempfile::NamedTempFile::new().unwrap();
+        let output_file = tempfile::NamedTempFile::new().unwrap();
+
+        let result = convert_image(
+            input_file.path(),
+            output_file.path(),
+            ImageFormat::Jpeg,
+            90,
+            &limits,
+        );
+
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("already exists"));
+    }
+
     // Note: Full integration tests would require actual image files
     // These are handled in the img-core crate's integration tests
 }
@@ -282,36 +306,44 @@ pub fn convert_mesh(
     options: ConversionOptions,
     limits: &ResourceLimits,
 ) -> Result<PathBuf> {
+    convert_mesh_with_policy(
+        input_path,
+        output_path,
+        output_format,
+        options,
+        limits,
+        &OutputWritePolicy::default(),
+    )
+}
+
+/// Convert a mesh file using an explicit output write policy.
+///
+/// Callers must pass a policy with `allow_overwrite: true` only after a verified
+/// user confirmation path. The default `convert_mesh` wrapper denies overwrite.
+///
+/// # Errors
+///
+/// Returns an error for invalid paths, unsafe output policy, unsupported formats,
+/// resource-limit violations, conversion failures, or write failures.
+pub fn convert_mesh_with_policy(
+    input_path: &Path,
+    output_path: &Path,
+    output_format: MeshFormat,
+    options: ConversionOptions,
+    limits: &ResourceLimits,
+    output_policy: &OutputWritePolicy,
+) -> Result<PathBuf> {
     // Validate input file path (security check)
     validate_file_path(input_path)?;
 
-    // Validate output filename (no invalid characters, no path traversal)
-    if let Some(filename) = output_path.file_name().and_then(|n| n.to_str()) {
-        validate_output_filename(filename).map_err(|e| {
-            common::error::ConversionError::InvalidInput(format!(
-                "Output filename validation failed: {}",
-                e
-            ))
-        })?;
-    } else {
-        return Err(common::error::ConversionError::InvalidInput(
-            "Invalid output filename.".to_string(),
-        ));
-    }
-
-    // Validate output path is not in system directories (security check)
-    validate_output_path_not_system(output_path)
-        .map_err(common::error::ConversionError::ValidationFailed)?;
-
-    // Check if output file already exists (for user confirmation later)
-    // Note: We don't fail here, but the UI should warn the user
-    // The actual file write will overwrite if it exists
+    let validated_output = validate_output_path(output_path, output_policy)?;
 
     // Build resource limits with mesh-specific constraints
     let mesh_limits = ResourceLimits::builder()
         .max_file_size(limits.max_file_size)
         .max_vertices(limits.max_vertices)
         .max_faces(limits.max_faces)
+        .max_vertices_per_polygon(limits.max_vertices_per_polygon)
         .build();
 
     // Read input file with size validation (DoS prevention)
@@ -330,7 +362,7 @@ pub fn convert_mesh(
         converter.convert_with_options(&input_data, reader.as_ref(), writer.as_ref(), &options)?;
 
     // Write output file
-    write_file_bytes(output_path, &output_data)?;
+    write_file_bytes_atomic(&validated_output, &output_data, output_policy)?;
 
     Ok(output_path.to_path_buf())
 }
@@ -370,6 +402,25 @@ mod mesh_tests {
         let result = convert_mesh(input_path, output_path, MeshFormat::Obj, options, &limits);
         // We expect an error (file not found), but not a validation error
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_convert_mesh_denies_overwrite_by_default() {
+        let limits = ResourceLimits::default();
+        let input_file = tempfile::NamedTempFile::new().unwrap();
+        let output_file = tempfile::NamedTempFile::new().unwrap();
+        let options = ConversionOptions::default();
+
+        let result = convert_mesh(
+            input_file.path(),
+            output_file.path(),
+            MeshFormat::Obj,
+            options,
+            &limits,
+        );
+
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("already exists"));
     }
 
     // Note: Full integration tests would require actual mesh files

@@ -44,6 +44,7 @@ impl MeshReader for ObjFormat {
         let obj_str = std::str::from_utf8(data).map_err(|e| {
             ConversionError::ConversionFailed(format!("Failed to parse OBJ file as UTF-8: {}", e))
         })?;
+        preflight_obj_counts(obj_str, &self.limits)?;
 
         // Use tobj to load OBJ (it handles MTL files automatically if referenced)
         let (models, _materials) = tobj::load_obj_buf(
@@ -137,6 +138,38 @@ impl MeshReader for ObjFormat {
 
         Ok(mesh)
     }
+}
+
+fn preflight_obj_counts(obj_str: &str, limits: &ResourceLimits) -> Result<()> {
+    let mut vertices = 0usize;
+    let mut projected_faces = 0usize;
+
+    for line in obj_str.lines() {
+        let line = line.trim_start();
+        if line.is_empty() || line.starts_with('#') {
+            continue;
+        }
+        if line.starts_with("v ") {
+            vertices = vertices.checked_add(1).ok_or_else(|| {
+                ConversionError::ResourceLimitExceeded("OBJ vertex count overflow".to_string())
+            })?;
+            limits.check_mesh_resources(vertices, projected_faces)?;
+        } else if line.starts_with("f ") {
+            let polygon_vertices = line.split_whitespace().skip(1).count();
+            limits.check_polygon_vertices(polygon_vertices)?;
+            limits.check_triangulated_face_budget(projected_faces, polygon_vertices)?;
+            projected_faces = projected_faces
+                .checked_add(polygon_vertices.saturating_sub(2))
+                .ok_or_else(|| {
+                    ConversionError::ResourceLimitExceeded(
+                        "OBJ triangulated face count overflow".to_string(),
+                    )
+                })?;
+            limits.check_mesh_resources(vertices, projected_faces)?;
+        }
+    }
+
+    Ok(())
 }
 
 impl MeshWriter for ObjFormat {
@@ -400,6 +433,19 @@ mod tests {
         let mesh = result.unwrap();
         assert_eq!(mesh.vertices.len(), 3);
         assert_eq!(mesh.faces.len(), 1);
+    }
+
+    #[test]
+    fn test_read_rejects_large_polygon_before_tobj_parse() {
+        let limits = ResourceLimits::builder()
+            .max_vertices_per_polygon(4)
+            .build();
+        let format = ObjFormat::with_limits(limits);
+        let obj_data = b"v 0 0 0\nv 1 0 0\nv 2 0 0\nv 3 0 0\nv 4 0 0\nf 1 2 3 4 5\n";
+
+        let result = format.read(obj_data);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().is_resource_limit());
     }
 
     #[test]

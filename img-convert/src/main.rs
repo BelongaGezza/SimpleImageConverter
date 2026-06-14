@@ -3,8 +3,9 @@
 
 use clap::Parser;
 use common::error::{ConversionError, Result};
-use common::io::{read_file_bytes_checked, write_file_bytes};
+use common::io::{read_file_bytes_checked, write_file_bytes_atomic};
 use common::limits::ResourceLimits;
+use common::validation::{validate_output_path, OutputWritePolicy};
 use img_core::{FormatRegistry, ImageConverter, QualitySettings};
 use std::path::Path;
 
@@ -33,6 +34,14 @@ struct Args {
     /// Maximum image dimension in pixels (default: 65535)
     #[arg(long, default_value_t = 65535)]
     max_dimension: u32,
+
+    /// Maximum decoded image size in MB (default: 512)
+    #[arg(long, default_value_t = 512)]
+    max_decoded_image_mb: usize,
+
+    /// Allow overwriting an existing output file
+    #[arg(long)]
+    overwrite: bool,
 }
 
 fn main() -> Result<()> {
@@ -47,8 +56,9 @@ fn main() -> Result<()> {
 
     // Build resource limits from CLI args
     let limits = ResourceLimits::builder()
-        .max_file_size_mb(args.max_file_size_mb)
+        .try_max_file_size_mb(args.max_file_size_mb)?
         .max_image_dimension(args.max_dimension)
+        .try_max_decoded_image_mb(args.max_decoded_image_mb)?
         .build();
 
     // Validate input file using common validation
@@ -90,7 +100,12 @@ fn main() -> Result<()> {
     let output_data = converter.convert(&input_data, reader.as_ref(), writer.as_ref(), &quality)?;
 
     // Write output file
-    write_file_bytes(&output_path, &output_data)?;
+    let output_policy = OutputWritePolicy {
+        allow_overwrite: args.overwrite,
+        ..OutputWritePolicy::default()
+    };
+    let validated_output = validate_output_path(&output_path, &output_policy)?;
+    write_file_bytes_atomic(&validated_output, &output_data, &output_policy)?;
 
     // Security: Validate output file by verifying it can be read back
     // This ensures the conversion produced a valid file

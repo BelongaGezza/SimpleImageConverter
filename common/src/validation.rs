@@ -2,12 +2,13 @@
 // Copyright (c) 2025 Simple Image Converter Contributors
 
 use crate::error::{ConversionError, Result};
+use std::path::{Component, Path, PathBuf};
 
 /// Sanitize a path for error messages (returns filename only)
 ///
 /// This prevents information disclosure by only showing the filename
 /// instead of the full path, which could leak directory structure.
-fn sanitize_path(path: &std::path::Path) -> String {
+fn sanitize_path(path: &Path) -> String {
     path.file_name()
         .and_then(|n| n.to_str())
         .map(|s| s.to_string())
@@ -18,7 +19,7 @@ fn sanitize_path(path: &std::path::Path) -> String {
 ///
 /// This function uses canonicalization for basic security (resolves `..` and symlinks).
 /// For better security with directory restrictions, use `validate_file_path_secure()`.
-pub fn validate_file_path(path: &std::path::Path) -> Result<()> {
+pub fn validate_file_path(path: &Path) -> Result<()> {
     // Use canonicalization for basic security
     let canonical = path.canonicalize().map_err(|e| {
         ConversionError::InvalidInput(format!(
@@ -39,7 +40,7 @@ pub fn validate_file_path(path: &std::path::Path) -> Result<()> {
 }
 
 /// Validate that a directory path exists and is writable
-pub fn validate_directory_path(path: &std::path::Path) -> Result<()> {
+pub fn validate_directory_path(path: &Path) -> Result<()> {
     if !path.exists() {
         return Err(ConversionError::InvalidInput(format!(
             "Directory does not exist: {}",
@@ -85,10 +86,7 @@ pub fn validate_directory_path(path: &std::path::Path) -> Result<()> {
 /// )?;
 /// # Ok::<(), common::error::ConversionError>(())
 /// ```
-pub fn validate_file_path_secure(
-    path: &std::path::Path,
-    allowed_dir: Option<&std::path::Path>,
-) -> Result<()> {
+pub fn validate_file_path_secure(path: &Path, allowed_dir: Option<&Path>) -> Result<()> {
     // Canonicalize to resolve .. and symlinks
     let canonical = path.canonicalize().map_err(|e| {
         ConversionError::ValidationFailed(format!(
@@ -118,6 +116,234 @@ pub fn validate_file_path_secure(
             "Path is not a file: {}",
             sanitize_path(path)
         )));
+    }
+
+    Ok(())
+}
+
+/// Policy used when validating and writing output files.
+#[derive(Debug, Clone)]
+pub struct OutputWritePolicy {
+    /// Whether an existing output file may be replaced.
+    pub allow_overwrite: bool,
+    /// Optional canonical root that output parents must stay inside.
+    pub allowed_output_root: Option<PathBuf>,
+    /// Whether missing parent directories may be created before writing.
+    pub create_parent_dirs: bool,
+    /// Whether obvious OS/system directories should be rejected.
+    pub block_system_dirs: bool,
+}
+
+impl Default for OutputWritePolicy {
+    fn default() -> Self {
+        Self {
+            allow_overwrite: false,
+            allowed_output_root: None,
+            create_parent_dirs: false,
+            block_system_dirs: true,
+        }
+    }
+}
+
+/// Output path that has passed validation.
+#[derive(Debug, Clone)]
+pub struct ValidatedOutputPath {
+    path: PathBuf,
+    canonical_parent: PathBuf,
+}
+
+impl ValidatedOutputPath {
+    /// Return the original output path.
+    pub fn path(&self) -> &Path {
+        &self.path
+    }
+
+    /// Return the canonicalized parent directory.
+    pub fn canonical_parent(&self) -> &Path {
+        &self.canonical_parent
+    }
+}
+
+/// Validate a filename component for safe output writes.
+pub fn validate_output_filename(filename: &str) -> Result<()> {
+    if filename.trim().is_empty() {
+        return Err(ConversionError::InvalidInput(
+            "Output filename cannot be empty".to_string(),
+        ));
+    }
+
+    let invalid_chars = ['<', '>', ':', '"', '|', '?', '*'];
+    if filename.chars().any(|c| invalid_chars.contains(&c)) {
+        return Err(ConversionError::InvalidInput(
+            "Output filename contains invalid characters".to_string(),
+        ));
+    }
+
+    if filename.contains("..") || filename.contains('/') || filename.contains('\\') {
+        return Err(ConversionError::InvalidInput(
+            "Output filename cannot contain path traversal or separators".to_string(),
+        ));
+    }
+
+    if filename.len() > 260 {
+        return Err(ConversionError::InvalidInput(
+            "Output filename is too long".to_string(),
+        ));
+    }
+
+    Ok(())
+}
+
+/// Validate an output path according to the provided write policy.
+pub fn validate_output_path(
+    path: &Path,
+    policy: &OutputWritePolicy,
+) -> Result<ValidatedOutputPath> {
+    let filename = path.file_name().and_then(|n| n.to_str()).ok_or_else(|| {
+        ConversionError::InvalidInput("Output path must include a filename".to_string())
+    })?;
+    validate_output_filename(filename)?;
+
+    if path
+        .components()
+        .any(|component| matches!(component, Component::ParentDir))
+    {
+        return Err(ConversionError::InvalidInput(
+            "Output path cannot contain parent-directory traversal".to_string(),
+        ));
+    }
+
+    let parent = path
+        .parent()
+        .filter(|p| !p.as_os_str().is_empty())
+        .ok_or_else(|| {
+            ConversionError::InvalidInput("Output path must include a parent directory".to_string())
+        })?;
+
+    if !parent.exists() {
+        if policy.create_parent_dirs {
+            std::fs::create_dir_all(parent).map_err(ConversionError::Io)?;
+        } else {
+            return Err(ConversionError::InvalidInput(
+                "Output parent directory does not exist".to_string(),
+            ));
+        }
+    }
+
+    let canonical_parent = parent.canonicalize().map_err(|e| {
+        ConversionError::InvalidInput(format!(
+            "Cannot resolve output directory '{}': {}",
+            sanitize_path(parent),
+            e
+        ))
+    })?;
+
+    if !canonical_parent.is_dir() {
+        return Err(ConversionError::InvalidInput(
+            "Output parent is not a directory".to_string(),
+        ));
+    }
+
+    if policy.block_system_dirs {
+        reject_system_directory(&canonical_parent)?;
+    }
+
+    if let Some(root) = &policy.allowed_output_root {
+        let canonical_root = root.canonicalize().map_err(|e| {
+            ConversionError::InvalidInput(format!("Cannot resolve allowed output root: {}", e))
+        })?;
+        if !canonical_parent.starts_with(&canonical_root) {
+            return Err(ConversionError::ValidationFailed(
+                "Output path is outside the allowed output root".to_string(),
+            ));
+        }
+    }
+
+    if path.exists() && !policy.allow_overwrite {
+        return Err(ConversionError::InvalidInput(
+            "Output file already exists; use --force to overwrite".to_string(),
+        ));
+    }
+
+    Ok(ValidatedOutputPath {
+        path: path.to_path_buf(),
+        canonical_parent,
+    })
+}
+
+fn reject_system_directory(path: &Path) -> Result<()> {
+    #[cfg(windows)]
+    {
+        let mut path_str = path.to_string_lossy().to_lowercase();
+        if path_str.starts_with(r"\\?\") {
+            path_str = path_str[4..].to_string();
+        }
+        let path_str = path_str.trim_end_matches('\\');
+
+        let is_drive_root = path_str.len() == 2 && path_str.as_bytes()[1] == b':';
+        if is_drive_root {
+            return Err(ConversionError::ValidationFailed(
+                "Cannot write to filesystem roots".to_string(),
+            ));
+        }
+
+        let system_dirs = [
+            r"c:\windows",
+            r"c:\windows\system32",
+            r"c:\program files",
+            r"c:\program files (x86)",
+            r"c:\programdata",
+        ];
+        if system_dirs.iter().any(|dir| {
+            path_str == *dir
+                || path_str
+                    .strip_prefix(*dir)
+                    .is_some_and(|rest| rest.starts_with('\\'))
+        }) {
+            return Err(ConversionError::ValidationFailed(
+                "Cannot write to system directories".to_string(),
+            ));
+        }
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        let system_dirs = [
+            Path::new("/System"),
+            Path::new("/Library"),
+            Path::new("/Applications"),
+            Path::new("/bin"),
+            Path::new("/sbin"),
+            Path::new("/usr"),
+        ];
+        if path == Path::new("/") || system_dirs.iter().any(|dir| path.starts_with(dir)) {
+            return Err(ConversionError::ValidationFailed(
+                "Cannot write to system directories".to_string(),
+            ));
+        }
+    }
+
+    #[cfg(all(unix, not(target_os = "macos")))]
+    {
+        let system_dirs = [
+            Path::new("/bin"),
+            Path::new("/sbin"),
+            Path::new("/usr"),
+            Path::new("/lib"),
+            Path::new("/lib64"),
+            Path::new("/etc"),
+            Path::new("/var"),
+            Path::new("/boot"),
+            Path::new("/dev"),
+            Path::new("/proc"),
+            Path::new("/sys"),
+            Path::new("/run"),
+        ];
+        if path == Path::new("/") || system_dirs.iter().any(|dir| path.starts_with(dir)) {
+            return Err(ConversionError::ValidationFailed(
+                "Cannot write to system directories".to_string(),
+            ));
+        }
     }
 
     Ok(())
@@ -225,5 +451,63 @@ mod tests {
         // Should contain "dir" but NOT "/home/user/secret"
         assert!(error_msg.contains("dir"));
         assert!(!error_msg.contains("/home"));
+    }
+
+    #[test]
+    fn test_validate_output_path_rejects_existing_without_force() {
+        let temp_file = NamedTempFile::new().unwrap();
+        let policy = OutputWritePolicy::default();
+        let result = validate_output_path(temp_file.path(), &policy);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("already exists"));
+    }
+
+    #[test]
+    fn test_validate_output_path_allows_existing_with_force() {
+        let temp_file = NamedTempFile::new().unwrap();
+        let policy = OutputWritePolicy {
+            allow_overwrite: true,
+            ..Default::default()
+        };
+        let result = validate_output_path(temp_file.path(), &policy);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_validate_output_path_rejects_bad_filename() {
+        let temp_dir = TempDir::new().unwrap();
+        let path = temp_dir.path().join("bad<name>.png");
+        let result = validate_output_path(&path, &OutputWritePolicy::default());
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_validate_output_path_allowed_root() {
+        let temp_dir = TempDir::new().unwrap();
+        let allowed = temp_dir.path().join("allowed");
+        let denied = temp_dir.path().join("denied");
+        std::fs::create_dir_all(&allowed).unwrap();
+        std::fs::create_dir_all(&denied).unwrap();
+
+        let policy = OutputWritePolicy {
+            allowed_output_root: Some(allowed.clone()),
+            ..Default::default()
+        };
+
+        assert!(validate_output_path(&allowed.join("ok.png"), &policy).is_ok());
+        assert!(validate_output_path(&denied.join("no.png"), &policy).is_err());
+    }
+
+    #[test]
+    fn test_validate_output_path_creates_parent_when_allowed() {
+        let temp_dir = TempDir::new().unwrap();
+        let path = temp_dir.path().join("new").join("output.png");
+        let policy = OutputWritePolicy {
+            create_parent_dirs: true,
+            ..Default::default()
+        };
+
+        assert!(validate_output_path(&path, &policy).is_ok());
+        assert!(path.parent().unwrap().exists());
     }
 }

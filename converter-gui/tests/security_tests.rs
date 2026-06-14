@@ -430,9 +430,11 @@ mod tests {
         assert_eq!(custom_limits.max_file_size, 50 * 1024 * 1024);
         assert_eq!(custom_limits.max_image_dimension, 10000);
 
-        // Test permissive limits (for trusted input)
-        let permissive = ResourceLimits::permissive();
-        assert_eq!(permissive.max_file_size, 1024 * 1024 * 1024); // 1GB
+        // Test explicit large limits for trusted test fixtures
+        let large_limits = ResourceLimits::builder()
+            .max_file_size(1024 * 1024 * 1024)
+            .build();
+        assert_eq!(large_limits.max_file_size, 1024 * 1024 * 1024); // 1GB
     }
 
     // ============================================================================

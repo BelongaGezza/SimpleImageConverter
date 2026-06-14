@@ -11,6 +11,7 @@
 
 #![allow(dead_code)] // Many items reserved for future use
 
+use common::io::read_file_bytes_checked;
 use common::limits::ResourceLimits;
 use common::validation::validate_file_path;
 use egui::ColorImage;
@@ -419,25 +420,21 @@ pub fn get_mesh_metadata(
     // Validate input file path (security check)
     validate_file_path(mesh_path).map_err(|_| PreviewError::InvalidPath)?;
 
-    // Read input file with size validation (DoS prevention)
-    let input_data = std::fs::read(mesh_path)
-        .map_err(|e| PreviewError::FileReadError(format!("Failed to read mesh file: {}", e)))?;
-
-    // Check file size against limits
-    if input_data.len() > limits.max_file_size {
-        return Err(PreviewError::ImageTooLarge); // Reuse for "too large" error
-    }
-
-    // Detect mesh format
-    let format = MeshFormatRegistry::detect_from_path(mesh_path)
-        .map_err(|e| PreviewError::FileReadError(format!("Failed to detect mesh format: {}", e)))?;
-
     // Get reader with resource limits
     let mesh_limits = ResourceLimits::builder()
         .max_file_size(limits.max_file_size)
         .max_vertices(limits.max_vertices)
         .max_faces(limits.max_faces)
+        .max_vertices_per_polygon(limits.max_vertices_per_polygon)
         .build();
+
+    // Read input file with size validation (DoS prevention)
+    let input_data = read_file_bytes_checked(mesh_path, &mesh_limits)
+        .map_err(|e| PreviewError::FileReadError(format!("Failed to read mesh file: {}", e)))?;
+
+    // Detect mesh format
+    let format = MeshFormatRegistry::detect_from_path(mesh_path)
+        .map_err(|e| PreviewError::FileReadError(format!("Failed to detect mesh format: {}", e)))?;
 
     let reader = MeshFormatRegistry::get_reader_with_limits(format, mesh_limits)
         .map_err(|e| PreviewError::FileReadError(format!("Failed to get mesh reader: {}", e)))?;

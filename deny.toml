@@ -17,7 +17,9 @@ ignore = [
     # No security vulnerability, just maintenance status
     "RUSTSEC-2024-0384",
     # core2 is unmaintained/yanked - transitive via image->ravif->rav1e->bitstream-io
-    # No security vulnerability, just maintenance status; no fixed release available
+    # Owner: Security Specialist. Review by: 2026-09-14.
+    # No direct replacement is available through our dependency graph today; revisit with image/ravif updates.
+    # No security vulnerability, just maintenance status; no fixed release available.
     "RUSTSEC-2026-0105",
 ]
 

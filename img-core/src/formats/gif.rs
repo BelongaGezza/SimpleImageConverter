@@ -5,7 +5,7 @@ use crate::formats::traits::{ImageData, ImageReader, ImageWriter};
 use crate::quality::QualitySettings;
 use common::error::{ConversionError, Result};
 use common::limits::ResourceLimits;
-use image::{DynamicImage, GenericImageView, ImageFormat, Rgb, Rgba};
+use image::{DynamicImage, ImageFormat, Rgb, Rgba};
 
 /// GIF format handler
 ///
@@ -37,61 +37,9 @@ impl Default for GifFormat {
 
 impl ImageReader for GifFormat {
     fn read(&self, data: &[u8]) -> Result<ImageData> {
-        // Security: Validate input size before parsing to prevent memory exhaustion
-        if let Err(e) = self.limits.check_file_size(data.len()) {
-            common::security::log_security_error(&e, None);
-            return Err(e);
-        }
-
-        // The image crate automatically extracts the first frame from animated GIFs
-        let img = image::load_from_memory_with_format(data, ImageFormat::Gif).map_err(|e| {
-            ConversionError::ConversionFailed(format!(
-                "Failed to read GIF image ({} bytes): {}",
-                data.len(),
-                e
-            ))
-        })?;
-
-        let (width, height) = img.dimensions();
-        self.limits.check_image_dimensions(width, height)?;
-
-        // GIF supports transparency via palette, which is converted to RGBA by the image crate
-        // We need to check if the image has transparency and preserve it
-        let color_type = match img {
-            DynamicImage::ImageLuma8(_) => crate::formats::traits::ColorType::Grayscale,
-            DynamicImage::ImageLumaA8(_) => crate::formats::traits::ColorType::GrayscaleAlpha,
-            DynamicImage::ImageRgb8(_) => crate::formats::traits::ColorType::Rgb,
-            DynamicImage::ImageRgba8(_) => crate::formats::traits::ColorType::Rgba,
-            _ => {
-                // Convert to RGBA to preserve transparency
-                let rgba = img.to_rgba8();
-                return Ok(ImageData {
-                    width,
-                    height,
-                    data: rgba.into_raw(),
-                    color_type: crate::formats::traits::ColorType::Rgba,
-                });
-            }
-        };
-
-        let data = match img {
-            DynamicImage::ImageLuma8(img) => img.into_raw(),
-            DynamicImage::ImageLumaA8(img) => img.into_raw(),
-            DynamicImage::ImageRgb8(img) => img.into_raw(),
-            DynamicImage::ImageRgba8(img) => img.into_raw(),
-            _ => {
-                // Convert to RGBA to preserve transparency
-                let rgba = img.to_rgba8();
-                rgba.into_raw()
-            }
-        };
-
-        Ok(ImageData {
-            width,
-            height,
-            data,
-            color_type,
-        })
+        let img = crate::formats::decode::read_dynamic_image(data, ImageFormat::Gif, &self.limits)
+            .inspect_err(|e| common::security::log_security_error(e, None))?;
+        crate::formats::decode::dynamic_to_image_data(img, &self.limits)
     }
 }
 

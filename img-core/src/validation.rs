@@ -168,7 +168,10 @@ mod tests {
 
     #[test]
     fn test_validate_with_permissive_limits() {
-        let limits = ResourceLimits::permissive();
+        let limits = ResourceLimits::builder()
+            .max_image_dimension(100_000)
+            .max_decoded_image_bytes(100_000 * 100 * 3)
+            .build();
 
         let image = ImageData {
             width: 100_000,

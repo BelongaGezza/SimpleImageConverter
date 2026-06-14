@@ -3,7 +3,9 @@
 
 use crate::error::{ConversionError, Result};
 use crate::limits::ResourceLimits;
+use crate::validation::{OutputWritePolicy, ValidatedOutputPath};
 use std::fs;
+use std::io::Write;
 use std::path::Path;
 
 /// Read file contents into a byte vector
@@ -51,6 +53,31 @@ pub fn read_file_bytes_checked(path: &Path, limits: &ResourceLimits) -> Result<V
 /// Write byte vector to file
 pub fn write_file_bytes(path: &Path, data: &[u8]) -> Result<()> {
     fs::write(path, data).map_err(ConversionError::Io)
+}
+
+/// Atomically write bytes to a validated output path.
+///
+/// The temporary file is created in the destination directory so the final
+/// persist operation stays on the same filesystem.
+pub fn write_file_bytes_atomic(
+    output: &ValidatedOutputPath,
+    data: &[u8],
+    policy: &OutputWritePolicy,
+) -> Result<()> {
+    let mut temp =
+        tempfile::NamedTempFile::new_in(output.canonical_parent()).map_err(ConversionError::Io)?;
+    temp.write_all(data).map_err(ConversionError::Io)?;
+    temp.flush().map_err(ConversionError::Io)?;
+
+    if policy.allow_overwrite {
+        temp.persist(output.path())
+            .map(|_| ())
+            .map_err(|e| ConversionError::Io(e.error))
+    } else {
+        temp.persist_noclobber(output.path())
+            .map(|_| ())
+            .map_err(|e| ConversionError::Io(e.error))
+    }
 }
 
 /// Get file extension (lowercase, without dot)
@@ -115,5 +142,31 @@ mod tests {
         let result = read_file_bytes_checked(file.path(), &limits);
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("exceeds limit"));
+    }
+
+    #[test]
+    fn test_write_file_bytes_atomic_no_overwrite() {
+        let dir = tempfile::TempDir::new().unwrap();
+        let path = dir.path().join("output.bin");
+        std::fs::write(&path, b"old").unwrap();
+
+        let policy = crate::validation::OutputWritePolicy::default();
+        let validation = crate::validation::validate_output_path(&path, &policy);
+        assert!(validation.is_err());
+    }
+
+    #[test]
+    fn test_write_file_bytes_atomic_overwrite_allowed() {
+        let dir = tempfile::TempDir::new().unwrap();
+        let path = dir.path().join("output.bin");
+        std::fs::write(&path, b"old").unwrap();
+
+        let policy = crate::validation::OutputWritePolicy {
+            allow_overwrite: true,
+            ..Default::default()
+        };
+        let validated = crate::validation::validate_output_path(&path, &policy).unwrap();
+        write_file_bytes_atomic(&validated, b"new", &policy).unwrap();
+        assert_eq!(std::fs::read(&path).unwrap(), b"new");
     }
 }

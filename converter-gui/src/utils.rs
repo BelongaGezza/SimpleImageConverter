@@ -160,6 +160,7 @@ pub fn validate_output_filename(filename: &str) -> Result<(), String> {
 /// let system_result = validate_output_path_not_system(Path::new("C:\\Windows\\photo.jpg"));
 /// // On Windows, this should fail; on other systems, it may not exist
 /// ```
+#[allow(dead_code)] // Legacy wrapper retained for existing utility tests; production uses common::validation.
 pub fn validate_output_path_not_system(path: &Path) -> Result<(), String> {
     // Get canonical path to resolve any .. or symlinks
     let canonical = match path.canonicalize() {
@@ -181,6 +182,7 @@ pub fn validate_output_path_not_system(path: &Path) -> Result<(), String> {
 }
 
 /// Check if a canonicalized path is in a system directory
+#[allow(dead_code)] // Used by legacy output path helper above.
 fn check_system_directory(path: &Path) -> Result<(), String> {
     #[cfg(windows)]
     {
@@ -275,6 +277,7 @@ fn check_system_directory(path: &Path) -> Result<(), String> {
 ///
 /// This is a fallback when canonicalization fails. It checks for system
 /// directory patterns in the path string directly.
+#[allow(dead_code)] // Used by legacy output path helper above.
 fn check_system_directory_string(path: &Path) -> Result<(), String> {
     let path_str = path.display().to_string().to_lowercase();
 

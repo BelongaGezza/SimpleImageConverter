@@ -6,7 +6,7 @@ use crate::formats::traits::{ImageData, ImageReader, ImageWriter};
 use crate::quality::QualitySettings;
 use common::error::{ConversionError, Result};
 use common::limits::ResourceLimits;
-use image::{DynamicImage, GenericImageView, ImageFormat};
+use image::{DynamicImage, ImageFormat};
 
 /// JPEG format handler
 pub struct JpegFormat {
@@ -35,32 +35,9 @@ impl Default for JpegFormat {
 
 impl ImageReader for JpegFormat {
     fn read(&self, data: &[u8]) -> Result<ImageData> {
-        // Security: Validate input size before parsing to prevent memory exhaustion
-        if let Err(e) = self.limits.check_file_size(data.len()) {
-            common::security::log_security_error(&e, None);
-            return Err(e);
-        }
-
-        let img = image::load_from_memory_with_format(data, ImageFormat::Jpeg).map_err(|e| {
-            ConversionError::ConversionFailed(format!(
-                "Failed to read JPEG image ({} bytes): {}",
-                data.len(),
-                e
-            ))
-        })?;
-
-        let (width, height) = img.dimensions();
-        self.limits.check_image_dimensions(width, height)?;
-
-        // JPEG doesn't support transparency, so convert to RGB
-        let rgb_img = img.to_rgb8();
-
-        Ok(ImageData {
-            width,
-            height,
-            data: rgb_img.into_raw(),
-            color_type: crate::formats::traits::ColorType::Rgb,
-        })
+        let img = crate::formats::decode::read_dynamic_image(data, ImageFormat::Jpeg, &self.limits)
+            .inspect_err(|e| common::security::log_security_error(e, None))?;
+        crate::formats::decode::dynamic_to_rgb_image_data(img, &self.limits)
     }
 }
 

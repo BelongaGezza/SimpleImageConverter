@@ -20,6 +20,12 @@ pub const DEFAULT_MAX_VERTICES: usize = 10_000_000;
 /// Default maximum faces: 10 million
 pub const DEFAULT_MAX_FACES: usize = 10_000_000;
 
+/// Default maximum decoded image data: 512 MiB
+pub const DEFAULT_MAX_DECODED_IMAGE_BYTES: usize = 512 * 1024 * 1024;
+
+/// Default maximum vertices allowed in one source polygon before triangulation
+pub const DEFAULT_MAX_VERTICES_PER_POLYGON: usize = 64;
+
 /// Centralized resource limits for security
 ///
 /// All file operations should validate against these limits
@@ -47,6 +53,12 @@ pub struct ResourceLimits {
 
     /// Maximum number of mesh faces
     pub max_faces: usize,
+
+    /// Maximum decoded image data in bytes
+    pub max_decoded_image_bytes: usize,
+
+    /// Maximum number of vertices in a single polygon before triangulation
+    pub max_vertices_per_polygon: usize,
 }
 
 impl Default for ResourceLimits {
@@ -56,6 +68,8 @@ impl Default for ResourceLimits {
             max_image_dimension: DEFAULT_MAX_IMAGE_DIMENSION,
             max_vertices: DEFAULT_MAX_VERTICES,
             max_faces: DEFAULT_MAX_FACES,
+            max_decoded_image_bytes: DEFAULT_MAX_DECODED_IMAGE_BYTES,
+            max_vertices_per_polygon: DEFAULT_MAX_VERTICES_PER_POLYGON,
         }
     }
 }
@@ -69,12 +83,15 @@ impl ResourceLimits {
     /// Create permissive limits for trusted input only
     ///
     /// WARNING: Only use for trusted input sources!
+    #[cfg(any(test, feature = "trusted-input"))]
     pub fn permissive() -> Self {
         Self {
-            max_file_size: 1024 * 1024 * 1024, // 1GB
-            max_image_dimension: 131072,       // 128K
-            max_vertices: 100_000_000,         // 100M
-            max_faces: 100_000_000,            // 100M
+            max_file_size: 1024 * 1024 * 1024,               // 1GB
+            max_image_dimension: 131072,                     // 128K
+            max_vertices: 100_000_000,                       // 100M
+            max_faces: 100_000_000,                          // 100M
+            max_decoded_image_bytes: 2 * 1024 * 1024 * 1024, // 2GB
+            max_vertices_per_polygon: 1024,
         }
     }
 
@@ -98,6 +115,11 @@ impl ResourceLimits {
 
     /// Validate image dimensions against limit
     pub fn check_image_dimensions(&self, width: u32, height: u32) -> Result<()> {
+        if width == 0 || height == 0 {
+            return Err(ConversionError::InvalidInput(
+                "Image dimensions must be greater than zero".to_string(),
+            ));
+        }
         if width > self.max_image_dimension {
             return Err(ConversionError::InvalidInput(format!(
                 "Image width {} exceeds limit of {}",
@@ -111,6 +133,39 @@ impl ResourceLimits {
             )));
         }
         Ok(())
+    }
+
+    /// Validate decoded image byte length against the configured limit
+    pub fn check_decoded_bytes(&self, bytes: usize) -> Result<()> {
+        if bytes > self.max_decoded_image_bytes {
+            return Err(ConversionError::ResourceLimitExceeded(format!(
+                "Decoded image size exceeds configured limit ({} > {} bytes)",
+                bytes, self.max_decoded_image_bytes
+            )));
+        }
+        Ok(())
+    }
+
+    /// Calculate and validate decoded image size using checked arithmetic
+    pub fn check_decoded_image_size(
+        &self,
+        width: u32,
+        height: u32,
+        bytes_per_pixel: usize,
+    ) -> Result<usize> {
+        self.check_image_dimensions(width, height)?;
+
+        let bytes = (width as usize)
+            .checked_mul(height as usize)
+            .and_then(|pixels| pixels.checked_mul(bytes_per_pixel))
+            .ok_or_else(|| {
+                ConversionError::ResourceLimitExceeded(
+                    "Decoded image size calculation overflowed".to_string(),
+                )
+            })?;
+
+        self.check_decoded_bytes(bytes)?;
+        Ok(bytes)
     }
 
     /// Validate mesh vertex count against limit
@@ -141,6 +196,31 @@ impl ResourceLimits {
         self.check_face_count(faces)?;
         Ok(())
     }
+
+    /// Validate source polygon vertex count before fan triangulation
+    pub fn check_polygon_vertices(&self, count: usize) -> Result<()> {
+        if count > self.max_vertices_per_polygon {
+            return Err(ConversionError::ResourceLimitExceeded(format!(
+                "Polygon vertex count exceeds configured limit ({} > {})",
+                count, self.max_vertices_per_polygon
+            )));
+        }
+        Ok(())
+    }
+
+    /// Validate whether adding triangulated faces would exceed the face budget
+    pub fn check_triangulated_face_budget(
+        &self,
+        current_faces: usize,
+        additional_faces: usize,
+    ) -> Result<()> {
+        let total = current_faces.checked_add(additional_faces).ok_or_else(|| {
+            ConversionError::ResourceLimitExceeded(
+                "Triangulated face count calculation overflowed".to_string(),
+            )
+        })?;
+        self.check_face_count(total)
+    }
 }
 
 /// Builder for customizing ResourceLimits
@@ -164,9 +244,28 @@ impl ResourceLimitsBuilder {
     }
 
     /// Set maximum file size in megabytes
+    ///
+    /// Prefer [`ResourceLimitsBuilder::try_max_file_size_mb`] for untrusted CLI
+    /// input so overflow can be reported as a validation error.
     pub fn max_file_size_mb(mut self, mb: usize) -> Self {
-        self.limits.max_file_size = mb * 1024 * 1024;
+        self.limits.max_file_size = mb
+            .checked_mul(1024)
+            .and_then(|v| v.checked_mul(1024))
+            .expect("max_file_size_mb overflowed; use try_max_file_size_mb for user input");
         self
+    }
+
+    /// Set maximum file size in megabytes using checked arithmetic
+    pub fn try_max_file_size_mb(mut self, mb: usize) -> Result<Self> {
+        self.limits.max_file_size = mb
+            .checked_mul(1024)
+            .and_then(|v| v.checked_mul(1024))
+            .ok_or_else(|| {
+                ConversionError::InvalidInput(
+                    "Maximum file size is too large to represent safely".to_string(),
+                )
+            })?;
+        Ok(self)
     }
 
     /// Set maximum image dimension
@@ -184,6 +283,31 @@ impl ResourceLimitsBuilder {
     /// Set maximum face count
     pub fn max_faces(mut self, count: usize) -> Self {
         self.limits.max_faces = count;
+        self
+    }
+
+    /// Set maximum decoded image bytes
+    pub fn max_decoded_image_bytes(mut self, bytes: usize) -> Self {
+        self.limits.max_decoded_image_bytes = bytes;
+        self
+    }
+
+    /// Set maximum decoded image size in MiB using checked arithmetic
+    pub fn try_max_decoded_image_mb(mut self, mb: usize) -> Result<Self> {
+        self.limits.max_decoded_image_bytes = mb
+            .checked_mul(1024)
+            .and_then(|v| v.checked_mul(1024))
+            .ok_or_else(|| {
+                ConversionError::InvalidInput(
+                    "Maximum decoded image size is too large to represent safely".to_string(),
+                )
+            })?;
+        Ok(self)
+    }
+
+    /// Set maximum vertices allowed in one source polygon
+    pub fn max_vertices_per_polygon(mut self, count: usize) -> Self {
+        self.limits.max_vertices_per_polygon = count;
         self
     }
 
@@ -210,6 +334,14 @@ mod tests {
         assert_eq!(limits.max_image_dimension, DEFAULT_MAX_IMAGE_DIMENSION);
         assert_eq!(limits.max_vertices, DEFAULT_MAX_VERTICES);
         assert_eq!(limits.max_faces, DEFAULT_MAX_FACES);
+        assert_eq!(
+            limits.max_decoded_image_bytes,
+            DEFAULT_MAX_DECODED_IMAGE_BYTES
+        );
+        assert_eq!(
+            limits.max_vertices_per_polygon,
+            DEFAULT_MAX_VERTICES_PER_POLYGON
+        );
     }
 
     #[test]
@@ -281,6 +413,7 @@ mod tests {
         assert!(limits.check_file_size(500 * 1024 * 1024).is_ok());
         assert!(limits.check_image_dimensions(100_000, 100_000).is_ok());
         assert!(limits.check_mesh_resources(50_000_000, 50_000_000).is_ok());
+        assert!(limits.check_polygon_vertices(1024).is_ok());
     }
 
     #[test]
@@ -290,12 +423,16 @@ mod tests {
             .max_image_dimension(10000)
             .max_vertices(1_000_000)
             .max_faces(2_000_000)
+            .max_decoded_image_bytes(10 * 1024 * 1024)
+            .max_vertices_per_polygon(32)
             .build();
 
         assert_eq!(limits.max_file_size, 50 * 1024 * 1024);
         assert_eq!(limits.max_image_dimension, 10000);
         assert_eq!(limits.max_vertices, 1_000_000);
         assert_eq!(limits.max_faces, 2_000_000);
+        assert_eq!(limits.max_decoded_image_bytes, 10 * 1024 * 1024);
+        assert_eq!(limits.max_vertices_per_polygon, 32);
     }
 
     #[test]
@@ -306,5 +443,54 @@ mod tests {
 
         assert!(limits.check_file_size(512 * 1024).is_ok());
         assert!(limits.check_file_size(2 * 1024 * 1024).is_err());
+    }
+
+    #[test]
+    fn test_decoded_image_limit() {
+        let limits = ResourceLimits::builder()
+            .max_decoded_image_bytes(100)
+            .build();
+        assert_eq!(limits.check_decoded_image_size(5, 5, 4).unwrap(), 100);
+        assert!(limits.check_decoded_image_size(6, 5, 4).is_err());
+    }
+
+    #[test]
+    fn test_decoded_image_overflow() {
+        let limits = ResourceLimits::builder()
+            .max_decoded_image_bytes(usize::MAX)
+            .build();
+        let result = limits.check_decoded_image_size(u32::MAX, u32::MAX, usize::MAX);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_polygon_vertex_limit() {
+        let limits = ResourceLimits::builder()
+            .max_vertices_per_polygon(4)
+            .build();
+        assert!(limits.check_polygon_vertices(4).is_ok());
+        assert!(limits.check_polygon_vertices(5).is_err());
+    }
+
+    #[test]
+    fn test_triangulated_face_budget() {
+        let limits = ResourceLimits::builder().max_faces(5).build();
+        assert!(limits.check_triangulated_face_budget(3, 2).is_ok());
+        assert!(limits.check_triangulated_face_budget(3, 3).is_err());
+    }
+
+    #[test]
+    fn test_try_max_file_size_mb_overflow() {
+        let result = ResourceLimits::builder().try_max_file_size_mb(usize::MAX);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_try_max_decoded_image_mb() {
+        let limits = ResourceLimits::builder()
+            .try_max_decoded_image_mb(1)
+            .unwrap()
+            .build();
+        assert_eq!(limits.max_decoded_image_bytes, 1024 * 1024);
     }
 }

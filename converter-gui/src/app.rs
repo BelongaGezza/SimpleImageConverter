@@ -6,7 +6,6 @@
 use crate::conversion;
 use crate::error_messages;
 use crate::ui;
-use crate::utils;
 use common::limits::ResourceLimits;
 use mesh_core::ConversionOptions;
 use rayon::prelude::*;
@@ -944,15 +943,16 @@ impl eframe::App for ConverterApp {
                                                     if should_load {
                                                         // Load mesh for 3D viewer
                                                         let limits = ResourceLimits::default();
-                                                        match std::fs::read(source_file) {
+                                                        let mesh_limits = ResourceLimits::builder()
+                                                            .max_file_size(limits.max_file_size)
+                                                            .max_vertices(limits.max_vertices)
+                                                            .max_faces(limits.max_faces)
+                                                            .max_vertices_per_polygon(limits.max_vertices_per_polygon)
+                                                            .build();
+                                                        match common::io::read_file_bytes_checked(source_file, &mesh_limits) {
                                                             Ok(input_data) => {
                                                                 match mesh_core::FormatRegistry::detect_two_stage(source_file, &input_data) {
                                                                     Ok(format) => {
-                                                                        let mesh_limits = ResourceLimits::builder()
-                                                                            .max_file_size(limits.max_file_size)
-                                                                            .max_vertices(limits.max_vertices)
-                                                                            .max_faces(limits.max_faces)
-                                                                            .build();
                                                                         match mesh_core::FormatRegistry::get_reader_with_limits(format, mesh_limits) {
                                                                             Ok(reader) => {
                                                                                 match reader.read(&input_data) {
@@ -1466,13 +1466,9 @@ impl ConverterApp {
             return Err("Invalid output filename.".to_string());
         }
 
-        // Validate output filename
-        if let Some(filename) = output_path.file_name().and_then(|n| n.to_str()) {
-            utils::validate_output_filename(filename)
-                .map_err(|e| format!("Invalid output filename: {}", e))?;
-        } else {
-            return Err("Invalid output filename.".to_string());
-        }
+        let output_policy = common::validation::OutputWritePolicy::default();
+        common::validation::validate_output_path(&output_path, &output_policy)
+            .map_err(|e| format!("Invalid output path: {}", e))?;
 
         // Build resource limits (convert u64 to usize where needed)
         let max_file_size_bytes = (self.max_file_size_mb as usize)

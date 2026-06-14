@@ -61,7 +61,7 @@ impl SvgFormat {
         let pixmap_size = size.to_int_size();
         let width = pixmap_size.width();
         let height = pixmap_size.height();
-        self.limits.check_image_dimensions(width, height)?;
+        self.limits.check_decoded_image_size(width, height, 4)?;
 
         // Create pixmap for rendering
         let mut pixmap = Pixmap::new(width, height).ok_or_else(|| {
@@ -79,6 +79,7 @@ impl SvgFormat {
         // Pixmap data is RGBA, stored as u32 pixels
         let width = pixmap.width();
         let height = pixmap.height();
+        self.limits.check_decoded_image_size(width, height, 4)?;
         let data = pixmap.data();
 
         // Convert from RGBA u8 array to image::RgbaImage
@@ -107,12 +108,14 @@ impl ImageReader for SvgFormat {
         // SVG rasterization always produces RGBA
         let rgba = dynamic.to_rgba8();
 
-        Ok(ImageData {
+        let image = ImageData {
             width,
             height,
             data: rgba.into_raw(),
             color_type: crate::formats::traits::ColorType::Rgba,
-        })
+        };
+        crate::validation::validate_image_data_with_limits(&image, &self.limits)?;
+        Ok(image)
     }
 }
 
@@ -202,6 +205,18 @@ mod tests {
         let invalid_data = b"not an svg file";
         let result = format.read(invalid_data);
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_svg_rejects_decoded_image_limit_before_pixmap_allocation() {
+        let svg_data = create_test_svg();
+        let limits = ResourceLimits::builder()
+            .max_decoded_image_bytes(100 * 100 * 4 - 1)
+            .build();
+        let format = SvgFormat::with_limits(limits);
+        let result = format.read(&svg_data);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().is_resource_limit());
     }
 
     #[test]

@@ -2,6 +2,7 @@
 // Copyright (c) 2025 Simple Image Converter Contributors
 
 pub mod bmp;
+mod decode;
 pub mod gif;
 pub mod info;
 pub mod jpg;

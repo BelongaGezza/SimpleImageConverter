@@ -692,15 +692,16 @@ pub fn render_edit_dialog(ui: &mut Ui, app: &mut ConverterApp) {
                 false
             };
 
-            // Validate path is not in system directory
-            let not_system_dir =
-                crate::utils::validate_output_path_not_system(&output_path).is_ok();
+            // Validate path using shared output policy
+            let output_policy = common::validation::OutputWritePolicy::default();
+            let valid_output_path =
+                common::validation::validate_output_path(&output_path, &output_policy).is_ok();
 
-            if !output_dir_valid || !not_system_dir {
+            if !output_dir_valid || !valid_output_path {
                 let error_msg = if !output_dir_valid {
                     "Invalid output directory or directory does not exist"
                 } else {
-                    "Output path is in a system directory"
+                    "Output path is not allowed"
                 };
                 app.add_message(
                     format!(
