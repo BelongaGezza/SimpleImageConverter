@@ -1,7 +1,7 @@
 # Project Roadmap
 ## Simple Image Converter
 
-**Last Updated:** May 29, 2026
+**Last Updated:** July 1, 2026
 **Current Version:** v0.3.0
 **Next Release:** v1.0.0 (First Stable Release — Mid-June 2026)
 
@@ -15,8 +15,9 @@
 **Sprint Goal:** Complete all remaining gates for v1.0.0 stable release
 **Sprint Duration:** May 29 – June 12, 2026
 **Target Release:** v1.0.0 (Mid-June 2026)
-**Detailed Tasking:** [`AGENT_TASKS/SPRINT_13_TASKING.md`](AGENT_TASKS/SPRINT_13_TASKING.md)
-**Architect Review:** [`SYSTEM_ARCHITECT_V1.0.0_RELEASE_REVIEW.md`](SYSTEM_ARCHITECT_V1.0.0_RELEASE_REVIEW.md) — CONDITIONAL NO-SHIP pending manual testing + review gates
+**Canonical Action List:** [`V1.0.0_RELEASE_CHECKLIST.md`](V1.0.0_RELEASE_CHECKLIST.md)  
+**Historical Tasking:** [`AGENT_TASKS/SPRINT_13_TASKING.md`](AGENT_TASKS/SPRINT_13_TASKING.md)  
+**Architect Review:** [`SYSTEM_ARCHITECT_V1.0.0_RELEASE_REVIEW.md`](SYSTEM_ARCHITECT_V1.0.0_RELEASE_REVIEW.md) — CONDITIONAL NO-SHIP pending manual testing, dependency triage, and release execution
 
 ### Completed Releases
 
@@ -66,33 +67,16 @@
 
 ---
 
-## 🔥 Sprint 13 Tasks (Current)
+## 🔥 Active v1.0.0 Release Work
 
-See [`AGENT_TASKS/SPRINT_13_TASKING.md`](AGENT_TASKS/SPRINT_13_TASKING.md) for full role assignments and acceptance criteria.
+The active release todos are maintained in one place: [`V1.0.0_RELEASE_CHECKLIST.md`](V1.0.0_RELEASE_CHECKLIST.md).
 
-### Phase 1: Code Hardening 🟡
-- [ ] glTF/DXF integration tests (Task 1.1)
-- [ ] `get_reader_with_limits` in img-core (Task 1.2)
-- [x] Wire orphaned CLI tests (Task 1.3 — complete May 29, 2026)
-
-### Phase 2: Reviews & Sign-off 🟡
-- [ ] Publish ADR-003 to architecture docs (Task 2.1)
-- [ ] glTF Senior review + Khronos validator run (Task 2.2 — **BLOCKING**)
-- [ ] Mesh detection sign-off (Task 2.3)
-
-### Phase 3: Manual Testing 🔴
-- [ ] Execute manual testing re-test (Task 3.1 — **BLOCKING**, human required)
-- [ ] Cross-platform GUI smoke test (Task 3.2)
-
-### Phase 4: Release Execution ⏳
-- [ ] Cross-platform release builds (Task 4.1)
-- [ ] Packaging + SHA256 checksums (Task 4.2)
-- [ ] Version bump, tag, GitHub Release (Task 4.3)
-
-### Phase 5: Documentation 🟡
-- [ ] Architect formal sign-off (Task 5.1)
-- [x] Refresh stale status docs (Task 5.2 — complete May 29, 2026)
-- [ ] Release notes final review (Task 5.3)
+Current release path:
+1. Refresh public status documentation from the canonical release checklist.
+2. Triage dependency audit warnings before release approval.
+3. Complete manual GUI validation, prioritizing Windows 11.
+4. Produce and verify release artifacts for all target platforms.
+5. Complete release sign-off and publish only after all blocking gates are green.
 
 ### Sprint 12_A Completed Gates ✅
 - [x] Restore `cargo fmt --check` compliance (Addendum A.1)

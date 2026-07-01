@@ -3,8 +3,9 @@
 **Sprint Duration:** May 29 – June 12, 2026  
 **Sprint Goal:** Complete all remaining gates for v1.0.0 stable release  
 **Target Release:** v1.0.0 (Mid-June 2026)  
-**Last Updated:** May 29, 2026  
+**Last Updated:** July 1, 2026  
 **Architect Review:** `SYSTEM_ARCHITECT_V1.0.0_RELEASE_REVIEW.md`
+**Canonical Action List:** `V1.0.0_RELEASE_CHECKLIST.md`
 
 ---
 
@@ -289,6 +290,20 @@ Verify release notes against `docs/FORMATS.md`, Sprint 13 hardening work, and `V
 
 ---
 
+## Current Active Release Todos
+
+Use `V1.0.0_RELEASE_CHECKLIST.md` as the single active release action list.
+This Sprint 13 tasking document remains useful for historical role ownership,
+acceptance criteria, and completed task evidence, but it should not be treated
+as a separate todo list.
+
+Current release path:
+1. Refresh public status documentation from the canonical release checklist.
+2. Triage dependency audit warnings before release approval.
+3. Complete manual GUI validation, prioritizing Windows 11.
+4. Produce and verify release artifacts for all target platforms.
+5. Complete release sign-off and publish only after all blocking gates are green.
+
 ## Immediate Parallel Dispatch (May 29, 2026 — Round 2)
 
 | Task | Agent | Result |
@@ -315,4 +330,4 @@ Tasks 3.1–3.2 require human GUI interaction and cannot be automated by subagen
 
 ---
 
-*Canonical release scope: `V1.0.0_SCOPE.md`. Checklist: `V1.0.0_RELEASE_CHECKLIST.md`.*
+*Canonical release scope: `V1.0.0_SCOPE.md`. Single active action list: `V1.0.0_RELEASE_CHECKLIST.md`.*
