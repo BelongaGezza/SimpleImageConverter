@@ -875,11 +875,12 @@ impl eframe::App for ModernApp {
         let _ = self.settings.save();
     }
 
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+    fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
+        let ctx = &ui.ctx().clone();
         self.poll_single_conversion();
         self.sync_batch_queue_from_thread();
 
-        egui::TopBottomPanel::top("top_bar").show(ctx, |ui| {
+        egui::Panel::top("top_bar").show(ui, |ui| {
             ui.add_space(6.0);
             ui.horizontal(|ui| {
                 ui.label(RichText::new("Simple Image Converter").strong());
@@ -908,16 +909,16 @@ impl eframe::App for ModernApp {
             ui.add_space(6.0);
         });
 
-        egui::TopBottomPanel::bottom("messages_panel")
+        egui::Panel::bottom("messages_panel")
             .resizable(true)
-            .min_height(90.0)
-            .max_height(240.0)
-            .default_height(120.0)
-            .show(ctx, |ui| self.render_messages(ui));
+            .min_size(90.0)
+            .max_size(240.0)
+            .default_size(120.0)
+            .show(ui, |ui| self.render_messages(ui));
 
-        egui::TopBottomPanel::bottom("status_bar")
+        egui::Panel::bottom("status_bar")
             .resizable(false)
-            .show(ctx, |ui| {
+            .show(ui, |ui| {
                 ui.set_height(28.0);
                 ui.horizontal(|ui| {
                     ui.separator();
@@ -952,7 +953,7 @@ impl eframe::App for ModernApp {
                 });
             });
 
-        egui::CentralPanel::default().show(ctx, |ui| {
+        egui::CentralPanel::default().show(ui, |ui| {
             egui::ScrollArea::vertical().show(ui, |ui| {
                 ui.add_space(10.0);
 
@@ -968,7 +969,7 @@ impl eframe::App for ModernApp {
         });
 
         // Popovers / dialogs
-        let popup_frame = egui::Frame::popup(ctx.style().as_ref())
+        let popup_frame = egui::Frame::popup(ctx.global_style().as_ref())
             .fill(crate::ui::theme::Palette::default().panel)
             .stroke(egui::Stroke::new(
                 1.5_f32,
@@ -1063,7 +1064,7 @@ fn render_single_mode(ui: &mut Ui, app: &mut ModernApp, _ctx: &egui::Context) {
             i.raw
                 .dropped_files
                 .iter()
-                .filter_map(|f| f.path.clone())
+                .map(|f| f.path().to_path_buf())
                 .collect::<Vec<_>>()
         });
 
@@ -1094,6 +1095,7 @@ fn render_single_mode(ui: &mut Ui, app: &mut ModernApp, _ctx: &egui::Context) {
                     ui.visuals().widgets.inactive.bg_stroke.color
                 },
             ),
+            egui::StrokeKind::Middle,
         );
 
         if !dropped_files.is_empty() {
@@ -1130,7 +1132,7 @@ fn render_single_mode(ui: &mut Ui, app: &mut ModernApp, _ctx: &egui::Context) {
             }
         }
 
-        ui.allocate_ui_at_rect(rect.shrink(10.0), |ui| {
+        ui.scope_builder(egui::UiBuilder::new().max_rect(rect.shrink(10.0)), |ui| {
             if let Some(ref f) = app.source_file {
                 ui.vertical_centered(|ui| {
                     ui.label(RichText::new("Selected").strong().color(palette.success));
@@ -1448,7 +1450,7 @@ fn render_batch_mode(ui: &mut Ui, app: &mut ModernApp, ctx: &egui::Context) {
 
         ui.horizontal(|ui| {
             ui.label("Default image format");
-            egui::ComboBox::from_id_source("default_img_fmt")
+            egui::ComboBox::from_id_salt("default_img_fmt")
                 .selected_text(format!("{:?}", app.batch_defaults.default_image_format))
                 .show_ui(ui, |ui| {
                     for fmt in converter_gui::format_helpers::get_writable_image_formats() {
@@ -1463,7 +1465,7 @@ fn render_batch_mode(ui: &mut Ui, app: &mut ModernApp, ctx: &egui::Context) {
             ui.add_space(10.0);
 
             ui.label("Default mesh format");
-            egui::ComboBox::from_id_source("default_mesh_fmt")
+            egui::ComboBox::from_id_salt("default_mesh_fmt")
                 .selected_text(format!("{:?}", app.batch_defaults.default_mesh_format))
                 .show_ui(ui, |ui| {
                     for fmt in converter_gui::format_helpers::get_writable_mesh_formats() {
@@ -1534,7 +1536,7 @@ fn render_batch_mode(ui: &mut Ui, app: &mut ModernApp, ctx: &egui::Context) {
             i.raw
                 .dropped_files
                 .iter()
-                .filter_map(|f| f.path.clone())
+                .map(|f| f.path().to_path_buf())
                 .collect::<Vec<_>>()
         });
         let is_drag_over = !hovered_files.is_empty()
@@ -1562,6 +1564,7 @@ fn render_batch_mode(ui: &mut Ui, app: &mut ModernApp, ctx: &egui::Context) {
                     ui.visuals().widgets.inactive.bg_stroke.color
                 },
             ),
+            egui::StrokeKind::Middle,
         );
 
         if !dropped_files.is_empty() {
@@ -1604,7 +1607,7 @@ fn render_batch_mode(ui: &mut Ui, app: &mut ModernApp, ctx: &egui::Context) {
             }
         }
 
-        ui.allocate_ui_at_rect(rect.shrink(10.0), |ui| {
+        ui.scope_builder(egui::UiBuilder::new().max_rect(rect.shrink(10.0)), |ui| {
             ui.vertical_centered(|ui| {
                 ui.label(RichText::new("Add Files").size(22.0).strong());
                 ui.label(
