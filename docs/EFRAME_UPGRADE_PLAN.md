@@ -137,3 +137,14 @@ Deprecated APIs still compile but emit warnings, which `clippy -D warnings` turn
 
 ### Compile errors at start of Phase 2
 `App::update` → `App::ui`; `TopBottomPanel` / `egui::menu::bar` removed; `Ui::set_enabled` (×6); `Context::screen_rect`; `Context::wants_keyboard_input`; `allocate_ui_at_rect`; `DroppedFile::path` is now a method; one call with an extra argument (`drop_zone.rs:91`); one type mismatch (`app.rs:852`).
+
+## Phase 2 results (2026-10-31)
+
+- `converter-gui` and `converter-gui-modern` compile against egui/eframe 0.37 with no deprecation warnings. `cargo fmt --check`, `cargo clippy --workspace --all-targets -- -D warnings`, `cargo test --workspace`, `cargo test -p converter-gui --features viewer-3d`, `cargo doc` and `cargo build --release` all pass (macOS).
+- Migration map: `App::update` → `App::ui` (a `ctx` clone is taken from `ui.ctx()` so the body is unchanged); `TopBottomPanel` → `Panel` (`min/max/default_height` → `*_size`); `egui::menu::bar` → `MenuBar`; `ui.close_menu` → `ui.close`; `set_enabled` → `if !x { ui.disable() }`; `screen_rect` → `content_rect`; `wants_keyboard_input` → `egui_wants_keyboard_input`; `DroppedFile.path` field → `path()` method; `rect_stroke` gets `StrokeKind::Middle` (matches the old centred stroke); `allocate_ui_at_rect` → `scope_builder`; `Rounding` → `CornerRadius` (`u8`); `from_id_source` → `from_id_salt`; `ctx.style()/set_style` → `global_style()/set_global_style`; `ColorImage::new` → `filled`; `raw_scroll_delta` → `smooth_scroll_delta` (3D zoom; feel may differ); `run_native` creator returns `Ok(Box<..>)`.
+- Release binaries: `converter-gui` 6,172,288 B, `converter-gui-modern` 6,122,592 B (compare with 0.3.0 artifacts in Phase 3).
+- `deny.toml`: licence exception moved from `epaint` to `epaint_default_fonts` (same Ubuntu font licence, now SPDX `Ubuntu-font-1.0`). `cargo deny check licenses` passes.
+- Remaining advisories (5): `zvariant`, `zbus_names`, `zvariant_derive` still reach the lock via `accesskit_unix` (Linux-only, `accesskit` feature; `cargo tree --target all`), not via `rfd`. `ttf-parser` and `rustybuzz` via `usvg`. All five are unmaintained notices with no vulnerability; handle with dated ignores in Phase 4, or drop the `accesskit` feature (loses screen-reader support, not recommended).
+
+### Not yet verified (needs a human at the GUI)
+Visual regressions (Frame/stroke padding, panel layout, `Panel` sizing), drag-and-drop, file dialogs, 3D viewer zoom, theme in both modes, Retina scaling. Windows and Linux builds/behaviour are unverified.

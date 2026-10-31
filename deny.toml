@@ -44,13 +44,13 @@ allow = [
 confidence-threshold = 0.8
 
 # Exceptions for crates with non-SPDX license expressions
-# epaint (egui's painting library) embeds fonts that use font-specific licenses:
+# epaint_default_fonts (egui's bundled fonts, split out of epaint in 0.37) embeds fonts that use font-specific licenses:
 # - OFL-1.1: SIL Open Font License (OSI approved, FSF free)
-# - UFL-1.0: Ubuntu Font License (permissive font license)
+# - Ubuntu-font-1.0: Ubuntu Font License (permissive font license)
 # These are standard, permissive font licenses safe for distribution
 [[licenses.exceptions]]
-name = "epaint"
-allow = ["LicenseRef-UFL-1.0"]
+name = "epaint_default_fonts"
+allow = ["Ubuntu-font-1.0"]
 
 [bans]
 # Check for multiple versions of the same crate
