@@ -80,11 +80,11 @@ pub fn apply_modern_theme(ctx: &egui::Context) {
 
     // Accent widgets.
     visuals.selection.bg_fill = palette.primary.linear_multiply(0.65);
-    visuals.selection.stroke = egui::Stroke::new(1.5, palette.primary);
+    visuals.selection.stroke = egui::Stroke::new(1.5_f32, palette.primary);
     visuals.widgets.hovered.bg_fill = palette.primary.linear_multiply(0.25);
     visuals.widgets.active.bg_fill = palette.primary.linear_multiply(0.40);
-    visuals.widgets.active.fg_stroke = egui::Stroke::new(1.5, Color32::WHITE);
-    visuals.widgets.hovered.fg_stroke = egui::Stroke::new(1.2, Color32::WHITE);
+    visuals.widgets.active.fg_stroke = egui::Stroke::new(1.5_f32, Color32::WHITE);
+    visuals.widgets.hovered.fg_stroke = egui::Stroke::new(1.2_f32, Color32::WHITE);
 
     style.visuals = visuals;
 

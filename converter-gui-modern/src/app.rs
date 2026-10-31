@@ -971,7 +971,7 @@ impl eframe::App for ModernApp {
         let popup_frame = egui::Frame::popup(ctx.style().as_ref())
             .fill(crate::ui::theme::Palette::default().panel)
             .stroke(egui::Stroke::new(
-                1.5,
+                1.5_f32,
                 crate::ui::theme::Palette::default().primary,
             ));
 
@@ -1085,7 +1085,7 @@ fn render_single_mode(ui: &mut Ui, app: &mut ModernApp, _ctx: &egui::Context) {
             rect,
             12.0,
             egui::Stroke::new(
-                2.0,
+                2.0_f32,
                 if app.source_file.is_some() {
                     palette.success
                 } else if is_drag_over {
@@ -1555,7 +1555,7 @@ fn render_batch_mode(ui: &mut Ui, app: &mut ModernApp, ctx: &egui::Context) {
             rect,
             12.0,
             egui::Stroke::new(
-                2.0,
+                2.0_f32,
                 if is_drag_over {
                     palette.secondary
                 } else {
