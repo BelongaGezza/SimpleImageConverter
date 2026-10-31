@@ -80,3 +80,47 @@ Work in small, individually compiling steps on the branch. Do not merge to `main
 
 ## Rollback
 The branch is isolated. If the migration stalls, fall back to the temporary option: ignore RUSTSEC-2026-0257 in `deny.toml` with a justification and review date, and keep the upgrade branch for later.
+
+---
+
+## Phase 0 results (2026-10-31, rustc 1.97.1, macOS)
+
+### Baseline (before any version change)
+| Check | Result |
+|---|---|
+| `cargo fmt --check` | Pass |
+| `cargo clippy --workspace -- -D warnings` | **Fail (pre-existing)**: 7 × "falling back to `f32`" (future-incompat) in `converter-gui-modern`: `src/app.rs:974,1088,1558`, `src/ui/mode_switch.rs:46`, `src/ui/theme.rs:83` and others. Fix by writing `1.5_f32` / `2.0_f32` |
+| `cargo test --workspace` | Pass (all suites ok) |
+| `cargo test -p converter-gui --features viewer-3d` | **Fail (pre-existing)**: `converter-gui/src/app.rs:1023` uses `frame` but the parameter is `_frame` (line 502) |
+| `cargo doc --workspace --no-deps` | Pass |
+| `cargo deny check advisories` | 6 failing: RUSTSEC-2026-0192, -0206, -0257, -0370, -0371, -0372 |
+
+The two pre-existing failures must be fixed in their own commits before the migration so the baseline is green and later failures are attributable to the upgrade.
+
+### MSRV
+eframe 0.37.0 requires **Rust 1.95**; the workspace declares `rust-version = "1.92"`. The workspace `rust-version` must be raised to 1.95, and the CI toolchain checked against it (Phase 1).
+
+### Breaking changes that match our usage (from the egui changelog, 0.28 → 0.37)
+Counts are occurrences in `converter-gui*/`.
+
+| Change | Version | Our usage | Effort |
+|---|---|---|---|
+| `Rounding` → `CornerRadius` (values now `u8`/`i8`; same for `Margin`, `Shadow`) | 0.31 | `Rounding` ×6, `inner_margin` | Mechanical, check float → int conversions |
+| `StrokeKind` required when painting rects with strokes; `Frame` now includes stroke width in padding | 0.31 | `painter()` ×16, `Stroke::new` ×8 | Visual regression risk, compare screenshots |
+| `id_source` → `id_salt` | 0.30 | `from_id_source` ×2 | Mechanical |
+| `allocate_ui_at_rect` → `scope_builder` / `allocate_new_ui` | 0.30–0.32 | ×3 | Small |
+| `screen_rect` → `content_rect` / `viewport_rect` | 0.33 | ×1 | Small |
+| `SidePanel` / `TopBottomPanel` → `Panel`; `CentralPanel::show` deprecated | 0.34 | `TopBottomPanel` ×6, `CentralPanel` ×2 | Moderate (layout) |
+| `eframe::App::update` → `App::ui` (+ `logic`); `Context::run_ui`; `Ui` derefs to `Context` | 0.34 | `fn update` in both apps | **Largest change**: touches the main loop in both 2,000+ line `app.rs` files |
+| `Context::available_rect` / `used_size` deprecated | 0.34 | not found in grep | None expected |
+| `clip_rect_margin` removed; `Window` margins reworked | 0.35–0.36 | not found in grep | Check windows visually |
+| MSRV bumps 1.80 → 1.95 | various | see above | Workspace change |
+
+Also in use and worth checking at compile time (no specific breakage found in the changelog): `ColorImage` ×10, `load_texture` ×2, `dropped_files` ×12, `ctx.input` ×12, `ScrollArea` ×9, `ViewportBuilder` / `NativeOptions` ×2 each, `ProgressBar`, `ComboBox`.
+
+Deprecated APIs still compile but emit warnings, which `clippy -D warnings` turns into errors. Treat each deprecation as a required fix, not an optional one.
+
+### Revised first steps
+1. Fix the two pre-existing baseline failures (separate commits).
+2. Bump `rust-version` to 1.95 and check the CI toolchain.
+3. Proceed to Phase 1.
