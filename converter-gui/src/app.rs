@@ -499,7 +499,8 @@ impl eframe::App for ConverterApp {
         }
     }
 
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+    #[cfg_attr(not(feature = "viewer-3d"), allow(unused_variables))]
+    fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
         // Performance: egui automatically optimizes redraws - only updates when necessary
         // (mouse movement, window resize, or explicit request_repaint() calls)
 
@@ -925,6 +926,7 @@ impl eframe::App for ConverterApp {
                                             #[cfg(feature = "viewer-3d")]
                                             {
                                                 // Try to show 3D viewer if available
+                                                let mut viewer_lock_failed = false;
                                                 if let Some(ref viewer_arc) = self.viewer_3d {
                                                     // Handle mutex lock error gracefully
                                                     if let Ok(mut viewer) = viewer_arc.lock() {
@@ -1043,10 +1045,7 @@ impl eframe::App for ConverterApp {
                                                 } else {
                                                     // Mutex lock failed - show error and fallback
                                                     ui.label("Viewer unavailable: internal error");
-                                                    self.add_message(
-                                                        "Failed to access 3D viewer due to internal error".to_string(),
-                                                        crate::app::MessageType::Error,
-                                                    );
+                                                    viewer_lock_failed = true;
                                                 }
                                                 } else {
                                                     // Fallback: show mesh metadata
@@ -1066,6 +1065,12 @@ impl eframe::App for ConverterApp {
                                                             ui.label("Mesh metadata not available");
                                                         }
                                                     }
+                                                }
+                                                if viewer_lock_failed {
+                                                    self.add_message(
+                                                        "Failed to access 3D viewer due to internal error".to_string(),
+                                                        crate::app::MessageType::Error,
+                                                    );
                                                 }
                                             } // Close cfg(feature = "viewer-3d") block
 
