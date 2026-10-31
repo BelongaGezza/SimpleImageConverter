@@ -50,7 +50,7 @@ pub fn render_drop_zone(ui: &mut Ui, app: &mut ConverterApp) {
         i.raw
             .dropped_files
             .iter()
-            .filter_map(|f| f.path.clone())
+            .map(|f| f.path().to_path_buf())
             .collect()
     });
 
@@ -92,6 +92,7 @@ pub fn render_drop_zone(ui: &mut Ui, app: &mut ConverterApp) {
         drop_zone_rect,
         style::corner_radius::STANDARD,
         Stroke::new(border_width, border_color),
+        egui::StrokeKind::Middle,
     );
 
     // Handle click on drop zone
@@ -129,7 +130,7 @@ pub fn render_drop_zone(ui: &mut Ui, app: &mut ConverterApp) {
     // Draw drop zone content INSIDE the allocated rect
     // Use a slightly smaller rect to account for border/padding
     let content_rect = drop_zone_rect.shrink(4.0);
-    ui.allocate_ui_at_rect(content_rect, |ui| {
+    ui.scope_builder(egui::UiBuilder::new().max_rect(content_rect), |ui| {
         if app.source_file.is_some() {
             // Compact display when file selected
             ui.horizontal(|ui| {

@@ -500,7 +500,8 @@ impl eframe::App for ConverterApp {
     }
 
     #[cfg_attr(not(feature = "viewer-3d"), allow(unused_variables))]
-    fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
+    fn ui(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame) {
+        let ctx = &ui.ctx().clone();
         // Performance: egui automatically optimizes redraws - only updates when necessary
         // (mouse movement, window resize, or explicit request_repaint() calls)
 
@@ -671,8 +672,8 @@ impl eframe::App for ConverterApp {
         }
 
         // Menu bar
-        egui::TopBottomPanel::top("menu_bar").show(ctx, |ui| {
-            egui::menu::bar(ui, |ui| {
+        egui::Panel::top("menu_bar").show(ui, |ui| {
+            egui::MenuBar::new().ui(ui, |ui| {
                 ui.menu_button("File", |ui| {
                     if ui
                         .button("Open File...")
@@ -704,7 +705,7 @@ impl eframe::App for ConverterApp {
                         {
                             crate::ui::drop_zone::handle_file_selection_internal(self, file_path);
                         }
-                        ui.close_menu();
+                        ui.close();
                     }
                     if ui
                         .button("Clear")
@@ -713,7 +714,7 @@ impl eframe::App for ConverterApp {
                     {
                         // Note: Confirmation is handled in the main UI, not in menu
                         self.reset();
-                        ui.close_menu();
+                        ui.close();
                     }
                     ui.separator();
                     let save_button = if self.show_settings_panel {
@@ -732,7 +733,7 @@ impl eframe::App for ConverterApp {
                         } else {
                             self.add_message("Settings saved".to_string(), MessageType::Success);
                         }
-                        ui.close_menu();
+                        ui.close();
                     }
                     ui.separator();
                     if ui
@@ -761,7 +762,7 @@ impl eframe::App for ConverterApp {
                         } else {
                             self.add_message("Settings panel closed".to_string(), MessageType::Info);
                         }
-                        ui.close_menu();
+                        ui.close();
                     }
                 });
 
@@ -772,7 +773,7 @@ impl eframe::App for ConverterApp {
                         .clicked()
                     {
                         self.show_help_panel = true;
-                        ui.close_menu();
+                        ui.close();
                     }
                     if ui
                         .button("About")
@@ -780,7 +781,7 @@ impl eframe::App for ConverterApp {
                         .clicked()
                     {
                         self.show_about_dialog = true;
-                        ui.close_menu();
+                        ui.close();
                     }
                     ui.separator();
                     if ui
@@ -801,7 +802,7 @@ impl eframe::App for ConverterApp {
                                 MessageType::Info,
                             );
                         }
-                        ui.close_menu();
+                        ui.close();
                     }
                     if ui
                         .button("License")
@@ -823,7 +824,7 @@ impl eframe::App for ConverterApp {
                                 MessageType::Info,
                             );
                         }
-                        ui.close_menu();
+                        ui.close();
                     }
                 });
             });
@@ -831,25 +832,25 @@ impl eframe::App for ConverterApp {
 
         // Messages area at bottom (above status bar)
         // Note: Bottom panels stack from bottom to top, so define messages first (it will be above status bar)
-        egui::TopBottomPanel::bottom("messages_panel")
+        egui::Panel::bottom("messages_panel")
             .resizable(true)
-            .min_height(80.0)
-            .max_height(200.0)
-            .default_height(100.0)
-            .show(ctx, |ui| {
+            .min_size(80.0)
+            .max_size(200.0)
+            .default_size(100.0)
+            .show(ui, |ui| {
                 ui::messages::render_messages(ui, self);
             });
 
         // Status bar at very bottom (fixed height, no resizing)
-        egui::TopBottomPanel::bottom("status_bar")
+        egui::Panel::bottom("status_bar")
             .resizable(false)
-            .show(ctx, |ui| {
+            .show(ui, |ui| {
                 ui.set_height(25.0); // Fixed height for status bar
                 ui::status_bar::render_status_bar(ui, self);
             });
 
         // Main content area with scrolling support
-        egui::CentralPanel::default().show(ctx, |ui| {
+        egui::CentralPanel::default().show(ui, |ui| {
             egui::ScrollArea::vertical()
                 .auto_shrink([false; 2])
                 .show(ui, |ui| {
@@ -1180,7 +1181,9 @@ impl eframe::App for ConverterApp {
                                         && self.output_format.is_some()
                                         && !matches!(self.status, Status::Converting { .. });
 
-                                    ui.set_enabled(can_convert);
+                                    if !(can_convert) {
+ ui.disable();
+ }
                                     if ui
                                         .button("Convert")
                                         .on_hover_text(if can_convert {
@@ -1278,7 +1281,7 @@ impl ConverterApp {
             return;
         };
 
-        let rect = ctx.screen_rect();
+        let rect = ctx.content_rect();
         let width = rect.width();
         let height = rect.height();
 
@@ -2053,7 +2056,7 @@ impl ConverterApp {
 
         // If a text input has focus, avoid stealing common editing keys (e.g., Ctrl+A, Space).
         // This preserves platform conventions and prevents surprising behavior while typing.
-        let wants_keyboard_input = ctx.wants_keyboard_input();
+        let wants_keyboard_input = ctx.egui_wants_keyboard_input();
 
         // Ctrl+O / Cmd+O: Open file
         if cmd_or_ctrl && ctx.input(|i| i.key_pressed(egui::Key::O)) {

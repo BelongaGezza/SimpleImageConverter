@@ -319,7 +319,7 @@ mod tests {
         // Create dummy preview data
         let create_preview = |path: &str| -> (PathBuf, Arc<PreviewData>) {
             let path_buf = PathBuf::from(path);
-            let color_img = ColorImage::new([1, 1], egui::Color32::BLACK);
+            let color_img = ColorImage::filled([1, 1], egui::Color32::BLACK);
             let preview = Arc::new(PreviewData {
                 image: color_img,
                 original_width: 100,
