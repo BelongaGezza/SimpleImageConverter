@@ -124,3 +124,16 @@ Deprecated APIs still compile but emit warnings, which `clippy -D warnings` turn
 1. Fix the two pre-existing baseline failures (separate commits).
 2. Bump `rust-version` to 1.95 and check the CI toolchain.
 3. Proceed to Phase 1.
+
+## Phase 1 results (2026-10-31)
+
+- Baseline fixed in separate commits: f32 literals (clippy) and `viewer-3d` (frame param, mutex-guard borrow, missing test imports). Workspace tests pass with and without `viewer-3d`; `cargo clippy --workspace -- -D warnings` is clean. Clippy with `--features viewer-3d` still reports pre-existing lints in `preview_3d.rs` (not run in CI; out of scope here).
+- Dependency bump: `eframe`/`egui` 0.37, `rfd` 0.17 now declared once in `[workspace.dependencies]`; both GUI crates use `workspace = true`. Workspace `rust-version` raised 1.92 → 1.95.
+- Renderer: eframe 0.37 defaults to **wgpu**; 0.27 defaulted to **glow**. We set `default-features = false` with `glow` to keep the renderer unchanged. Revisit after the migration.
+- `links` feature (pulls in `webbrowser`) deliberately omitted; the GUI opens URLs via the `open` crate. `webbrowser` is no longer in the dependency tree, so RUSTSEC-2026-0257 is cleared.
+- `cargo deny check advisories` now reports 5: RUSTSEC-2026-0192, -0206, -0370, -0371, -0372. `zvariant`/`zbus_names`/`zvariant_derive` were NOT cleared by this bump; investigate their remaining path (Phase 4).
+- `Cargo.lock` remains untracked/ignored (see `SECURITY_TODO.md`), so lock changes are not part of these commits.
+- State: **does not compile yet** (18 errors in `converter-gui`, listed below). Phase 2 starts from here.
+
+### Compile errors at start of Phase 2
+`App::update` → `App::ui`; `TopBottomPanel` / `egui::menu::bar` removed; `Ui::set_enabled` (×6); `Context::screen_rect`; `Context::wants_keyboard_input`; `allocate_ui_at_rect`; `DroppedFile::path` is now a method; one call with an extra argument (`drop_zone.rs:91`); one type mismatch (`app.rs:852`).
