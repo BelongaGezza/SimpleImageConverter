@@ -12,9 +12,9 @@ name = "converter-gui"
 path = "src/main.rs"
 
 [dependencies]
-eframe = "0.27"
-egui = "0.27"
-rfd = "0.15"
+eframe.workspace = true
+egui.workspace = true
+rfd.workspace = true
 # wgpu for 3D mesh viewer (prototype for Sprint 9)
 wgpu = { version = "28", optional = true }
 bytemuck = { version = "1", optional = true }

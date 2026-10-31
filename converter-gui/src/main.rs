@@ -44,7 +44,7 @@ fn main() -> eframe::Result<()> {
         options,
         Box::new(move |_cc| {
             // Setup custom styles if needed
-            Box::new(ConverterApp::with_settings(settings.clone()))
+            Ok(Box::new(ConverterApp::with_settings(settings.clone())))
         }),
     )
 }

@@ -112,7 +112,9 @@ pub fn render_batch_queue(ui: &mut Ui, app: &mut ConverterApp) {
         let is_paused = app.is_batch_processing_paused();
 
         // Process Queue button
-        ui.set_enabled(has_pending && !is_processing);
+        if !(has_pending && !is_processing) {
+ ui.disable();
+ }
         if ui
             .button("Process Queue")
             .on_hover_text(if has_pending && !is_processing {
@@ -138,7 +140,9 @@ pub fn render_batch_queue(ui: &mut Ui, app: &mut ConverterApp) {
         }
 
         // Pause/Resume button (only enabled when processing is active)
-        ui.set_enabled(is_processing_active);
+        if !(is_processing_active) {
+ ui.disable();
+ }
         if is_paused {
             if ui
                 .button("▶ Resume")
@@ -176,7 +180,9 @@ pub fn render_batch_queue(ui: &mut Ui, app: &mut ConverterApp) {
         }
 
         // Cancel button (only enabled when processing is active)
-        ui.set_enabled(is_processing_active);
+        if !(is_processing_active) {
+ ui.disable();
+ }
         if ui
             .button("⏹ Cancel")
             .on_hover_text("Cancel batch processing. Items currently processing will finish, but pending items will be cancelled (Press Escape)")
@@ -422,7 +428,9 @@ fn render_queue_item(ui: &mut Ui, item: &BatchItem, _index: usize) -> (bool, Opt
                     let can_edit = matches!(item.status, BatchItemStatus::Pending);
                     let can_remove = !matches!(item.status, BatchItemStatus::Processing);
 
-                    ui.set_enabled(can_remove);
+                    if !(can_remove) {
+                        ui.disable();
+                    }
                     if ui
                         .small_button("Remove")
                         .on_hover_text(if can_remove {
@@ -436,7 +444,9 @@ fn render_queue_item(ui: &mut Ui, item: &BatchItem, _index: usize) -> (bool, Opt
                         should_remove = true; // Signal that this item should be removed
                     }
 
-                    ui.set_enabled(can_edit);
+                    if !(can_edit) {
+                        ui.disable();
+                    }
                     if ui
                         .small_button("Edit")
                         .on_hover_text(if can_edit {
