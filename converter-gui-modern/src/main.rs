@@ -27,7 +27,7 @@ fn main() -> eframe::Result<()> {
         options,
         Box::new(move |cc| {
             ui::theme::apply_modern_theme(&cc.egui_ctx);
-            Box::new(ModernApp::new(settings.clone()))
+            Ok(Box::new(ModernApp::new(settings.clone())))
         }),
     )
 }
