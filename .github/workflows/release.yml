@@ -69,14 +69,14 @@ jobs:
           Get-Content checksums-windows.txt
       
       - name: Upload Windows Release Asset
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           files: simpleimageconverter-*-windows-x64.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Upload Windows Checksums
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           files: checksums-windows.txt
         env:
@@ -139,14 +139,14 @@ jobs:
           cat checksums-macos.txt
       
       - name: Upload macOS Release Asset
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           files: simpleimageconverter-*-macos-*.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Upload macOS Checksums
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           files: checksums-macos.txt
         env:
@@ -206,14 +206,14 @@ jobs:
           cat checksums-linux.txt
       
       - name: Upload Linux Release Asset
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           files: simpleimageconverter-*-linux-x64.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Upload Linux Checksums
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           files: checksums-linux.txt
         env:
