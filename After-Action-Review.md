@@ -4,14 +4,14 @@
 
 **Scope:** Post-mortem / continuous AAR for the SimpleImageConverter project. Items marked with ⬜ are action items to complete.
 
-**Maintainers:** System Engineer; Project Manager (Gerry Gillies)
+**Maintainers:** System Engineer; Project Manager (BelongaGezza)
 
 ---
 
 ## 📌 Snapshot
 - **Repository:** SimpleImageConverter
 - **Date created:** January 5, 2026
-- **Author:** Gerry Gillies
+- **Author:** BelongaGezza
 
 ---
 

@@ -80,7 +80,7 @@ Two CLI tools: `img-convert` (2D images) and `mesh-convert` (3D meshes)
 
 ### Who's building this?
 Claude AI, Claude Code, and Cursor 2.2 in coordination
-**Project Manager:** Gerry Gillies
+**Project Manager:** BelongaGezza
 
 ---
 
