@@ -753,7 +753,7 @@ impl Viewer3D {
 
         if response.hovered() {
             // Handle mouse wheel for zoom
-            let scroll_delta = ui.input(|i| i.raw_scroll_delta.y);
+            let scroll_delta = ui.input(|i| i.smooth_scroll_delta.y);
             if scroll_delta != 0.0 {
                 self.handle_zoom(scroll_delta * 0.01);
             }

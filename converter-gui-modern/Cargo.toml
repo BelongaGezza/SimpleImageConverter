@@ -12,9 +12,9 @@ name = "converter-gui-modern"
 path = "src/main.rs"
 
 [dependencies]
-eframe = "0.27"
-egui = "0.27"
-rfd = "0.15"
+eframe.workspace = true
+egui.workspace = true
+rfd.workspace = true
 open = "5.0"
 rayon = "1.8"
 num_cpus = "1.0"

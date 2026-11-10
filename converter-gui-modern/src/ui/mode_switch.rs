@@ -43,7 +43,7 @@ pub fn render_mode_switch(ui: &mut Ui, mode: &mut ProcessingMode) {
             if selected {
                 b = b
                     .fill(selected_bg)
-                    .stroke(egui::Stroke::new(1.5, stroke.color));
+                    .stroke(egui::Stroke::new(1.5_f32, stroke.color));
             } else {
                 b = b.fill(inactive_bg).stroke(stroke);
             }

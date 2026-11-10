@@ -701,7 +701,9 @@ fn test_settings_auto_save_debouncing() {
 #[cfg(feature = "viewer-3d")]
 use converter_gui::preview_3d::{RenderMode, Viewer3D};
 #[cfg(feature = "viewer-3d")]
-use mesh_core::Mesh;
+use mesh_core::{Face, Mesh, Vertex};
+#[cfg(feature = "viewer-3d")]
+use std::sync::Mutex;
 use std::thread;
 
 // Helper to create a simple test mesh

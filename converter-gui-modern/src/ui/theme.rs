@@ -35,7 +35,7 @@ pub fn apply_modern_theme(ctx: &egui::Context) {
     let palette = Palette::default();
 
     // Fonts: keep default families, but scale sizes up.
-    let mut style = (*ctx.style()).clone();
+    let mut style = (*ctx.global_style()).clone();
     style.text_styles = [
         (
             TextStyle::Heading,
@@ -64,12 +64,12 @@ pub fn apply_modern_theme(ctx: &egui::Context) {
     // Spacing + rounding for bigger, touch-friendlier UI.
     style.spacing.button_padding = egui::vec2(12.0, 10.0);
     style.spacing.item_spacing = egui::vec2(10.0, 8.0);
-    style.visuals.window_rounding = egui::Rounding::same(10.0);
-    style.visuals.menu_rounding = egui::Rounding::same(10.0);
-    style.visuals.widgets.noninteractive.rounding = egui::Rounding::same(10.0);
-    style.visuals.widgets.inactive.rounding = egui::Rounding::same(10.0);
-    style.visuals.widgets.hovered.rounding = egui::Rounding::same(10.0);
-    style.visuals.widgets.active.rounding = egui::Rounding::same(10.0);
+    style.visuals.window_corner_radius = egui::CornerRadius::same(10);
+    style.visuals.menu_corner_radius = egui::CornerRadius::same(10);
+    style.visuals.widgets.noninteractive.corner_radius = egui::CornerRadius::same(10);
+    style.visuals.widgets.inactive.corner_radius = egui::CornerRadius::same(10);
+    style.visuals.widgets.hovered.corner_radius = egui::CornerRadius::same(10);
+    style.visuals.widgets.active.corner_radius = egui::CornerRadius::same(10);
 
     let mut visuals = Visuals::dark();
     visuals.override_text_color = Some(Color32::from_rgb(235, 235, 245));
@@ -80,13 +80,13 @@ pub fn apply_modern_theme(ctx: &egui::Context) {
 
     // Accent widgets.
     visuals.selection.bg_fill = palette.primary.linear_multiply(0.65);
-    visuals.selection.stroke = egui::Stroke::new(1.5, palette.primary);
+    visuals.selection.stroke = egui::Stroke::new(1.5_f32, palette.primary);
     visuals.widgets.hovered.bg_fill = palette.primary.linear_multiply(0.25);
     visuals.widgets.active.bg_fill = palette.primary.linear_multiply(0.40);
-    visuals.widgets.active.fg_stroke = egui::Stroke::new(1.5, Color32::WHITE);
-    visuals.widgets.hovered.fg_stroke = egui::Stroke::new(1.2, Color32::WHITE);
+    visuals.widgets.active.fg_stroke = egui::Stroke::new(1.5_f32, Color32::WHITE);
+    visuals.widgets.hovered.fg_stroke = egui::Stroke::new(1.2_f32, Color32::WHITE);
 
     style.visuals = visuals;
 
-    ctx.set_style(style);
+    ctx.set_global_style(style);
 }
