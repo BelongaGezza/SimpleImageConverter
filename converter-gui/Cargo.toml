@@ -16,7 +16,7 @@ eframe.workspace = true
 egui.workspace = true
 rfd.workspace = true
 # wgpu for 3D mesh viewer (prototype for Sprint 9)
-wgpu = { version = "28", optional = true }
+wgpu = { version = "30", optional = true }
 bytemuck = { version = "1", optional = true }
 pollster = { version = "0.3", optional = true }
 image.workspace = true
