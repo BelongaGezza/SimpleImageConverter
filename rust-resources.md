@@ -82,6 +82,7 @@
 | 2025-12-30 | **SPRINT 10** | opencascade-rs documentation verified and compiled (Task 1.1 support) - OCCT installation guide complete, limitations documented, STEP reference updated | Researcher |
 | 2026-01-26 | Updates | Upgraded resvg 0.40→0.45 (usvg API: `Tree::from_data(data, &Options)`; fonts via `Options::fontdb_mut()`) | Junior Engineer (2D Formats) |
 | 2026-01-26 | Updates | Documented stl_io 0.7→0.10 upgrade approach: no GitHub Releases notes; rely on docs.rs comparison + compile + regression tests. | Researcher |
+| 2026-11-11 | Dependencies | Dependabot PR #14 (tiny-skia 0.11→0.12) closed: `resvg` 0.45 pins tiny-skia 0.11, so a direct 0.12 dep breaks `resvg::render` (type mismatch). Keep tiny-skia in lockstep with resvg. | Claude Code |
 
 ---
 
@@ -208,6 +209,14 @@ resvg::render(&tree, resvg::usvg::Transform::default(), &mut pixmap_mut);
 **Gotchas:**
 - Requires font database for text rendering
 - DPI affects output size calculations
+- **tiny-skia must match resvg's version.** `resvg::render` takes
+  `resvg::tiny_skia::PixmapMut`; if our direct `tiny-skia` dependency resolves
+  to a different version (e.g. 0.12 while resvg 0.45 uses 0.11), Cargo builds
+  both and `img-core/src/formats/svg.rs` fails with E0308 ("multiple different
+  versions of crate `tiny_skia`"). Do not bump `tiny-skia` independently —
+  upgrade it together with `resvg` once resvg depends on the newer release
+  (or use `resvg::tiny_skia` and drop the direct dependency). Dependabot is set
+  to ignore tiny-skia 0.12 until then (see PR #14).
 
 #### ravif (v0.11) - AVIF Encoding
 **License:** BSD-3-Clause  
