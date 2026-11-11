@@ -19,7 +19,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0  # Full history for verification
       
@@ -39,7 +39,7 @@ jobs:
           targets: x86_64-pc-windows-msvc
       
       - name: Cache cargo registry
-        uses: actions/cache@v3
+        uses: actions/cache@v6
         with:
           path: |
             ~/.cargo/bin/
@@ -69,14 +69,14 @@ jobs:
           Get-Content checksums-windows.txt
       
       - name: Upload Windows Release Asset
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           files: simpleimageconverter-*-windows-x64.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Upload Windows Checksums
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           files: checksums-windows.txt
         env:
@@ -91,7 +91,7 @@ jobs:
       matrix:
         target: [x86_64-apple-darwin, aarch64-apple-darwin]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0  # Full history for verification
       
@@ -110,7 +110,7 @@ jobs:
           targets: ${{ matrix.target }}
       
       - name: Cache cargo registry
-        uses: actions/cache@v3
+        uses: actions/cache@v6
         with:
           path: |
             ~/.cargo/bin/
@@ -139,14 +139,14 @@ jobs:
           cat checksums-macos.txt
       
       - name: Upload macOS Release Asset
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           files: simpleimageconverter-*-macos-*.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Upload macOS Checksums
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           files: checksums-macos.txt
         env:
@@ -158,7 +158,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0  # Full history for verification
       
@@ -177,7 +177,7 @@ jobs:
           targets: x86_64-unknown-linux-gnu
       
       - name: Cache cargo registry
-        uses: actions/cache@v3
+        uses: actions/cache@v6
         with:
           path: |
             ~/.cargo/bin/
@@ -206,14 +206,14 @@ jobs:
           cat checksums-linux.txt
       
       - name: Upload Linux Release Asset
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           files: simpleimageconverter-*-linux-x64.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Upload Linux Checksums
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           files: checksums-linux.txt
         env:
