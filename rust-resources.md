@@ -39,8 +39,8 @@
 - ✅ `serde_json` v1.0 - JSON support
 - ✅ `log` v0.4 - Logging
 - ✅ `image` v0.25 - Image processing (latest: 0.25.8)
-- ✅ `resvg` v0.45 - SVG rendering (current: 0.45.1)
-- ✅ `tiny-skia` v0.11 - 2D rendering (latest: 0.11.4)
+- ✅ `resvg` v0.50 - SVG rendering
+- ✅ `tiny-skia` v0.12 - 2D rendering (must match resvg's tiny-skia version)
 
 **GUI Dependencies (Sprint 7):**
 - 📋 `egui` v0.27 - GUI framework (latest: **0.33.3** - stick with 0.27 for Sprint 7)
@@ -83,6 +83,7 @@
 | 2026-01-26 | Updates | Upgraded resvg 0.40→0.45 (usvg API: `Tree::from_data(data, &Options)`; fonts via `Options::fontdb_mut()`) | Junior Engineer (2D Formats) |
 | 2026-01-26 | Updates | Documented stl_io 0.7→0.10 upgrade approach: no GitHub Releases notes; rely on docs.rs comparison + compile + regression tests. | Researcher |
 | 2026-11-11 | Dependencies | Dependabot PR #14 (tiny-skia 0.11→0.12) closed: `resvg` 0.45 pins tiny-skia 0.11, so a direct 0.12 dep breaks `resvg::render` (type mismatch). Keep tiny-skia in lockstep with resvg. | Claude Code |
+| 2026-11-11 | Updates | Upgraded resvg 0.45→0.50 and tiny-skia 0.11→0.12 together (resvg ≥0.47 depends on tiny-skia 0.12); no source changes needed in `img-core/src/formats/svg.rs`. fmt/clippy/tests/doc pass. | Claude Code |
 
 ---
 
@@ -181,9 +182,9 @@ if image.color() == ColorType::Rgba8 {
 }
 ```
 
-#### resvg (v0.45) - SVG Rasterization
+#### resvg (v0.50) - SVG Rasterization
 **License:** MIT OR Apache-2.0 (note: resvg upstream changed from MPL-2.0 in v0.45.0)
-**Status:** ✅ Current (workspace uses 0.45.1)
+**Status:** ✅ Current (workspace uses 0.50; no API changes needed in img-core vs 0.45)
 **Current Usage:** Active in img-core
 
 **API Note (0.45+):**
@@ -214,9 +215,8 @@ resvg::render(&tree, resvg::usvg::Transform::default(), &mut pixmap_mut);
   to a different version (e.g. 0.12 while resvg 0.45 uses 0.11), Cargo builds
   both and `img-core/src/formats/svg.rs` fails with E0308 ("multiple different
   versions of crate `tiny_skia`"). Do not bump `tiny-skia` independently —
-  upgrade it together with `resvg` once resvg depends on the newer release
-  (or use `resvg::tiny_skia` and drop the direct dependency). Dependabot is set
-  to ignore tiny-skia 0.12 until then (see PR #14).
+  upgrade it together with `resvg`. resvg 0.47+ uses tiny-skia 0.12; we moved to
+  resvg 0.50 + tiny-skia 0.12 together (supersedes the closed Dependabot PR #14).
 
 #### ravif (v0.11) - AVIF Encoding
 **License:** BSD-3-Clause  
