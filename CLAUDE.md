@@ -66,6 +66,29 @@ cargo test       # Run tests
 cargo doc        # Verify docs build
 ```
 
+### Branch Protection (`main`)
+
+`main` is protected on GitHub. Do not push to it directly; open a PR from a
+branch.
+
+- Merge via PR only (0 approvals required — solo repo)
+- Required status checks: `Test`, `Clippy`, `Format Check`, `Build Linux`,
+  `Build Windows`, `Build macOS`, `Security Audit`
+- Branch must be up to date with `main` before merging (strict checks); after
+  another PR merges, ask Dependabot to `@dependabot rebase` or rebase manually
+- Linear history: squash or rebase merges only
+- Force-pushes and deletion of `main` are blocked
+- Review conversations must be resolved before merging
+- Admins are exempt (`enforce_admins` off) for emergency overrides
+
+When resolving conflicts in a rebase, verify the result still contains the
+intended change (a rebase once produced an empty merge commit for a Dependabot
+bump). Delete merged branches after merging.
+
+To change these rules, use the GitHub API
+(`gh api -X PUT repos/<owner>/<repo>/branches/main/protection`) and update this
+section.
+
 ## Agent Prompt Files
 
 Agent definitions are stored in `.agents/`:
