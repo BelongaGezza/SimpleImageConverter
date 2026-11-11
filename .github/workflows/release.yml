@@ -39,7 +39,7 @@ jobs:
           targets: x86_64-pc-windows-msvc
       
       - name: Cache cargo registry
-        uses: actions/cache@v3
+        uses: actions/cache@v6
         with:
           path: |
             ~/.cargo/bin/
@@ -110,7 +110,7 @@ jobs:
           targets: ${{ matrix.target }}
       
       - name: Cache cargo registry
-        uses: actions/cache@v3
+        uses: actions/cache@v6
         with:
           path: |
             ~/.cargo/bin/
@@ -177,7 +177,7 @@ jobs:
           targets: x86_64-unknown-linux-gnu
       
       - name: Cache cargo registry
-        uses: actions/cache@v3
+        uses: actions/cache@v6
         with:
           path: |
             ~/.cargo/bin/
